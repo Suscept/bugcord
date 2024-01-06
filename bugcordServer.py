@@ -29,7 +29,7 @@ async def register_connection(websocket:websockets.WebSocketServerProtocol):
 async def consume_server(websocket:websockets.WebSocketServerProtocol):
     print("echoiung")
     async for message in websocket:
-        print("casting")
+        print("casting " + message)
         websockets.broadcast(CONNECTIONS, message)
 
 async def main():
