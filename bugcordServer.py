@@ -12,7 +12,7 @@ async def server():
     await server.close()
 
 async def handle(websocket:websockets.WebSocketServerProtocol):
-    asyncio.gather(
+    await asyncio.gather(
         register_connection(websocket),
         consume_server(websocket)
         )
