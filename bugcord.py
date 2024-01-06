@@ -6,21 +6,25 @@ CONNECTIONS = set()
 async def client():
     uri = "ws://localhost:25987"
 
-    async with websockets.connect(uri) as client:
-        async for message in client:
-            await consume_client(message)
-        await produce(client)
+    client = await websockets.connect(uri)
+    
+    async for message in client:
+        await consume_client(message)
+    await produce(client)
 
 async def server():
     stop = asyncio.Future()
-
-    server = await websockets.serve(handle, "localhost", port=25987)
+    
+    server = await websockets.serve(handle, "10.0.0.25", port=25987)
 
     await stop
     await server.close()
 
 async def handle(websocket:websockets.WebSocketServerProtocol):
-    asyncio.gather(register_connection(websocket), consume_server(websocket))
+    asyncio.gather(
+        register_connection(websocket),
+        consume_server(websocket)
+        )
 
 async def register_connection(websocket:websockets.WebSocketServerProtocol):
     CONNECTIONS.add(websocket)
@@ -28,6 +32,7 @@ async def register_connection(websocket:websockets.WebSocketServerProtocol):
     try:
         await websocket.wait_closed()
     finally:
+        print("removed conectino")
         CONNECTIONS.remove(websocket)
 
 async def consume_server(websocket:websockets.WebSocketServerProtocol):
@@ -46,10 +51,11 @@ async def produce(websocket:websockets.WebSocketServerProtocol):
 
 async def main():
     serverTask = asyncio.create_task(server())
-    clientTask = asyncio.create_task(client())
+    #clientTask = asyncio.create_task(client())
     if input("host? y/n ") == "y":
         await serverTask
-    await clientTask
+    #else:
+        #await clientTask
     
 
 if __name__ == '__main__':
