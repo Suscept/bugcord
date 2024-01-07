@@ -1,5 +1,6 @@
 import websockets
 import asyncio
+import json
 
 CONNECTIONS = set()
 
@@ -12,6 +13,7 @@ async def server():
     await server.close()
 
 async def handle(websocket:websockets.WebSocketServerProtocol):
+    await websocket.send(json.dumps({"usr":"10.0.0.25", "pktpe":"servhndshke", "networkcount":len(CONNECTIONS), "motd":"Hello chat"}))
     await asyncio.gather(
         register_connection(websocket),
         consume_server(websocket)
