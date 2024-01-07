@@ -13,7 +13,11 @@ except FileNotFoundError:
     print("Creating account...")
     user = {"username":username, "defaultConnect":uri, "secretDONTSHARE":str(uuid.uuid4())}
     userRaw = json.dumps(user)
-    open("user.txt", "w").write(userRaw)
+    try:
+        open("user.txt", "w").write(userRaw)
+    except Exception as e:
+        print(e)
+        input()
     while True:
         input("Created account!\nPlease close and reopen Bugcord.")
     
@@ -51,17 +55,22 @@ async def client():
 async def consume_client(websocket:websockets.WebSocketServerProtocol):
     async for message in websocket:
         msgJson = json.loads(message)
-        if msgJson["usr"] == username:
+        if msgJson["usr"] == user["username"]:
             continue
+        if msgJson["pktpe"] == "servhndshke":
+            print_message("Server MOTD: " + msgJson["motd"])
         if msgJson["pktpe"] == "msg":
-            print(msgJson["usr"] + ": " + msgJson["content"])
+            print_message(msgJson["usr"] + ": " + msgJson["content"])
 
 async def produce(websocket:websockets.WebSocketServerProtocol):
     print("taking input")
     while True:
+        print("You: ", end='')
         msg = await asyncio.to_thread(input)
-        print("msg: " + msg)
-        await websocket.send(json.dumps({"pktpe":"msg", "usr":username, "content":msg}))
+        await websocket.send(json.dumps({"pktpe":"msg", "usr":user["username"], "content":msg}))
+
+def print_message(message:str):
+    print("\r" + message)
 
 async def main():
     clientTask = asyncio.create_task(client())
