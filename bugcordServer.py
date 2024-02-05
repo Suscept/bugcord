@@ -13,7 +13,8 @@ async def server():
     await server.close()
 
 async def handle(websocket:websockets.WebSocketServerProtocol):
-    await websocket.send(json.dumps({"usr":"10.0.0.25", "pktpe":"servhndshke", "networkcount":len(CONNECTIONS), "motd":"Hello chat"}))
+    #await websocket.send(json.dumps({"usr":"10.0.0.25", "pktpe":"servhndshke", "networkcount":len(CONNECTIONS), "motd":"Hello chat"}))
+    await websocket.send(json.dumps({"pktpe":"msg", "usr":"Server", "content":"Hello chat. " + len(CONNECTIONS) + " other users connected."}))
     await asyncio.gather(
         register_connection(websocket),
         consume_server(websocket)
