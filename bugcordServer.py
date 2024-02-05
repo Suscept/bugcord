@@ -8,7 +8,7 @@ async def server():
     stop = asyncio.Future()
     
     server = await websockets.serve(handle, "10.0.0.25", port=25987)
-
+    print("open")
     await stop
     await server.close()
 
