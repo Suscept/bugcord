@@ -1,10 +1,15 @@
 from tkinter import *
 from tkinter import messagebox
 from async_tkinter_loop import async_handler, async_mainloop
+from enum import Enum
 import json
 import uuid
 import asyncio
 import websockets
+class Packet(Enum):
+    Message = 1
+    Handshake = 2
+    VoicePacket = 3
 
 client = None
 

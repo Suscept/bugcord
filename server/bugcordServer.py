@@ -1,8 +1,17 @@
 import websockets
 import asyncio
 import json
+from enum import Enum
 
 CONNECTIONS = set()
+
+class Packet(Enum):
+    Message = 1
+    Handshake = 2
+    VoicePacket = 3
+
+    def __eq__(self, __value: object) -> bool:
+        return self.value == __value
 
 async def server():
     stop = asyncio.Future()
@@ -14,7 +23,7 @@ async def server():
 
 async def handle(websocket:websockets.WebSocketServerProtocol):
     #await websocket.send(json.dumps({"usr":"10.0.0.25", "pktpe":"servhndshke", "networkcount":len(CONNECTIONS), "motd":"Hello chat"}))
-    await websocket.send(json.dumps({"pktpe":"msg", "usr":"Server", "content":"Hello chat. " + len(CONNECTIONS) + " other users connected."}))
+    await websocket.send(json.dumps({"pktpe":Packet.Message.value, "usr":"Server", "content":"Hello chat. " + str(len(CONNECTIONS)) + " other users connected."}))
     await asyncio.gather(
         register_connection(websocket),
         consume_server(websocket)
