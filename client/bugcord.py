@@ -6,12 +6,39 @@ import json
 import uuid
 import asyncio
 import websockets
+import webrunner
+import pyaudio
+import base64
+
+# mobile version
+# messages save
+# pins
+# notifacations
+# online indacators
+# specific pings
+# screen share
+# camera
+# mute/deafen
+# keybinds
+# gifs embeds and file uploads
+# change volume / mute specific users
+
 class Packet(Enum):
     Message = 1
     Handshake = 2
     VoicePacket = 3
 
+    def __eq__(self, __value: object) -> bool:
+        return self.value == __value
+
+class User():
+    def __init__(self, username, defaultServer, secret) -> None:
+        self.username = username
+        self.defaultServer = defaultServer
+        self.secret = secret
+
 client = None
+voiceStream = None
 
 def messageBox(title:str = None, message:str = None):
     if title == None:
@@ -21,55 +48,90 @@ def messageBox(title:str = None, message:str = None):
 
     messagebox.showinfo(title, message)
 
-async def cum(pen):
-    print(pen.state)
-    if pen.state == 8:
+async def sendPacket(type:Packet, *args, **kwargs):
+    match type:
+        case Packet.Message:
+            await client.socketProtocol.send(json.dumps({
+                "pktpe":type.value,
+                "usr":client.user.username,
+                "content":kwargs["msg"]
+                }))
+        case Packet.VoicePacket:
+            await client.socketProtocol.send(json.dumps({
+                "pktpe":type.value,
+                "usr":client.user.username,
+                "data":kwargs["data"]
+                }))
+
+
+async def sendMessage(event):
+    if event.state == 8: # If shift was not held when enter was pressed
         msg = channelInput.get(1.0, 'end')[:-2] # message comes with \n\n for some reason so cut it out
 
-        # channelContent.configure(state=NORMAL)
-        # channelContent.insert('end', "Bussyman: " + msg)
-        # channelContent.configure(state=DISABLED)
         channelInput.delete(1.0, 'end')
 
-        await client.send(json.dumps({"pktpe":"msg", "usr":user["username"], "content":msg}))
+        await sendPacket(Packet.Message, client.socketProtocol, msg=msg)
+        print_message(client.user.username + ": " + msg)
+        #await client.send(json.dumps({"pktpe":"msg", "usr":user.username, "content":msg}))
 
         return 'break'
-    
-async def connect(uriHolder):
-    global client
-    
-    if client != None:
-        await client.close()
-    
-    uriParsed = uriHolder.get().split(":")
-    if len(uriParsed) == 1:
-        uriParsed.append("25987")
 
-    formattedUri = "ws://{}:{}".format(uriParsed[0], uriParsed[1])
-    print("Connecting to " + formattedUri + "...")
-    client = await websockets.connect(formattedUri)
-    print("Connected!")
-    connectionStatus.configure(text="Connected")
-    await consume_client(client)
-    
-    print("cloihg")
-    await client.close()
+async def consume_client():
+    p = pyaudio.PyAudio()
+    voiceStream = p.open(
+        rate=10000,
+        channels=1,
+        output_device_index=8,
+        output=True,
+        format=pyaudio.paInt16,
+        frames_per_buffer=2048)
 
-async def consume_client(websocket:websockets.WebSocketServerProtocol):
-    async for message in websocket:
-        print(message)
+    async for message in client.socketProtocol:
         msgJson = json.loads(message)
-        # if msgJson["usr"] == user["username"]:
+        # if msgJson["usr"] == user["username"]: # Ignore own packets
         #     continue
-        if msgJson["pktpe"] == "servhndshke":
+        if msgJson["pktpe"] == Packet.Handshake:
             print_message("Server MOTD: " + msgJson["motd"])
-        if msgJson["pktpe"] == "msg":
+        if msgJson["pktpe"] == Packet.Message:
             print_message(msgJson["usr"] + ": " + msgJson["content"])
+        if msgJson["pktpe"] == Packet.VoicePacket:
+            print("recv")
+            voiceStream.write(base64.b64decode(msgJson["data"]))
+
+    voiceStream.stop_stream()
+    p.terminate()
 
 def print_message(message:str):
     channelContent.configure(state=NORMAL)
     channelContent.insert('end', "\n\n"+message)
     channelContent.configure(state=DISABLED)
+
+async def startConnect():
+    await client.connect(client.uriCleaner(connectUrl.get()), consume_client)
+    
+async def startVoiceStream():
+    # if client == None or voiceStream != None:
+    #     return
+    
+    p = pyaudio.PyAudio()
+    voiceStream = p.open(
+        rate=10000,
+        channels=1,
+        input_device_index=1,
+        #output_device_index=8,
+        input=True,
+        #output=True,
+        format=pyaudio.paInt16,
+        frames_per_buffer=2048)
+    
+    while True:
+        print(voiceStream.get_read_available())
+        voiceBase64 = base64.b64encode(voiceStream.read(4096)).decode()
+        print("sending")
+        await sendPacket(type=Packet.VoicePacket, data=voiceBase64)
+        await asyncio.sleep(0.1)
+    voiceStream.stop_stream()
+    p.terminate()
 
 if __name__ == '__main__':
     # Account creation step
@@ -92,12 +154,12 @@ if __name__ == '__main__':
             input("Created account!\nPlease close and reopen Bugcord.")
 
     # Login
-    user = json.loads(userRaw)
-    print("Logging in as " + user["username"])
-    #print("Connect to " + user["defaultConnect"] + "?\nPress enter to connect. Enter server IP to connect to other server")
-    uri = user["defaultConnect"]
+    userJson = json.loads(userRaw)
+    user = User(userJson["username"], userJson["defaultConnect"], userJson["secretDONTSHARE"])
+    print("Logging in as " + user.username)
 
-    client = None
+    client = webrunner.Client(user)
+    voiceStream = None
 
     # UI
     root = Tk("Bugcord")
@@ -105,8 +167,9 @@ if __name__ == '__main__':
 
     connectionStatus = Label(root, text="Not Connected")
     connectUrl = Entry(root)
-    connectUrl.insert(0, uri)
-    connectButton = Button(root, text="Connect", command=async_handler(connect, connectUrl))
+    connectUrl.insert(0, user.defaultServer)
+    connectButton = Button(root, text="Connect", command=async_handler(startConnect))
+    connectVoiceButton = Button(root, text="Connect to voice", command=async_handler(startVoiceStream))
 
     channelContent = Text(root, background="red", wrap=WORD, state=DISABLED)
 
@@ -116,14 +179,14 @@ if __name__ == '__main__':
     channelContent.grid(row=1, column=0, columnspan=5, sticky=NSEW)
 
     channelInput.grid(row=2, column=0, columnspan=4, sticky=NSEW)
-    channelInput.bind(sequence="<Return>", func=async_handler(cum))
+    channelInput.bind(sequence="<Return>", func=async_handler(sendMessage))
     fileButton.grid(row=2, column=4, sticky=E)
 
     connectUrl.grid(row=0, column=0)
     connectButton.grid(row=0, column=1)
     connectionStatus.grid(row=0, column=2)
+    connectVoiceButton.grid(row=0, column=3)
 
-    #root.columnconfigure(1, weight=1)
     root.columnconfigure(3, weight=1)
     root.rowconfigure(1, weight=1)
 
