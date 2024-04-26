@@ -1,0 +1,38 @@
+[gd_scene load_steps=3 format=3 uid="uid://c0hr25wlgd0kt"]
+
+[ext_resource type="Script" path="res://MessageUI.cs" id="1_3f5tq"]
+[ext_resource type="Texture2D" uid="uid://6j35bsdb4w8r" path="res://icon.svg" id="1_7dhvk"]
+
+[node name="MessageUI" type="MarginContainer" node_paths=PackedStringArray("messageContentLabel", "usernameLabel")]
+script = ExtResource("1_3f5tq")
+messageContentLabel = NodePath("HBoxContainer/VBoxContainer/RichTextLabel")
+usernameLabel = NodePath("HBoxContainer/VBoxContainer/Label")
+
+[node name="HBoxContainer" type="HBoxContainer" parent="."]
+layout_mode = 2
+size_flags_vertical = 0
+
+[node name="Profile" type="TextureRect" parent="HBoxContainer"]
+custom_minimum_size = Vector2(40, 40)
+layout_mode = 2
+size_flags_vertical = 0
+texture = ExtResource("1_7dhvk")
+expand_mode = 1
+
+[node name="VBoxContainer" type="VBoxContainer" parent="HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label" type="Label" parent="HBoxContainer/VBoxContainer"]
+layout_mode = 2
+text = "glop man"
+vertical_alignment = 1
+
+[node name="RichTextLabel" type="RichTextLabel" parent="HBoxContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "penis 
+aaaaaaaaa
+"
+fit_content = true
+scroll_active = false

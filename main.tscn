@@ -1,0 +1,398 @@
+[gd_scene load_steps=14 format=3 uid="uid://b4h65lw1u6cii"]
+
+[ext_resource type="Script" path="res://Bugcord.cs" id="1_jyk1e"]
+[ext_resource type="PackedScene" uid="uid://c0hr25wlgd0kt" path="res://message.tscn" id="1_ki7uw"]
+[ext_resource type="Script" path="res://MessageWindow.cs" id="2_7eip0"]
+[ext_resource type="Script" path="res://ServerSelector.cs" id="2_jgtti"]
+[ext_resource type="Script" path="res://SpacesList.cs" id="3_rhloj"]
+[ext_resource type="PackedScene" uid="uid://cjop4t0huwwq0" path="res://space.tscn" id="4_70f0h"]
+[ext_resource type="Script" path="res://MessageCreator.cs" id="4_weho3"]
+[ext_resource type="Script" path="res://RegisterWindow.cs" id="6_jgjb0"]
+[ext_resource type="Script" path="res://MakeSpaceWindow.cs" id="7_p4jpm"]
+[ext_resource type="Script" path="res://FunctionTester.cs" id="9_d1uvj"]
+[ext_resource type="Script" path="res://MakeVisible.cs" id="11_7p3cn"]
+[ext_resource type="Script" path="res://SpaceInviter.cs" id="11_cskni"]
+[ext_resource type="PackedScene" uid="uid://bl2sn6odt10ns" path="res://invite_option.tscn" id="12_qp5d4"]
+
+[node name="Main" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Bugcord" type="Node" parent="." node_paths=PackedStringArray("messageInput", "registerWindow", "spacesList")]
+script = ExtResource("1_jyk1e")
+messageInput = NodePath("../HBoxContainer/ChatMain/VBoxContainer/MessageCreator/HBoxContainer/TextEdit")
+registerWindow = NodePath("../Popups/Register")
+spacesList = NodePath("../HBoxContainer/LeftBar/Panel/VBoxContainer/Spaces")
+
+[node name="HBoxContainer" type="HBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="LeftBar" type="Control" parent="HBoxContainer"]
+custom_minimum_size = Vector2(200, 0)
+layout_mode = 2
+
+[node name="Panel" type="Panel" parent="HBoxContainer/LeftBar"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="HBoxContainer/LeftBar/Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="ServerInput" type="MarginContainer" parent="HBoxContainer/LeftBar/Panel/VBoxContainer" node_paths=PackedStringArray("serverUrlInput", "autoConnectCheckBox")]
+layout_mode = 2
+script = ExtResource("2_jgtti")
+serverUrlInput = NodePath("VBoxContainer/ServerInput/LineEdit")
+autoConnectCheckBox = NodePath("VBoxContainer/CheckBox")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="HBoxContainer/LeftBar/Panel/VBoxContainer/ServerInput"]
+layout_mode = 2
+
+[node name="ServerInput" type="HBoxContainer" parent="HBoxContainer/LeftBar/Panel/VBoxContainer/ServerInput/VBoxContainer"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+
+[node name="Button" type="Button" parent="HBoxContainer/LeftBar/Panel/VBoxContainer/ServerInput/VBoxContainer/ServerInput"]
+custom_minimum_size = Vector2(40, 40)
+layout_mode = 2
+mouse_default_cursor_shape = 2
+text = "#"
+
+[node name="LineEdit" type="LineEdit" parent="HBoxContainer/LeftBar/Panel/VBoxContainer/ServerInput/VBoxContainer/ServerInput"]
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "Server:"
+virtual_keyboard_type = 7
+
+[node name="CheckBox" type="CheckBox" parent="HBoxContainer/LeftBar/Panel/VBoxContainer/ServerInput/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 15
+text = "Connect Automatically"
+clip_text = true
+
+[node name="HSeparator" type="HSeparator" parent="HBoxContainer/LeftBar/Panel/VBoxContainer"]
+layout_mode = 2
+
+[node name="Spaces" type="ScrollContainer" parent="HBoxContainer/LeftBar/Panel/VBoxContainer" node_paths=PackedStringArray("spaceContainer")]
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+script = ExtResource("3_rhloj")
+spaceUi = ExtResource("4_70f0h")
+spaceContainer = NodePath("VBoxContainer")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="HBoxContainer/LeftBar/Panel/VBoxContainer/Spaces"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="NewSpace" type="Button" parent="HBoxContainer/LeftBar/Panel/VBoxContainer/Spaces/VBoxContainer"]
+layout_mode = 2
+mouse_default_cursor_shape = 2
+text = "Create Space"
+
+[node name="ChatMain" type="Control" parent="HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="VBoxContainer" type="VBoxContainer" parent="HBoxContainer/ChatMain"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="MessageWindow" type="Control" parent="HBoxContainer/ChatMain/VBoxContainer" node_paths=PackedStringArray("messageContainer", "scrollContainer")]
+layout_mode = 2
+size_flags_vertical = 3
+script = ExtResource("2_7eip0")
+messageScene = ExtResource("1_ki7uw")
+messageContainer = NodePath("ScrollContainer/Messages")
+scrollContainer = NodePath("ScrollContainer")
+
+[node name="ScrollContainer" type="ScrollContainer" parent="HBoxContainer/ChatMain/VBoxContainer/MessageWindow"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+horizontal_scroll_mode = 0
+vertical_scroll_mode = 2
+
+[node name="Messages" type="VBoxContainer" parent="HBoxContainer/ChatMain/VBoxContainer/MessageWindow/ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Message" parent="HBoxContainer/ChatMain/VBoxContainer/MessageWindow/ScrollContainer/Messages" instance=ExtResource("1_ki7uw")]
+layout_mode = 2
+
+[node name="MessageCreator" type="MarginContainer" parent="HBoxContainer/ChatMain/VBoxContainer" node_paths=PackedStringArray("messageInput")]
+layout_mode = 2
+script = ExtResource("4_weho3")
+messageInput = NodePath("HBoxContainer/TextEdit")
+
+[node name="HBoxContainer" type="HBoxContainer" parent="HBoxContainer/ChatMain/VBoxContainer/MessageCreator"]
+layout_mode = 2
+
+[node name="Button" type="Button" parent="HBoxContainer/ChatMain/VBoxContainer/MessageCreator/HBoxContainer"]
+custom_minimum_size = Vector2(40, 40)
+layout_mode = 2
+size_flags_vertical = 0
+size_flags_stretch_ratio = 0.0
+mouse_default_cursor_shape = 2
+text = "+"
+
+[node name="EncryptionButton" type="Button" parent="HBoxContainer/ChatMain/VBoxContainer/MessageCreator/HBoxContainer"]
+custom_minimum_size = Vector2(40, 40)
+layout_mode = 2
+size_flags_vertical = 0
+size_flags_stretch_ratio = 0.0
+mouse_default_cursor_shape = 2
+text = "🔐"
+
+[node name="TextEdit" type="TextEdit" parent="HBoxContainer/ChatMain/VBoxContainer/MessageCreator/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+auto_translate = false
+localize_numeral_system = false
+text = "e
+e
+e bg cummies"
+placeholder_text = "Message:"
+scroll_fit_content_height = true
+caret_blink = true
+draw_control_chars = true
+
+[node name="Popups" type="Control" parent="."]
+anchors_preset = 0
+mouse_filter = 2
+
+[node name="Register" type="Panel" parent="Popups" node_paths=PackedStringArray("usernameInput", "passwordInput", "repeatPasswordInput")]
+visible = false
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = 409.573
+offset_top = 210.37
+offset_right = 742.427
+offset_bottom = 437.63
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("6_jgjb0")
+usernameInput = NodePath("VBoxContainer/UsernameInput")
+passwordInput = NodePath("VBoxContainer/PasswordInput")
+repeatPasswordInput = NodePath("VBoxContainer/PasswordRepeat")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Popups/Register"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Label" type="Label" parent="Popups/Register/VBoxContainer"]
+layout_mode = 2
+text = "Bugcord registration"
+horizontal_alignment = 1
+
+[node name="UsernameInput" type="LineEdit" parent="Popups/Register/VBoxContainer"]
+layout_mode = 2
+placeholder_text = "Username:"
+
+[node name="PasswordInput" type="LineEdit" parent="Popups/Register/VBoxContainer"]
+layout_mode = 2
+placeholder_text = "Password:"
+virtual_keyboard_type = 6
+secret = true
+
+[node name="PasswordRepeat" type="LineEdit" parent="Popups/Register/VBoxContainer"]
+layout_mode = 2
+placeholder_text = "Repeat Password:"
+virtual_keyboard_type = 6
+secret = true
+
+[node name="Button" type="Button" parent="Popups/Register/VBoxContainer"]
+layout_mode = 2
+mouse_default_cursor_shape = 2
+text = "Register"
+
+[node name="MakeSpace" type="Panel" parent="Popups" node_paths=PackedStringArray("spaceName")]
+visible = false
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = 409.573
+offset_top = 210.37
+offset_right = 742.427
+offset_bottom = 334.965
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("7_p4jpm")
+spaceName = NodePath("VBoxContainer/SpaceName")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Popups/MakeSpace"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+alignment = 1
+
+[node name="Label" type="Label" parent="Popups/MakeSpace/VBoxContainer"]
+layout_mode = 2
+text = "Create a new Space"
+horizontal_alignment = 1
+
+[node name="SpaceName" type="LineEdit" parent="Popups/MakeSpace/VBoxContainer"]
+layout_mode = 2
+placeholder_text = "Name your space.."
+max_length = 12
+
+[node name="CreateSpace" type="Button" parent="Popups/MakeSpace/VBoxContainer"]
+layout_mode = 2
+mouse_default_cursor_shape = 2
+text = "Create Space"
+
+[node name="Button" type="Button" parent="Popups/MakeSpace"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -30.0
+offset_bottom = 31.0
+grow_horizontal = 0
+mouse_default_cursor_shape = 2
+text = "X"
+
+[node name="dataspan tester" type="Panel" parent="Popups" node_paths=PackedStringArray("input")]
+layout_mode = 0
+offset_left = 950.0
+offset_top = 428.0
+offset_right = 1126.47
+offset_bottom = 537.375
+script = ExtResource("9_d1uvj")
+input = NodePath("VBoxContainer/LineEdit")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Popups/dataspan tester"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Label" type="Label" parent="Popups/dataspan tester/VBoxContainer"]
+layout_mode = 2
+text = "test data span read"
+
+[node name="LineEdit" type="LineEdit" parent="Popups/dataspan tester/VBoxContainer"]
+layout_mode = 2
+placeholder_text = "base64"
+
+[node name="Button" type="Button" parent="Popups/dataspan tester/VBoxContainer"]
+layout_mode = 2
+text = "go"
+
+[node name="SpaceInviter" type="Panel" parent="Popups" node_paths=PackedStringArray("inviteEntryContainer")]
+visible = false
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = 444.0
+offset_top = 248.0
+offset_right = 745.14
+offset_bottom = 407.896
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("11_cskni")
+inviteEntry = ExtResource("12_qp5d4")
+inviteEntryContainer = NodePath("VBoxContainer/ScrollContainer/VBoxContainer")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Popups/SpaceInviter"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="Popups/SpaceInviter/VBoxContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="Popups/SpaceInviter/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Invite to Space"
+horizontal_alignment = 1
+
+[node name="Refresh" type="Button" parent="Popups/SpaceInviter/VBoxContainer/HBoxContainer" node_paths=PackedStringArray("target")]
+custom_minimum_size = Vector2(31, 0)
+layout_mode = 2
+text = "R"
+script = ExtResource("11_7p3cn")
+target = NodePath("../../..")
+
+[node name="Close" type="Button" parent="Popups/SpaceInviter/VBoxContainer/HBoxContainer" node_paths=PackedStringArray("target")]
+custom_minimum_size = Vector2(31, 0)
+layout_mode = 2
+text = "X"
+script = ExtResource("11_7p3cn")
+target = NodePath("../../..")
+
+[node name="ScrollContainer" type="ScrollContainer" parent="Popups/SpaceInviter/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Popups/SpaceInviter/VBoxContainer/ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[connection signal="OnLoggedIn" from="Bugcord" to="HBoxContainer/LeftBar/Panel/VBoxContainer/ServerInput" method="SetupFromClientDict"]
+[connection signal="OnMessageRecieved" from="Bugcord" to="HBoxContainer/ChatMain/VBoxContainer/MessageWindow" method="DisplayNewMessage"]
+[connection signal="OnAutoconnectSettingChanged" from="HBoxContainer/LeftBar/Panel/VBoxContainer/ServerInput" to="Bugcord" method="SetAutoConnect"]
+[connection signal="OnServerSelected" from="HBoxContainer/LeftBar/Panel/VBoxContainer/ServerInput" to="Bugcord" method="Connect"]
+[connection signal="pressed" from="HBoxContainer/LeftBar/Panel/VBoxContainer/ServerInput/VBoxContainer/ServerInput/Button" to="HBoxContainer/LeftBar/Panel/VBoxContainer/ServerInput" method="SelectServer"]
+[connection signal="toggled" from="HBoxContainer/LeftBar/Panel/VBoxContainer/ServerInput/VBoxContainer/CheckBox" to="HBoxContainer/LeftBar/Panel/VBoxContainer/ServerInput" method="AutoConnectCheckChanged"]
+[connection signal="OnSpaceInvite" from="HBoxContainer/LeftBar/Panel/VBoxContainer/Spaces" to="Popups/SpaceInviter" method="UpdateList"]
+[connection signal="OnSpacePicked" from="HBoxContainer/LeftBar/Panel/VBoxContainer/Spaces" to="Bugcord" method="ConnectSpace"]
+[connection signal="pressed" from="HBoxContainer/LeftBar/Panel/VBoxContainer/Spaces/VBoxContainer/NewSpace" to="Popups/MakeSpace" method="ToggleVisibility"]
+[connection signal="OnMessageSubmit" from="HBoxContainer/ChatMain/VBoxContainer/MessageCreator" to="Bugcord" method="PostMessage"]
+[connection signal="OnRegister" from="Popups/Register" to="Bugcord" method="CreateUserFile"]
+[connection signal="pressed" from="Popups/Register/VBoxContainer/Button" to="Popups/Register" method="AttemptRegister"]
+[connection signal="OnCreatingSpace" from="Popups/MakeSpace" to="Bugcord" method="GenerateSpace"]
+[connection signal="pressed" from="Popups/MakeSpace/VBoxContainer/CreateSpace" to="Popups/MakeSpace" method="OnCreateSpace"]
+[connection signal="pressed" from="Popups/MakeSpace/Button" to="Popups/MakeSpace" method="ToggleVisibility"]
+[connection signal="pressed" from="Popups/dataspan tester/VBoxContainer/Button" to="Popups/dataspan tester" method="OnInput"]
+[connection signal="OnInvitePeer" from="Popups/SpaceInviter" to="Bugcord" method="SendSpaceInvite"]
+[connection signal="pressed" from="Popups/SpaceInviter/VBoxContainer/HBoxContainer/Refresh" to="Popups/SpaceInviter/VBoxContainer/HBoxContainer/Refresh" method="SetInvisible"]
+[connection signal="pressed" from="Popups/SpaceInviter/VBoxContainer/HBoxContainer/Close" to="Popups/SpaceInviter/VBoxContainer/HBoxContainer/Close" method="SetInvisible"]

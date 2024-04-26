@@ -1,0 +1,30 @@
+[gd_scene load_steps=3 format=3 uid="uid://bl2sn6odt10ns"]
+
+[ext_resource type="Script" path="res://InvitePageEntry.cs" id="1_cxc5h"]
+[ext_resource type="Texture2D" uid="uid://6j35bsdb4w8r" path="res://icon.svg" id="2_tt6ku"]
+
+[node name="InviteOption" type="MarginContainer" node_paths=PackedStringArray("usernameTextObject", "profilePicture")]
+size_flags_horizontal = 3
+script = ExtResource("1_cxc5h")
+usernameTextObject = NodePath("HBoxContainer/Username")
+profilePicture = NodePath("HBoxContainer/ProfilePic")
+
+[node name="HBoxContainer" type="HBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="ProfilePic" type="TextureRect" parent="HBoxContainer"]
+layout_mode = 2
+texture = ExtResource("2_tt6ku")
+expand_mode = 2
+
+[node name="Username" type="Label" parent="HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Goon guy"
+
+[node name="Invite" type="Button" parent="HBoxContainer"]
+layout_mode = 2
+mouse_default_cursor_shape = 2
+text = "Invite"
+
+[connection signal="pressed" from="HBoxContainer/Invite" to="." method="Invite"]
