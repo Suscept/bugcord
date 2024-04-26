@@ -38,6 +38,9 @@ public partial class SpaceInviter : Panel
 		inviteEntries.Clear();
 
 		foreach (var (guid, info) in Bugcord.peers){
+			if ((string)guid == (string)Bugcord.clientUser["id"])
+				continue;
+
 			InvitePageEntry entry = inviteEntry.Instantiate<InvitePageEntry>();
 
 			inviteEntryContainer.AddChild(entry);
