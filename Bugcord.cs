@@ -219,13 +219,17 @@ public partial class Bugcord : Node
 
 	private void ProcessSpaceInvite(byte[] packet){
 		GD.Print("Processing space invite");
-		ushort keyLength = BitConverter.ToUInt16(packet, 1);
 
 		byte[][] dataSpans = ReadDataSpans(packet, 1);
 
 		byte[] uuid = dataSpans[0];
 		byte[] spaceName = dataSpans[1];
 		byte[] encryptedSpaceKey = dataSpans[2];
+
+		if (spaces.ContainsKey(uuid.GetStringFromUtf8())){
+			GD.Print("client already in space");
+			return;
+		}
 
 		byte[] spaceKey = new byte[256];
 		bool couldDecrypt = clientAuth.TryDecrypt(encryptedSpaceKey, spaceKey, RSAEncryptionPadding.Pkcs1, out int bytesWritten);
