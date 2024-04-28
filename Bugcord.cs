@@ -28,10 +28,10 @@ public partial class Bugcord : Node
 
 	public static byte[] selectedSpaceKey;
 
-	private RSA clientAuth;
-	private WebSocketPeer client;
+	private static RSA clientAuth;
+	private static WebSocketPeer client;
 
-	private WebSocketPeer.State previousState;
+	private static WebSocketPeer.State previousState;
 
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
