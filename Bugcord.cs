@@ -491,6 +491,11 @@ public partial class Bugcord : Node
 		}
 	}
 
+	// Debuggers
+	public void DEBUGB64SpaceInvite(string invite){
+		ProcessSpaceInvite(FromBase64(invite));
+	}
+
 	public struct User{
 		public string username;
 	}

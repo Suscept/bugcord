@@ -319,6 +319,77 @@ placeholder_text = "base64"
 layout_mode = 2
 text = "go"
 
+[node name="rsa tester" type="Panel" parent="Popups" node_paths=PackedStringArray("input", "input2", "input3")]
+layout_mode = 0
+offset_left = 759.0
+offset_top = 411.0
+offset_right = 935.47
+offset_bottom = 520.375
+script = ExtResource("9_d1uvj")
+type = 1
+input = NodePath("VBoxContainer/LineEdit")
+input2 = NodePath("VBoxContainer/LineEdit2")
+input3 = NodePath("VBoxContainer/LineEdit3")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Popups/rsa tester"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Label" type="Label" parent="Popups/rsa tester/VBoxContainer"]
+layout_mode = 2
+text = "test rsa exchange"
+
+[node name="LineEdit" type="LineEdit" parent="Popups/rsa tester/VBoxContainer"]
+layout_mode = 2
+placeholder_text = "message b64"
+
+[node name="LineEdit2" type="LineEdit" parent="Popups/rsa tester/VBoxContainer"]
+layout_mode = 2
+placeholder_text = "recipiant key b64"
+
+[node name="LineEdit3" type="LineEdit" parent="Popups/rsa tester/VBoxContainer"]
+layout_mode = 2
+placeholder_text = "base64"
+
+[node name="Button" type="Button" parent="Popups/rsa tester/VBoxContainer"]
+layout_mode = 2
+text = "go"
+
+[node name="space invite tester" type="Panel" parent="Popups" node_paths=PackedStringArray("bugcordInstance", "input")]
+layout_mode = 0
+offset_left = 759.0
+offset_top = 233.0
+offset_right = 935.47
+offset_bottom = 342.375
+script = ExtResource("9_d1uvj")
+type = 2
+bugcordInstance = NodePath("../../Bugcord")
+input = NodePath("VBoxContainer/LineEdit")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Popups/space invite tester"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Label" type="Label" parent="Popups/space invite tester/VBoxContainer"]
+layout_mode = 2
+text = "test space invite"
+
+[node name="LineEdit" type="LineEdit" parent="Popups/space invite tester/VBoxContainer"]
+layout_mode = 2
+placeholder_text = "full invite packet b64"
+
+[node name="Button" type="Button" parent="Popups/space invite tester/VBoxContainer"]
+layout_mode = 2
+text = "go"
+
 [node name="SpaceInviter" type="Panel" parent="Popups" node_paths=PackedStringArray("inviteEntryContainer")]
 visible = false
 layout_mode = 1
@@ -377,6 +448,47 @@ horizontal_scroll_mode = 0
 layout_mode = 2
 size_flags_horizontal = 3
 
+[node name="AlertPanel" type="MarginContainer" parent="."]
+custom_minimum_size = Vector2(188.64, 0)
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 1.0
+anchor_right = 1.0
+anchor_bottom = 0.615
+offset_right = -15.0
+offset_bottom = -3.05176e-05
+grow_horizontal = 0
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="AlertPanel"]
+layout_mode = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="AlertPanel/VBoxContainer"]
+layout_mode = 2
+alignment = 2
+
+[node name="Button" type="Button" parent="AlertPanel/VBoxContainer/HBoxContainer"]
+custom_minimum_size = Vector2(30, 30)
+layout_mode = 2
+mouse_default_cursor_shape = 2
+text = "M"
+
+[node name="Panel" type="Panel" parent="AlertPanel/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="ScrollContainer" type="ScrollContainer" parent="AlertPanel/VBoxContainer/Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="AlertPanel/VBoxContainer/Panel/ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
 [connection signal="OnLoggedIn" from="Bugcord" to="HBoxContainer/LeftBar/Panel/VBoxContainer/ServerInput" method="SetupFromClientDict"]
 [connection signal="OnMessageRecieved" from="Bugcord" to="HBoxContainer/ChatMain/VBoxContainer/MessageWindow" method="DisplayNewMessage"]
 [connection signal="OnAutoconnectSettingChanged" from="HBoxContainer/LeftBar/Panel/VBoxContainer/ServerInput" to="Bugcord" method="SetAutoConnect"]
@@ -393,6 +505,8 @@ size_flags_horizontal = 3
 [connection signal="pressed" from="Popups/MakeSpace/VBoxContainer/CreateSpace" to="Popups/MakeSpace" method="OnCreateSpace"]
 [connection signal="pressed" from="Popups/MakeSpace/Button" to="Popups/MakeSpace" method="ToggleVisibility"]
 [connection signal="pressed" from="Popups/dataspan tester/VBoxContainer/Button" to="Popups/dataspan tester" method="OnInput"]
+[connection signal="pressed" from="Popups/rsa tester/VBoxContainer/Button" to="Popups/rsa tester" method="OnInput"]
+[connection signal="pressed" from="Popups/space invite tester/VBoxContainer/Button" to="Popups/space invite tester" method="OnInput"]
 [connection signal="OnInvitePeer" from="Popups/SpaceInviter" to="Bugcord" method="SendSpaceInvite"]
 [connection signal="pressed" from="Popups/SpaceInviter/VBoxContainer/HBoxContainer/Refresh" to="Popups/SpaceInviter/VBoxContainer/HBoxContainer/Refresh" method="SetInvisible"]
 [connection signal="pressed" from="Popups/SpaceInviter/VBoxContainer/HBoxContainer/Close" to="Popups/SpaceInviter/VBoxContainer/HBoxContainer/Close" method="SetInvisible"]
