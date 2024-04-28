@@ -231,11 +231,12 @@ public partial class Bugcord : Node
 			return;
 		}
 
-		byte[] spaceKey = new byte[256];
+		byte[] spaceKey = new byte[32]; // Size of AES key in bytes. 256 bits = 32 bytes
 		bool couldDecrypt = clientAuth.TryDecrypt(encryptedSpaceKey, spaceKey, RSAEncryptionPadding.Pkcs1, out int bytesWritten);
+
 		if (couldDecrypt){
 			Dictionary spaceData = new Dictionary(){
-				{"name", spaceName},
+				{"name", spaceName.GetStringFromUtf8()},
 				{"key", ToBase64(spaceKey)}
 			};
 			
