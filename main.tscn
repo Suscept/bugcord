@@ -141,9 +141,6 @@ vertical_scroll_mode = 2
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="Message" parent="HBoxContainer/ChatMain/VBoxContainer/MessageWindow/ScrollContainer/Messages" instance=ExtResource("1_ki7uw")]
-layout_mode = 2
-
 [node name="MessageCreator" type="MarginContainer" parent="HBoxContainer/ChatMain/VBoxContainer" node_paths=PackedStringArray("messageInput")]
 layout_mode = 2
 script = ExtResource("4_weho3")
@@ -173,9 +170,6 @@ layout_mode = 2
 size_flags_horizontal = 3
 auto_translate = false
 localize_numeral_system = false
-text = "e
-e
-e bg cummies"
 placeholder_text = "Message:"
 scroll_fit_content_height = true
 caret_blink = true
@@ -291,6 +285,7 @@ mouse_default_cursor_shape = 2
 text = "X"
 
 [node name="dataspan tester" type="Panel" parent="Popups" node_paths=PackedStringArray("input")]
+visible = false
 layout_mode = 0
 offset_left = 950.0
 offset_top = 428.0
@@ -320,6 +315,7 @@ layout_mode = 2
 text = "go"
 
 [node name="rsa tester" type="Panel" parent="Popups" node_paths=PackedStringArray("input", "input2", "input3")]
+visible = false
 layout_mode = 0
 offset_left = 759.0
 offset_top = 411.0
@@ -360,6 +356,7 @@ layout_mode = 2
 text = "go"
 
 [node name="space invite tester" type="Panel" parent="Popups" node_paths=PackedStringArray("bugcordInstance", "input")]
+visible = false
 layout_mode = 0
 offset_left = 759.0
 offset_top = 233.0
