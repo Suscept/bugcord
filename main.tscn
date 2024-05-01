@@ -1,4 +1,4 @@
-[gd_scene load_steps=14 format=3 uid="uid://b4h65lw1u6cii"]
+[gd_scene load_steps=16 format=3 uid="uid://b4h65lw1u6cii"]
 
 [ext_resource type="Script" path="res://Bugcord.cs" id="1_jyk1e"]
 [ext_resource type="PackedScene" uid="uid://c0hr25wlgd0kt" path="res://message.tscn" id="1_ki7uw"]
@@ -13,6 +13,8 @@
 [ext_resource type="Script" path="res://MakeVisible.cs" id="11_7p3cn"]
 [ext_resource type="Script" path="res://SpaceInviter.cs" id="11_cskni"]
 [ext_resource type="PackedScene" uid="uid://bl2sn6odt10ns" path="res://invite_option.tscn" id="12_qp5d4"]
+[ext_resource type="Script" path="res://AlertPanel.cs" id="14_gf605"]
+[ext_resource type="PackedScene" uid="uid://xbjljk2f0tqf" path="res://alert_message.tscn" id="15_jvka1"]
 
 [node name="Main" type="Control"]
 layout_mode = 3
@@ -445,7 +447,7 @@ horizontal_scroll_mode = 0
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="AlertPanel" type="MarginContainer" parent="."]
+[node name="AlertPanel" type="MarginContainer" parent="." node_paths=PackedStringArray("popupWindow", "alertContainer")]
 custom_minimum_size = Vector2(188.64, 0)
 layout_mode = 1
 anchors_preset = -1
@@ -456,6 +458,10 @@ offset_right = -15.0
 offset_bottom = -3.05176e-05
 grow_horizontal = 0
 grow_vertical = 2
+script = ExtResource("14_gf605")
+popupWindow = NodePath("VBoxContainer/Panel")
+alertContainer = NodePath("VBoxContainer/Panel/ScrollContainer/VBoxContainer")
+alertMessageScene = ExtResource("15_jvka1")
 
 [node name="VBoxContainer" type="VBoxContainer" parent="AlertPanel"]
 layout_mode = 2
@@ -471,6 +477,7 @@ mouse_default_cursor_shape = 2
 text = "M"
 
 [node name="Panel" type="Panel" parent="AlertPanel/VBoxContainer"]
+visible = false
 layout_mode = 2
 size_flags_vertical = 3
 
@@ -507,3 +514,4 @@ size_flags_horizontal = 3
 [connection signal="OnInvitePeer" from="Popups/SpaceInviter" to="Bugcord" method="SendSpaceInvite"]
 [connection signal="pressed" from="Popups/SpaceInviter/VBoxContainer/HBoxContainer/Refresh" to="Popups/SpaceInviter/VBoxContainer/HBoxContainer/Refresh" method="SetInvisible"]
 [connection signal="pressed" from="Popups/SpaceInviter/VBoxContainer/HBoxContainer/Close" to="Popups/SpaceInviter/VBoxContainer/HBoxContainer/Close" method="SetInvisible"]
+[connection signal="pressed" from="AlertPanel/VBoxContainer/HBoxContainer/Button" to="AlertPanel" method="ToggleVisible"]

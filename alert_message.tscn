@@ -1,0 +1,43 @@
+[gd_scene load_steps=3 format=3 uid="uid://xbjljk2f0tqf"]
+
+[ext_resource type="Script" path="res://AlertMessage.cs" id="1_bvlua"]
+
+[sub_resource type="SystemFont" id="SystemFont_vjm28"]
+font_names = PackedStringArray("Sans-Serif")
+font_weight = 999
+subpixel_positioning = 0
+
+[node name="AlertMessage" type="MarginContainer" node_paths=PackedStringArray("header", "subHeader", "content")]
+script = ExtResource("1_bvlua")
+header = NodePath("VBoxContainer/Header")
+subHeader = NodePath("VBoxContainer/Subheader")
+content = NodePath("VBoxContainer/Message")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="Header" type="Label" parent="VBoxContainer"]
+layout_mode = 2
+theme_override_fonts/font = SubResource("SystemFont_vjm28")
+theme_override_font_sizes/font_size = 14
+text = "Header"
+
+[node name="Subheader" type="Label" parent="VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.627451, 0.627451, 0.627451, 1)
+theme_override_font_sizes/font_size = 13
+text = "Subheader"
+
+[node name="Message" type="RichTextLabel" parent="VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/normal_font_size = 14
+theme_override_font_sizes/bold_font_size = 14
+theme_override_font_sizes/italics_font_size = 14
+theme_override_font_sizes/bold_italics_font_size = 14
+theme_override_font_sizes/mono_font_size = 14
+text = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Fusce vestibulum lorem tortor, vel malesuada risus."
+fit_content = true
+scroll_active = false
+
+[node name="HSeparator" type="HSeparator" parent="VBoxContainer"]
+layout_mode = 2

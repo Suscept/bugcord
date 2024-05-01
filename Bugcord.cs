@@ -184,6 +184,7 @@ public partial class Bugcord : Node
 	public void ConnectSpace(string guid){
 		selectedSpaceKey = FromBase64((string)((Dictionary)spaces[guid])["key"]);
 		GD.Print("connected to space " + guid);
+		AlertPanel.PostAlert("Connected to space", guid);
 	}
 
 	public void SendSpaceInvite(string spaceGuid, string peerGuid){
