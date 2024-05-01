@@ -1,4 +1,5 @@
 using Godot;
+using Godot.Collections;
 using System;
 
 public partial class MessageWindow : Control
@@ -18,11 +19,11 @@ public partial class MessageWindow : Control
 		
 	}
 
-	public void DisplayNewMessage(string message){
+	public void DisplayNewMessage(Dictionary message){
 		VScrollBar vScroll = scrollContainer.GetVScrollBar();
 
 		MessageUI newMessage = messageScene.Instantiate<MessageUI>();
-		newMessage.Initiate(message, "globber", null);
+		newMessage.Initiate(message);
 		messageContainer.AddChild(newMessage);
 
 		int trueMax = (int)(vScroll.MaxValue - vScroll.Page);

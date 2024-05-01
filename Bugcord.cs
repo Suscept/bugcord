@@ -13,7 +13,7 @@ public partial class Bugcord : Node
 
 	[Export] public ServerSelector serverSelector;
 
-	[Signal] public delegate void OnMessageRecievedEventHandler(string message);
+	[Signal] public delegate void OnMessageRecievedEventHandler(Dictionary message);
 	[Signal] public delegate void OnLoggedInEventHandler(Dictionary client);
 
 	public const string clientSavePath = "user://client.data";
@@ -59,14 +59,18 @@ public partial class Bugcord : Node
 		previousState = client.GetReadyState();
 		
 		while (client.GetAvailablePacketCount() > 0){
-			string message = ProcessIncomingPacket(client.GetPacket());
-			
-			DisplayMessage(message, "ween");
+			ProcessIncomingPacket(client.GetPacket());
 		}
 	}
 
-	public void DisplayMessage(string content, string senderName){
-		EmitSignal(SignalName.OnMessageRecieved, content);
+	public void DisplayMessage(string content, string senderId){
+		Dictionary messageDict = new Dictionary
+		{
+			{"content", content},
+			{"sender", senderId}
+		};
+
+		EmitSignal(SignalName.OnMessageRecieved, messageDict);
 	}
 
 	public void Connect(string url){
@@ -200,12 +204,13 @@ public partial class Bugcord : Node
 		return peers;
 	}
 
-	private string ProcessIncomingPacket(byte[] packet){
+	private void ProcessIncomingPacket(byte[] packet){
 		byte type = packet[0];
 
 		switch (type){
 			case 0:
-				return ProcessMessagePacket(packet);
+				ProcessMessagePacket(packet);
+				break;
 			case 1:
 				ProcessIdentify(packet);
 				break;
@@ -213,8 +218,6 @@ public partial class Bugcord : Node
 				ProcessSpaceInvite(packet);
 				break;
 		}
-
-		return null;
 	}
 
 	private void ProcessSpaceInvite(byte[] packet){
@@ -270,9 +273,13 @@ public partial class Bugcord : Node
 		}
 	}
 
-	private string ProcessMessagePacket(byte[] packet){
+	private void ProcessMessagePacket(byte[] packet){
+		byte[][] spans = ReadDataSpans(packet, 17);
+
 		byte[] initVector = ReadLength(packet, 1, 16);
-		byte[] encryptedMessage = ReadDataSpan(packet, 17);
+
+		byte[] encryptedMessage = spans[0];
+		byte[] senderGuid = spans[1];
 
 		byte[] decryptedMessage = null;
 
@@ -287,7 +294,9 @@ public partial class Bugcord : Node
 			}
 		}
 		
-		return decryptedMessage.GetStringFromUtf8();
+		string messageString = decryptedMessage.GetStringFromUtf8();
+		if (messageString.Length > 0)
+			DisplayMessage(messageString, senderGuid.GetStringFromUtf8());
 	}
 
 	// Format
@@ -322,10 +331,10 @@ public partial class Bugcord : Node
 			}
 		}
 
-		byte[] textLength = BitConverter.GetBytes((short)encryptedMessage.Length);
+		
 		packetList.AddRange(initVector);
-		packetList.AddRange(textLength);
-		packetList.AddRange(encryptedMessage);
+		packetList.AddRange(MakeDataSpan(encryptedMessage));
+		packetList.AddRange(MakeDataSpan(((string)clientUser["id"]).ToUtf8Buffer()));
 
 		return packetList.ToArray();
 	}

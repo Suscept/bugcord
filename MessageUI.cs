@@ -1,4 +1,5 @@
 using Godot;
+using Godot.Collections;
 using System;
 
 public partial class MessageUI : MarginContainer
@@ -16,8 +17,8 @@ public partial class MessageUI : MarginContainer
 	// {
 	// }
 
-	public void Initiate(string content, string username, ImageTexture profile){
-		messageContentLabel.Text = content;
-		usernameLabel.Text = username;
+	public void Initiate(Dictionary message){
+		messageContentLabel.Text = (string)message["content"];
+		usernameLabel.Text = (string)message["sender"];
 	}
 }
