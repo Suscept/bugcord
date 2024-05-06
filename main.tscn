@@ -1,4 +1,4 @@
-[gd_scene load_steps=16 format=3 uid="uid://b4h65lw1u6cii"]
+[gd_scene load_steps=17 format=3 uid="uid://b4h65lw1u6cii"]
 
 [ext_resource type="Script" path="res://Bugcord.cs" id="1_jyk1e"]
 [ext_resource type="PackedScene" uid="uid://c0hr25wlgd0kt" path="res://message.tscn" id="1_ki7uw"]
@@ -9,6 +9,7 @@
 [ext_resource type="Script" path="res://MessageCreator.cs" id="4_weho3"]
 [ext_resource type="Script" path="res://RegisterWindow.cs" id="6_jgjb0"]
 [ext_resource type="Script" path="res://MakeSpaceWindow.cs" id="7_p4jpm"]
+[ext_resource type="PackedScene" uid="uid://br4rq6oo0fvp" path="res://embed_input_display.tscn" id="8_ihghl"]
 [ext_resource type="Script" path="res://FunctionTester.cs" id="9_d1uvj"]
 [ext_resource type="Script" path="res://MakeVisible.cs" id="11_7p3cn"]
 [ext_resource type="Script" path="res://SpaceInviter.cs" id="11_cskni"]
@@ -26,7 +27,7 @@ grow_vertical = 2
 
 [node name="Bugcord" type="Node" parent="." node_paths=PackedStringArray("messageInput", "registerWindow", "spacesList")]
 script = ExtResource("1_jyk1e")
-messageInput = NodePath("../HBoxContainer/ChatMain/VBoxContainer/MessageCreator/HBoxContainer/TextEdit")
+messageInput = NodePath("../HBoxContainer/ChatMain/VBoxContainer/MessageCreator/VBoxContainer/MessageInput/MessageText")
 registerWindow = NodePath("../Popups/Register")
 spacesList = NodePath("../HBoxContainer/LeftBar/Panel/VBoxContainer/Spaces")
 
@@ -143,15 +144,30 @@ vertical_scroll_mode = 2
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="MessageCreator" type="MarginContainer" parent="HBoxContainer/ChatMain/VBoxContainer" node_paths=PackedStringArray("messageInput")]
+[node name="MessageCreator" type="MarginContainer" parent="HBoxContainer/ChatMain/VBoxContainer" node_paths=PackedStringArray("messageInput", "embedDialog", "embedContainer")]
 layout_mode = 2
 script = ExtResource("4_weho3")
-messageInput = NodePath("HBoxContainer/TextEdit")
+messageInput = NodePath("VBoxContainer/MessageInput/MessageText")
+embedDialog = NodePath("EmbedDialog")
+embedContainer = NodePath("VBoxContainer/ScrollContainer/Embeds")
+embedScene = ExtResource("8_ihghl")
 
-[node name="HBoxContainer" type="HBoxContainer" parent="HBoxContainer/ChatMain/VBoxContainer/MessageCreator"]
+[node name="EmbedDialog" type="FileDialog" parent="HBoxContainer/ChatMain/VBoxContainer/MessageCreator"]
+title = "Open File(s)"
+initial_position = 2
+size = Vector2i(337, 159)
+ok_button_text = "Open"
+file_mode = 1
+access = 2
+use_native_dialog = true
+
+[node name="VBoxContainer" type="VBoxContainer" parent="HBoxContainer/ChatMain/VBoxContainer/MessageCreator"]
 layout_mode = 2
 
-[node name="Button" type="Button" parent="HBoxContainer/ChatMain/VBoxContainer/MessageCreator/HBoxContainer"]
+[node name="MessageInput" type="HBoxContainer" parent="HBoxContainer/ChatMain/VBoxContainer/MessageCreator/VBoxContainer"]
+layout_mode = 2
+
+[node name="EmbedButton" type="Button" parent="HBoxContainer/ChatMain/VBoxContainer/MessageCreator/VBoxContainer/MessageInput"]
 custom_minimum_size = Vector2(40, 40)
 layout_mode = 2
 size_flags_vertical = 0
@@ -159,7 +175,7 @@ size_flags_stretch_ratio = 0.0
 mouse_default_cursor_shape = 2
 text = "+"
 
-[node name="EncryptionButton" type="Button" parent="HBoxContainer/ChatMain/VBoxContainer/MessageCreator/HBoxContainer"]
+[node name="EncryptionButton" type="Button" parent="HBoxContainer/ChatMain/VBoxContainer/MessageCreator/VBoxContainer/MessageInput"]
 custom_minimum_size = Vector2(40, 40)
 layout_mode = 2
 size_flags_vertical = 0
@@ -167,7 +183,7 @@ size_flags_stretch_ratio = 0.0
 mouse_default_cursor_shape = 2
 text = "🔐"
 
-[node name="TextEdit" type="TextEdit" parent="HBoxContainer/ChatMain/VBoxContainer/MessageCreator/HBoxContainer"]
+[node name="MessageText" type="TextEdit" parent="HBoxContainer/ChatMain/VBoxContainer/MessageCreator/VBoxContainer/MessageInput"]
 layout_mode = 2
 size_flags_horizontal = 3
 auto_translate = false
@@ -176,6 +192,14 @@ placeholder_text = "Message:"
 scroll_fit_content_height = true
 caret_blink = true
 draw_control_chars = true
+
+[node name="ScrollContainer" type="ScrollContainer" parent="HBoxContainer/ChatMain/VBoxContainer/MessageCreator/VBoxContainer"]
+layout_mode = 2
+vertical_scroll_mode = 0
+
+[node name="Embeds" type="HBoxContainer" parent="HBoxContainer/ChatMain/VBoxContainer/MessageCreator/VBoxContainer/ScrollContainer"]
+layout_mode = 2
+alignment = 2
 
 [node name="Popups" type="Control" parent="."]
 anchors_preset = 0
@@ -503,6 +527,8 @@ size_flags_horizontal = 3
 [connection signal="OnSpacePicked" from="HBoxContainer/LeftBar/Panel/VBoxContainer/Spaces" to="Bugcord" method="ConnectSpace"]
 [connection signal="pressed" from="HBoxContainer/LeftBar/Panel/VBoxContainer/Spaces/VBoxContainer/NewSpace" to="Popups/MakeSpace" method="ToggleVisibility"]
 [connection signal="OnMessageSubmit" from="HBoxContainer/ChatMain/VBoxContainer/MessageCreator" to="Bugcord" method="PostMessage"]
+[connection signal="files_selected" from="HBoxContainer/ChatMain/VBoxContainer/MessageCreator/EmbedDialog" to="HBoxContainer/ChatMain/VBoxContainer/MessageCreator" method="EmbedFile"]
+[connection signal="pressed" from="HBoxContainer/ChatMain/VBoxContainer/MessageCreator/VBoxContainer/MessageInput/EmbedButton" to="HBoxContainer/ChatMain/VBoxContainer/MessageCreator" method="OnEmbedButtonPressed"]
 [connection signal="OnRegister" from="Popups/Register" to="Bugcord" method="CreateUserFile"]
 [connection signal="pressed" from="Popups/Register/VBoxContainer/Button" to="Popups/Register" method="AttemptRegister"]
 [connection signal="OnCreatingSpace" from="Popups/MakeSpace" to="Bugcord" method="GenerateSpace"]
