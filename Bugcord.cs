@@ -63,6 +63,8 @@ public partial class Bugcord : Node
 		}
 	}
 
+	#region message functions
+
 	public void DisplayMessage(string content, string senderId){
 		Dictionary messageDict = new Dictionary
 		{
@@ -72,6 +74,31 @@ public partial class Bugcord : Node
 
 		EmitSignal(SignalName.OnMessageRecieved, messageDict);
 	}
+
+	public void PostMessage(string message){
+		// client.SendText(message);
+		client.Send(BuildMsgPacket(message));
+	}
+
+	private void ProcessIncomingPacket(byte[] packet){
+		byte type = packet[0];
+
+		switch (type){
+			case 0:
+				ProcessMessagePacket(packet);
+				break;
+			case 1:
+				ProcessIdentify(packet);
+				break;
+			case 4:
+				ProcessSpaceInvite(packet);
+				break;
+		}
+	}
+
+	#endregion
+
+	#region connection
 
 	public void Connect(string url){
 		if (clientAuth == null){
@@ -100,6 +127,10 @@ public partial class Bugcord : Node
 		GD.Print("connected");
 		client.Send(BuildIdentifyingPacket());
 	}
+
+	#endregion
+
+	#region user file related
 
 	public bool LogIn(){
 		if (!FileAccess.FileExists(clientSavePath)){
@@ -169,6 +200,10 @@ public partial class Bugcord : Node
 		spaceList.Close();
 	}
 
+	#endregion
+
+	#region space functions
+
 	public void GenerateSpace(string name){
 		Aes spaceKey = Aes.Create();
 
@@ -196,30 +231,9 @@ public partial class Bugcord : Node
 		client.Send(spaceInvitePacket);
 	}
 
-	public void PostMessage(string message){
-		// client.SendText(message);
-		client.Send(BuildMsgPacket(message));
-	}
+	#endregion
 
-	public Dictionary GetPeerDict(){
-		return peers;
-	}
-
-	private void ProcessIncomingPacket(byte[] packet){
-		byte type = packet[0];
-
-		switch (type){
-			case 0:
-				ProcessMessagePacket(packet);
-				break;
-			case 1:
-				ProcessIdentify(packet);
-				break;
-			case 4:
-				ProcessSpaceInvite(packet);
-				break;
-		}
-	}
+	#region packet processors
 
 	private void ProcessSpaceInvite(byte[] packet){
 		GD.Print("Processing space invite");
@@ -300,12 +314,9 @@ public partial class Bugcord : Node
 			DisplayMessage(messageString, senderGuid.GetStringFromUtf8());
 	}
 
-	// Format
-	// First byte is message content index
-	// Other bytes are: Data length, and data
+	#endregion
 
-	// Index byte format: (big endian)
-	// First bit: contains text
+	#region packet builders
 
 	private byte[] BuildMsgPacket(string text){
 		List<byte> packetList = new List<byte>
@@ -377,6 +388,10 @@ public partial class Bugcord : Node
 		return packetBytes.ToArray();
 	}
 
+	#endregion
+
+	#region saveloaders
+
 	private void SavePeers(){
 		FileAccess peerFile = FileAccess.Open(clientPeerPath, FileAccess.ModeFlags.Write);
 		peerFile.Seek(0);
@@ -444,6 +459,10 @@ public partial class Bugcord : Node
 		userKeyFile.Close();
 	}
 
+	#endregion
+
+	#region library functions
+
 	public static string ToBase64(byte[] data){
 		return Convert.ToBase64String(data);
 	}
@@ -500,6 +519,12 @@ public partial class Bugcord : Node
 		foreach (byte b in bytes){
 			GD.Print("  " + b);
 		}
+	}
+
+	#endregion
+
+	public Dictionary GetPeerDict(){
+		return peers;
 	}
 
 	// Debuggers
