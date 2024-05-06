@@ -67,7 +67,7 @@ public partial class Bugcord : Node
 		Dictionary messageDict = new Dictionary
 		{
 			{"content", content},
-			{"sender", senderId}
+			{"sender", ((Dictionary)peers[senderId])["username"]}
 		};
 
 		EmitSignal(SignalName.OnMessageRecieved, messageDict);
