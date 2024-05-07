@@ -5,6 +5,7 @@ using Godot.NativeInterop;
 public partial class MessageCreator : MarginContainer
 {
 	[Signal] public delegate void OnMessageSubmitEventHandler(string message);
+	[Signal] public delegate void OnEmbedSubmitEventHandler(string filePath);
 
 	[Export] public TextEdit messageInput;
 	[Export] public FileDialog embedDialog;
@@ -35,8 +36,12 @@ public partial class MessageCreator : MarginContainer
 			if (sendingText.Length > 0){ // If message is not empty
 				EmitSignal(SignalName.OnMessageSubmit, sendingText);
 				messageInput.Clear();
+			}
 
-				// Embed sending logic here
+			if (embeds.Count > 0){ // If embeds are present
+				foreach (string path in embeds.Keys){
+					EmitSignal(SignalName.OnEmbedSubmit, path);
+				}
 
 				foreach (Node embedNode in embeds.Values){
 					embedNode.QueueFree();

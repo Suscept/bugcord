@@ -21,6 +21,9 @@ public partial class Bugcord : Node
 	public const string clientPeerPath = "user://peers.json";
 	public const string clientSpacesPath = "user://spaces.json";
 
+	public const string cachePath = "user://cache/";
+	public const string dataServePath = "user://serve/";
+
 	public static Dictionary clientUser;
 
 	public static Dictionary peers;
@@ -62,6 +65,65 @@ public partial class Bugcord : Node
 			ProcessIncomingPacket(client.GetPacket());
 		}
 	}
+
+	#region server client
+
+	// encrypts a copy of the file with its uuid, init vector, and true filename stored as a dataspan at the start
+	// places the plaintext version in cache (does not include filename or uuid dataspan)
+	// encrypted version is placed in client's servable folder with the filename of the file's uuid
+	public void SubmitEmbed(string directory){
+		FileAccess embedFile = FileAccess.Open(directory, FileAccess.ModeFlags.Read);
+		
+		byte[] embedData = embedFile.GetBuffer((long)embedFile.GetLength());
+		GD.Print(embedData.Length);
+		string filename = System.IO.Path.GetFileName(directory);
+		string guidString = Guid.NewGuid().ToString();
+
+		GD.Print("preparing embedded file " + filename);
+
+		byte [] iv = GetRandomBytes(16);
+		byte[] encryptedData = AESEncrypt(embedData, selectedSpaceKey, iv);
+		byte[] fileGuid = guidString.ToUtf8Buffer();
+
+		List<byte> serveCopyData = new List<byte>();
+		serveCopyData.AddRange(MakeDataSpan(fileGuid));
+		serveCopyData.AddRange(MakeDataSpan(iv));
+		serveCopyData.AddRange(MakeDataSpan(filename.ToUtf8Buffer()));
+		serveCopyData.AddRange(encryptedData); // cant use dataspans for this since the files length in bytes may be more than 2^16
+
+		WriteToCache(embedData, filename);
+		WriteToServable(serveCopyData.ToArray(), guidString);
+	}
+
+	private void WriteToServable(byte[] data, string guid){
+		if (!DirAccess.DirExistsAbsolute(dataServePath)){
+			DirAccess cacheDir = DirAccess.Open("user://");
+			cacheDir.MakeDir("serve");
+		}
+
+		FileAccess serveCopy = FileAccess.Open(dataServePath + guid + ".file", FileAccess.ModeFlags.Write);
+		serveCopy.StoreBuffer(data);
+
+		serveCopy.Close();
+	}
+
+	private void WriteToCache(byte[] data, string filename){
+		if (!DirAccess.DirExistsAbsolute(cachePath)){
+			DirAccess cacheDir = DirAccess.Open("user://");
+			cacheDir.MakeDir("cache");
+		}
+
+		string path = cachePath + filename;
+
+		GD.Print("writing to cache " + path);
+
+		FileAccess cacheCopy = FileAccess.Open(path, FileAccess.ModeFlags.Write);
+		cacheCopy.StoreBuffer(data);
+
+		cacheCopy.Close();
+	}
+
+	#endregion
 
 	#region message functions
 
@@ -462,6 +524,39 @@ public partial class Bugcord : Node
 	#endregion
 
 	#region library functions
+
+	public static byte[] GetRandomBytes(int length){
+		byte[] bytes = new byte[length];
+		new Random().NextBytes(bytes);
+		
+		return bytes;
+	}
+
+	public static byte[] AESEncrypt(byte[] plaintext, byte[] key, byte[] iv){
+		using (Aes aes = Aes.Create()){
+			aes.Key = key;
+			aes.IV = iv;
+			aes.Mode = CipherMode.CBC;
+			aes.Padding = PaddingMode.PKCS7;
+
+			using (ICryptoTransform encryptor = aes.CreateEncryptor()){
+				return encryptor.TransformFinalBlock(plaintext, 0, plaintext.Length);
+			}
+		}
+	}
+
+	public static byte[] AESDecrypt(byte[] cyphertext, byte[] key, byte[] iv){
+		using (Aes aes = Aes.Create()){
+			aes.Key = key;
+			aes.IV = iv;
+			aes.Mode = CipherMode.CBC;
+			aes.Padding = PaddingMode.PKCS7;
+
+			using (ICryptoTransform decryptor = aes.CreateDecryptor()){
+				return decryptor.TransformFinalBlock(cyphertext, 0, cyphertext.Length);
+			}
+		}
+	}
 
 	public static string ToBase64(byte[] data){
 		return Convert.ToBase64String(data);
