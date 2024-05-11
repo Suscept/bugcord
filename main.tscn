@@ -517,6 +517,7 @@ grow_vertical = 2
 layout_mode = 2
 size_flags_horizontal = 3
 
+[connection signal="OnEmbedMessageRecieved" from="Bugcord" to="HBoxContainer/ChatMain/VBoxContainer/MessageWindow" method="DisplayNewMediaMessage"]
 [connection signal="OnLoggedIn" from="Bugcord" to="HBoxContainer/LeftBar/Panel/VBoxContainer/ServerInput" method="SetupFromClientDict"]
 [connection signal="OnMessageRecieved" from="Bugcord" to="HBoxContainer/ChatMain/VBoxContainer/MessageWindow" method="DisplayNewMessage"]
 [connection signal="OnAutoconnectSettingChanged" from="HBoxContainer/LeftBar/Panel/VBoxContainer/ServerInput" to="Bugcord" method="SetAutoConnect"]

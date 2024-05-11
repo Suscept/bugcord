@@ -1,11 +1,16 @@
-[gd_scene load_steps=3 format=3 uid="uid://c0hr25wlgd0kt"]
+[gd_scene load_steps=4 format=3 uid="uid://c0hr25wlgd0kt"]
 
 [ext_resource type="Script" path="res://MessageUI.cs" id="1_3f5tq"]
 [ext_resource type="Texture2D" uid="uid://6j35bsdb4w8r" path="res://icon.svg" id="1_7dhvk"]
 
-[node name="MessageUI" type="MarginContainer" node_paths=PackedStringArray("messageContentLabel", "usernameLabel")]
+[sub_resource type="LabelSettings" id="LabelSettings_r4x21"]
+outline_size = 1
+
+[node name="MessageUI" type="MarginContainer" node_paths=PackedStringArray("imageContent", "textContent", "usernameLabel")]
+size_flags_horizontal = 3
 script = ExtResource("1_3f5tq")
-messageContentLabel = NodePath("HBoxContainer/VBoxContainer/RichTextLabel")
+imageContent = NodePath("HBoxContainer/VBoxContainer/TextureRect")
+textContent = NodePath("HBoxContainer/VBoxContainer/RichTextLabel")
 usernameLabel = NodePath("HBoxContainer/VBoxContainer/Label")
 
 [node name="HBoxContainer" type="HBoxContainer" parent="."]
@@ -25,14 +30,19 @@ size_flags_horizontal = 3
 
 [node name="Label" type="Label" parent="HBoxContainer/VBoxContainer"]
 layout_mode = 2
-text = "glop man"
+text = "username"
+label_settings = SubResource("LabelSettings_r4x21")
 vertical_alignment = 1
 
 [node name="RichTextLabel" type="RichTextLabel" parent="HBoxContainer/VBoxContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
-text = "penis 
-aaaaaaaaa
+bbcode_enabled = true
+text = "message
 "
 fit_content = true
 scroll_active = false
+
+[node name="TextureRect" type="TextureRect" parent="HBoxContainer/VBoxContainer"]
+layout_mode = 2
+texture = ExtResource("1_7dhvk")

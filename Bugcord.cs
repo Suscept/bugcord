@@ -14,6 +14,7 @@ public partial class Bugcord : Node
 	[Export] public ServerSelector serverSelector;
 
 	[Signal] public delegate void OnMessageRecievedEventHandler(Dictionary message);
+	[Signal] public delegate void OnEmbedMessageRecievedEventHandler(Dictionary message);
 	[Signal] public delegate void OnLoggedInEventHandler(Dictionary client);
 
 	public const string clientSavePath = "user://client.data";
@@ -29,7 +30,10 @@ public partial class Bugcord : Node
 	public static Dictionary peers;
 	public static Dictionary spaces;
 
+	public static Dictionary cacheIndex;
+
 	public static byte[] selectedSpaceKey;
+	public static string selectedSpaceId;
 
 	private static RSA clientAuth;
 	private static WebSocketPeer client;
@@ -43,7 +47,7 @@ public partial class Bugcord : Node
 
 		if (!LogIn()){
 			registerWindow.Visible = true;
-        }
+		}
 	}
 
 	// Called every frame. 'delta' is the elapsed time since the previous frame.
@@ -71,6 +75,7 @@ public partial class Bugcord : Node
 	// encrypts a copy of the file with its uuid, init vector, and true filename stored as a dataspan at the start
 	// places the plaintext version in cache (does not include filename or uuid dataspan)
 	// encrypted version is placed in client's servable folder with the filename of the file's uuid
+	// then broadcasts an embed linked message
 	public void SubmitEmbed(string directory){
 		FileAccess embedFile = FileAccess.Open(directory, FileAccess.ModeFlags.Read);
 		
@@ -91,8 +96,10 @@ public partial class Bugcord : Node
 		serveCopyData.AddRange(MakeDataSpan(filename.ToUtf8Buffer()));
 		serveCopyData.AddRange(encryptedData); // cant use dataspans for this since the files length in bytes may be more than 2^16
 
-		WriteToCache(embedData, filename);
+		WriteToCache(embedData, filename, guidString);
 		WriteToServable(serveCopyData.ToArray(), guidString);
+
+		client.Send(BuildEmbedMessage(guidString));
 	}
 
 	private void WriteToServable(byte[] data, string guid){
@@ -107,7 +114,7 @@ public partial class Bugcord : Node
 		serveCopy.Close();
 	}
 
-	private void WriteToCache(byte[] data, string filename){
+	private void WriteToCache(byte[] data, string filename, string guid){
 		if (!DirAccess.DirExistsAbsolute(cachePath)){
 			DirAccess cacheDir = DirAccess.Open("user://");
 			cacheDir.MakeDir("cache");
@@ -121,6 +128,20 @@ public partial class Bugcord : Node
 		cacheCopy.StoreBuffer(data);
 
 		cacheCopy.Close();
+
+		cacheIndex.Add(guid, path);
+	}
+
+	private byte[] GetServableData(string guid){
+		FileAccess file = FileAccess.Open(dataServePath + guid + ".file", FileAccess.ModeFlags.Read);
+		return file.GetBuffer((long)file.GetLength());
+	}
+
+	private bool HasServableFile(string guid){
+		FileAccess file = FileAccess.Open(dataServePath + guid + ".file", FileAccess.ModeFlags.Read);
+		if (file == null)
+			return false;
+		return true;
 	}
 
 	#endregion
@@ -137,25 +158,21 @@ public partial class Bugcord : Node
 		EmitSignal(SignalName.OnMessageRecieved, messageDict);
 	}
 
+	public void DisplayMediaMessage(string dirInCache, string senderId){
+		GD.Print("displaying media message " + dirInCache);
+
+		Dictionary messageDict = new Dictionary
+		{
+			{"mediaDir", dirInCache},
+			{"sender", ((Dictionary)peers[senderId])["username"]}
+		};
+
+		EmitSignal(SignalName.OnEmbedMessageRecieved, messageDict);
+	}
+
 	public void PostMessage(string message){
 		// client.SendText(message);
 		client.Send(BuildMsgPacket(message));
-	}
-
-	private void ProcessIncomingPacket(byte[] packet){
-		byte type = packet[0];
-
-		switch (type){
-			case 0:
-				ProcessMessagePacket(packet);
-				break;
-			case 1:
-				ProcessIdentify(packet);
-				break;
-			case 4:
-				ProcessSpaceInvite(packet);
-				break;
-		}
 	}
 
 	#endregion
@@ -220,6 +237,8 @@ public partial class Bugcord : Node
 
 		EmitSignal(SignalName.OnLoggedIn, clientUser);
 
+		cacheIndex = new Dictionary();
+
 		if ((string)clientUser["autoConnectToServer"] == "true"){
 			Connect((string)clientUser["defaultConnectServer"]);
 		}
@@ -262,6 +281,10 @@ public partial class Bugcord : Node
 		spaceList.Close();
 	}
 
+	public string GetClientId(){
+		return (string)clientUser["id"];
+	}
+
 	#endregion
 
 	#region space functions
@@ -279,6 +302,7 @@ public partial class Bugcord : Node
 	}
 
 	public void ConnectSpace(string guid){
+		selectedSpaceId = guid;
 		selectedSpaceKey = FromBase64((string)((Dictionary)spaces[guid])["key"]);
 		GD.Print("connected to space " + guid);
 		AlertPanel.PostAlert("Connected to space", guid);
@@ -296,6 +320,82 @@ public partial class Bugcord : Node
 	#endregion
 
 	#region packet processors
+
+	private void ProcessIncomingPacket(byte[] packet){
+		byte type = packet[0];
+
+		switch (type){
+			case 0:
+				ProcessMessagePacket(packet);
+				break;
+			case 1:
+				ProcessIdentify(packet);
+				break;
+			case 4:
+				ProcessSpaceInvite(packet);
+				break;
+			case 5:
+				ProcessEmbedMessage(packet);
+				break;
+			case 6:
+				ProcessFileRequest(packet);
+				break;
+			case 7:
+				ProcessFilePacket(packet);
+				break;
+		}
+	}
+
+	private void ProcessFilePacket(byte[] packet){
+		GD.Print("recieved file packet");
+
+		byte[][] dataSpans = ReadDataSpans(packet, 1);
+
+		byte[] senderGuid = dataSpans[0];
+		byte[] fileGuid = dataSpans[1];
+		byte[] fileData = dataSpans[2];
+		
+		WriteToServable(fileData, fileGuid.GetStringFromUtf8());
+
+		// Check if file can be decrypted
+		
+	}
+
+	private void ProcessFileRequest(byte[] packet){
+		GD.Print("Recieved file request");
+		
+		byte subtype = packet[1];
+		string fileGuid = ReadDataSpan(packet, 2).GetStringFromUtf8();
+
+		switch (subtype){
+			case 0:
+				if (!HasServableFile(fileGuid)) // stop if we dont have this file
+					return;
+
+				client.Send(BuildFilePacket(fileGuid, GetServableData(fileGuid)));
+				break;
+		}
+	}
+
+	private void ProcessEmbedMessage(byte[] packet){
+		GD.Print("Processing embedded message");
+
+		byte[][] dataSpans = ReadDataSpans(packet, 1);
+
+		string senderId = dataSpans[0].GetStringFromUtf8();
+		string targetSpaceId = dataSpans[1].GetStringFromUtf8();
+		string embedId = dataSpans[2].GetStringFromUtf8();
+
+		if (targetSpaceId != selectedSpaceId)
+			return;
+
+		if (cacheIndex.ContainsKey(embedId)){
+			DisplayMediaMessage((string)cacheIndex[embedId], senderId);
+			return;
+		}
+
+		client.Send(BuildFileRequest(embedId));
+	}
 
 	private void ProcessSpaceInvite(byte[] packet){
 		GD.Print("Processing space invite");
@@ -380,11 +480,48 @@ public partial class Bugcord : Node
 
 	#region packet builders
 
+	private byte[] BuildFilePacket(string fileGuid, byte[] data){
+		List<byte> packetBytes = new List<byte>{
+			7
+		};
+
+		packetBytes.AddRange(MakeDataSpan(GetClientId().ToUtf8Buffer()));
+		packetBytes.AddRange(MakeDataSpan(fileGuid.ToUtf8Buffer()));
+
+		packetBytes.AddRange(MakeDataSpan(data, 0));
+
+		return packetBytes.ToArray();
+	}
+
+	private byte[] BuildFileRequest(string fileGuid){
+		List<byte> packetBytes = new List<byte>{
+			6,
+			0 // request subtype
+		};
+
+		packetBytes.AddRange(MakeDataSpan(fileGuid.ToUtf8Buffer()));
+
+		return packetBytes.ToArray();
+	}
+
+	private byte[] BuildEmbedMessage(string embedGuid){
+		List<byte> packetBytes = new List<byte>{
+			5
+		};
+
+		packetBytes.AddRange(MakeDataSpan(GetClientId().ToUtf8Buffer())); // add user's guid
+		packetBytes.AddRange(MakeDataSpan(selectedSpaceId.ToUtf8Buffer())); // add target space guid
+
+		packetBytes.AddRange(MakeDataSpan(embedGuid.ToUtf8Buffer()));
+
+		return packetBytes.ToArray();
+	}
+
 	private byte[] BuildMsgPacket(string text){
 		List<byte> packetList = new List<byte>
-        {
-            0
-        };
+		{
+			0
+		};
 
 		byte[] textBuffer = text.ToUtf8Buffer();
 		byte[] encryptedMessage = null;

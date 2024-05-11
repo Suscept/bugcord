@@ -30,4 +30,10 @@ public partial class MessageWindow : Control
 		//scrollContainer.ScrollVertical = trueMax;
 		// idk bruh
 	}
+
+	public void DisplayNewMediaMessage(Dictionary message){
+		MessageUI newMessage = messageScene.Instantiate<MessageUI>();
+		newMessage.InitiateMediaMode(message);
+		messageContainer.AddChild(newMessage);
+	}
 }

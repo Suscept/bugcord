@@ -54,8 +54,14 @@ public partial class MessageCreator : MarginContainer
 	public void EmbedFile(string[] dirs){
 		GD.Print(dirs.Length);
 		foreach (string dir in dirs){
+			// read some metadata
+			string filename = System.IO.Path.GetFileName(dir);
+			FileAccess dirFile = FileAccess.Open(dir, FileAccess.ModeFlags.Read);
+			string fileSize = BugstringUtils.BytesToSizeString(dirFile.GetLength());
+			dirFile.Close();
+
 			embed_input_display newEmbed = embedScene.Instantiate<embed_input_display>();
-			newEmbed.Initiate("newfile.ree", "1000 TB", dir);
+			newEmbed.Initiate(filename, fileSize, dir);
 			newEmbed.OnRemoveEmbed += RemoveEmbed;
 
 			embedContainer.AddChild(newEmbed);
