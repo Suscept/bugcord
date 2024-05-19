@@ -1,4 +1,4 @@
-[gd_scene load_steps=17 format=3 uid="uid://b4h65lw1u6cii"]
+[gd_scene load_steps=19 format=3 uid="uid://b4h65lw1u6cii"]
 
 [ext_resource type="Script" path="res://Bugcord.cs" id="1_jyk1e"]
 [ext_resource type="PackedScene" uid="uid://c0hr25wlgd0kt" path="res://message.tscn" id="1_ki7uw"]
@@ -16,6 +16,8 @@
 [ext_resource type="PackedScene" uid="uid://bl2sn6odt10ns" path="res://invite_option.tscn" id="12_qp5d4"]
 [ext_resource type="Script" path="res://AlertPanel.cs" id="14_gf605"]
 [ext_resource type="PackedScene" uid="uid://xbjljk2f0tqf" path="res://alert_message.tscn" id="15_jvka1"]
+[ext_resource type="Script" path="res://UiToggler.cs" id="15_kgtp7"]
+[ext_resource type="Texture2D" uid="uid://6j35bsdb4w8r" path="res://icon.svg" id="16_h3cnx"]
 
 [node name="Main" type="Control"]
 layout_mode = 3
@@ -471,41 +473,37 @@ horizontal_scroll_mode = 0
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="AlertPanel" type="MarginContainer" parent="." node_paths=PackedStringArray("popupWindow", "alertContainer")]
-custom_minimum_size = Vector2(188.64, 0)
+[node name="HBoxContainer2" type="HBoxContainer" parent="."]
 layout_mode = 1
 anchors_preset = -1
-anchor_left = 1.0
 anchor_right = 1.0
-anchor_bottom = 0.615
 offset_right = -15.0
-offset_bottom = -3.05176e-05
+offset_bottom = 40.0
 grow_horizontal = 0
-grow_vertical = 2
-script = ExtResource("14_gf605")
-popupWindow = NodePath("VBoxContainer/Panel")
-alertContainer = NodePath("VBoxContainer/Panel/ScrollContainer/VBoxContainer")
-alertMessageScene = ExtResource("15_jvka1")
-
-[node name="VBoxContainer" type="VBoxContainer" parent="AlertPanel"]
-layout_mode = 2
-
-[node name="HBoxContainer" type="HBoxContainer" parent="AlertPanel/VBoxContainer"]
-layout_mode = 2
 alignment = 2
 
-[node name="Button" type="Button" parent="AlertPanel/VBoxContainer/HBoxContainer"]
-custom_minimum_size = Vector2(30, 30)
+[node name="SettingsPanel" type="MarginContainer" parent="HBoxContainer2"]
 layout_mode = 2
-mouse_default_cursor_shape = 2
-text = "M"
 
-[node name="Panel" type="Panel" parent="AlertPanel/VBoxContainer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="HBoxContainer2/SettingsPanel"]
+layout_mode = 2
+
+[node name="Button" type="Button" parent="HBoxContainer2/SettingsPanel/VBoxContainer" node_paths=PackedStringArray("target")]
+custom_minimum_size = Vector2(35, 35)
+layout_mode = 2
+size_flags_horizontal = 8
+mouse_default_cursor_shape = 2
+text = "⚙️"
+script = ExtResource("15_kgtp7")
+target = NodePath("../Panel")
+
+[node name="Panel" type="Panel" parent="HBoxContainer2/SettingsPanel/VBoxContainer"]
 visible = false
+custom_minimum_size = Vector2(200, 500)
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="ScrollContainer" type="ScrollContainer" parent="AlertPanel/VBoxContainer/Panel"]
+[node name="VBoxContainer" type="VBoxContainer" parent="HBoxContainer2/SettingsPanel/VBoxContainer/Panel"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -513,7 +511,84 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="VBoxContainer" type="VBoxContainer" parent="AlertPanel/VBoxContainer/Panel/ScrollContainer"]
+[node name="ScrollContainer" type="ScrollContainer" parent="HBoxContainer2/SettingsPanel/VBoxContainer/Panel/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="HBoxContainer2/SettingsPanel/VBoxContainer/Panel/VBoxContainer/ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="UserSettings" type="MarginContainer" parent="HBoxContainer2/SettingsPanel/VBoxContainer/Panel/VBoxContainer/ScrollContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="HBoxContainer2/SettingsPanel/VBoxContainer/Panel/VBoxContainer/ScrollContainer/VBoxContainer/UserSettings"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="HBoxContainer2/SettingsPanel/VBoxContainer/Panel/VBoxContainer/ScrollContainer/VBoxContainer/UserSettings/VBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "User settings"
+horizontal_alignment = 1
+
+[node name="ProfilePicture" type="MarginContainer" parent="HBoxContainer2/SettingsPanel/VBoxContainer/Panel/VBoxContainer/ScrollContainer/VBoxContainer/UserSettings/VBoxContainer"]
+custom_minimum_size = Vector2(100, 0)
+layout_mode = 2
+size_flags_horizontal = 0
+
+[node name="TextureRect" type="TextureRect" parent="HBoxContainer2/SettingsPanel/VBoxContainer/Panel/VBoxContainer/ScrollContainer/VBoxContainer/UserSettings/VBoxContainer/ProfilePicture"]
+layout_mode = 2
+texture = ExtResource("16_h3cnx")
+expand_mode = 4
+stretch_mode = 4
+
+[node name="Button" type="Button" parent="HBoxContainer2/SettingsPanel/VBoxContainer/Panel/VBoxContainer/ScrollContainer/VBoxContainer/UserSettings/VBoxContainer/ProfilePicture"]
+layout_mode = 2
+mouse_default_cursor_shape = 2
+flat = true
+
+[node name="LineEdit" type="LineEdit" parent="HBoxContainer2/SettingsPanel/VBoxContainer/Panel/VBoxContainer/ScrollContainer/VBoxContainer/UserSettings/VBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "Username:"
+
+[node name="Save" type="Button" parent="HBoxContainer2/SettingsPanel/VBoxContainer/Panel/VBoxContainer"]
+layout_mode = 2
+text = "Save"
+
+[node name="AlertPanel" type="MarginContainer" parent="HBoxContainer2" node_paths=PackedStringArray("popupWindow", "alertContainer")]
+layout_mode = 2
+script = ExtResource("14_gf605")
+popupWindow = NodePath("VBoxContainer/Panel")
+alertContainer = NodePath("VBoxContainer/Panel/ScrollContainer/VBoxContainer")
+alertMessageScene = ExtResource("15_jvka1")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="HBoxContainer2/AlertPanel"]
+layout_mode = 2
+
+[node name="Button" type="Button" parent="HBoxContainer2/AlertPanel/VBoxContainer"]
+custom_minimum_size = Vector2(35, 35)
+layout_mode = 2
+size_flags_horizontal = 8
+mouse_default_cursor_shape = 2
+text = "M"
+
+[node name="Panel" type="Panel" parent="HBoxContainer2/AlertPanel/VBoxContainer"]
+visible = false
+custom_minimum_size = Vector2(200, 0)
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="ScrollContainer" type="ScrollContainer" parent="HBoxContainer2/AlertPanel/VBoxContainer/Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="HBoxContainer2/AlertPanel/VBoxContainer/Panel/ScrollContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
 
@@ -542,4 +617,5 @@ size_flags_horizontal = 3
 [connection signal="OnInvitePeer" from="Popups/SpaceInviter" to="Bugcord" method="SendSpaceInvite"]
 [connection signal="pressed" from="Popups/SpaceInviter/VBoxContainer/HBoxContainer/Refresh" to="Popups/SpaceInviter/VBoxContainer/HBoxContainer/Refresh" method="SetInvisible"]
 [connection signal="pressed" from="Popups/SpaceInviter/VBoxContainer/HBoxContainer/Close" to="Popups/SpaceInviter/VBoxContainer/HBoxContainer/Close" method="SetInvisible"]
-[connection signal="pressed" from="AlertPanel/VBoxContainer/HBoxContainer/Button" to="AlertPanel" method="ToggleVisible"]
+[connection signal="pressed" from="HBoxContainer2/SettingsPanel/VBoxContainer/Button" to="HBoxContainer2/SettingsPanel/VBoxContainer/Button" method="Toggle"]
+[connection signal="pressed" from="HBoxContainer2/AlertPanel/VBoxContainer/Button" to="HBoxContainer2/AlertPanel" method="ToggleVisible"]
