@@ -4,6 +4,8 @@ using System;
 
 public partial class MessageUI : MarginContainer
 {
+	[Export] public float maxHeightFromImage;
+
 	[Export] public TextureRect imageContent;
 	[Export] public RichTextLabel textContent;
 	[Export] public Label usernameLabel;
@@ -29,7 +31,12 @@ public partial class MessageUI : MarginContainer
 	public void InitiateMediaMode(Dictionary message){
 		usernameLabel.Text = (string)message["sender"];
 
-		imageContent.Texture = ImageTexture.CreateFromImage(Image.LoadFromFile((string)message["mediaDir"]));
+		Image loadedImage = Image.LoadFromFile((string)message["mediaDir"]);
+		ImageTexture imageTexture = ImageTexture.CreateFromImage(loadedImage);
+
+		imageContent.Texture = imageTexture;
+
+		imageContent.CustomMinimumSize = new Vector2(0, Mathf.Min(maxHeightFromImage, loadedImage.GetSize().Y));
 		
 		textContent.Visible = false;
 	}
