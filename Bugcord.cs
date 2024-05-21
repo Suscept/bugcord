@@ -72,23 +72,30 @@ public partial class Bugcord : Node
 
 	#region server client
 
+	// prepares a file to be served and sends an embed linked message
+	public void SubmitEmbed(string directory){
+		string guidString = Guid.NewGuid().ToString();
+
+		PrepareEmbed(directory, guidString);
+
+		client.Send(BuildEmbedMessage(guidString));
+	}
+
 	// encrypts a copy of the file with its uuid, init vector, and true filename stored as a dataspan at the start
 	// places the plaintext version in cache (does not include filename or uuid dataspan)
 	// encrypted version is placed in client's servable folder with the filename of the file's uuid
-	// then broadcasts an embed linked message
-	public void SubmitEmbed(string directory){
+	public static void PrepareEmbed(string directory, string guid){
 		FileAccess embedFile = FileAccess.Open(directory, FileAccess.ModeFlags.Read);
 		
 		byte[] embedData = embedFile.GetBuffer((long)embedFile.GetLength());
 		GD.Print(embedData.Length);
 		string filename = System.IO.Path.GetFileName(directory);
-		string guidString = Guid.NewGuid().ToString();
 
 		GD.Print("preparing embedded file " + filename);
 
 		byte [] iv = GetRandomBytes(16);
 		byte[] encryptedData = AESEncrypt(embedData, selectedSpaceKey, iv);
-		byte[] fileGuid = guidString.ToUtf8Buffer();
+		byte[] fileGuid = guid.ToUtf8Buffer();
 
 		List<byte> serveCopyData = new List<byte>();
 		serveCopyData.AddRange(MakeDataSpan(fileGuid));
@@ -96,13 +103,11 @@ public partial class Bugcord : Node
 		serveCopyData.AddRange(MakeDataSpan(filename.ToUtf8Buffer()));
 		serveCopyData.AddRange(encryptedData); // cant use dataspans for this since the files length in bytes may be more than 2^16
 
-		WriteToCache(embedData, filename, guidString);
-		WriteToServable(serveCopyData.ToArray(), guidString);
-
-		client.Send(BuildEmbedMessage(guidString));
+		WriteToCache(embedData, filename, guid);
+		WriteToServable(serveCopyData.ToArray(), guid);
 	}
 
-	private void WriteToServable(byte[] data, string guid){
+	private static void WriteToServable(byte[] data, string guid){
 		if (!DirAccess.DirExistsAbsolute(dataServePath)){
 			DirAccess cacheDir = DirAccess.Open("user://");
 			cacheDir.MakeDir("serve");
@@ -114,7 +119,7 @@ public partial class Bugcord : Node
 		serveCopy.Close();
 	}
 
-	private void WriteToCache(byte[] data, string filename, string guid){
+	private static void WriteToCache(byte[] data, string filename, string guid){
 		if (!DirAccess.DirExistsAbsolute(cachePath)){
 			DirAccess cacheDir = DirAccess.Open("user://");
 			cacheDir.MakeDir("cache");
@@ -625,14 +630,14 @@ public partial class Bugcord : Node
 		spacesList.Update(spaces);
 	}
 
-	private void SaveUser(){
+	public static void SaveUser(){
 		FileAccess userFile = FileAccess.Open(clientSavePath, FileAccess.ModeFlags.Write);
 		userFile.Seek(0);
 		userFile.StoreLine(Json.Stringify(clientUser));
 		userFile.Close();
 	}
 
-	private void LoadUser(){
+	public static void LoadUser(){
 		FileAccess userData = FileAccess.Open(clientSavePath, FileAccess.ModeFlags.Read);
 		string userfileRaw = userData.GetAsText();
 		GD.Print("user: " + userfileRaw);
