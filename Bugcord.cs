@@ -70,7 +70,15 @@ public partial class Bugcord : Node
 		}
 	}
 
-	#region server client
+    public override void _Notification(int what)
+    {
+        if (what == NotificationWMCloseRequest){
+			client.Close(1000, "Application process terminated");
+			GetTree().Quit();
+		}
+    }
+
+    #region server client
 
 	// prepares a file to be served and sends an embed linked message
 	public void SubmitEmbed(string directory){
