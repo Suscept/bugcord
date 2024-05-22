@@ -22,6 +22,8 @@ public partial class Bugcord : Node
 	public const string clientPeerPath = "user://peers.json";
 	public const string clientSpacesPath = "user://spaces.json";
 
+	public const string knownKeysPath = "user://keys.auth";
+
 	public const string cachePath = "user://cache/";
 	public const string dataServePath = "user://serve/";
 
@@ -30,9 +32,10 @@ public partial class Bugcord : Node
 	public static Dictionary peers;
 	public static Dictionary spaces;
 
+	public static Dictionary aesKeys;
+
 	public static Dictionary cacheIndex;
 
-	public static byte[] selectedSpaceKey;
 	public static string selectedSpaceId;
 
 	private static RSA clientAuth;
@@ -80,13 +83,13 @@ public partial class Bugcord : Node
 
     #region server client
 
-	// prepares a file to be served and sends an embed linked message
-	public void SubmitEmbed(string directory){
+    // prepares a file to be served and sends an embed linked message
+    public void SubmitEmbed(string directory){
 		string guidString = Guid.NewGuid().ToString();
 
 		PrepareEmbed(directory, guidString);
 
-		client.Send(BuildEmbedMessage(guidString));
+		Send(BuildEmbedMessage(guidString));
 	}
 
 	// encrypts a copy of the file with its uuid, init vector, and true filename stored as a dataspan at the start
@@ -102,7 +105,7 @@ public partial class Bugcord : Node
 		GD.Print("preparing embedded file " + filename);
 
 		byte [] iv = GetRandomBytes(16);
-		byte[] encryptedData = AESEncrypt(embedData, selectedSpaceKey, iv);
+		byte[] encryptedData = AESEncrypt(embedData, GetSpaceKey(selectedSpaceId), iv);
 		byte[] fileGuid = guid.ToUtf8Buffer();
 
 		List<byte> serveCopyData = new List<byte>();
@@ -185,12 +188,12 @@ public partial class Bugcord : Node
 
 	public void PostMessage(string message){
 		// client.SendText(message);
-		client.Send(BuildMsgPacket(message));
+		Send(BuildMsgPacket(message));
 	}
 
 	#endregion
 
-	#region connection
+	#region connection & websocket interaction
 
 	public void Connect(string url){
 		if (clientAuth == null){
@@ -205,6 +208,11 @@ public partial class Bugcord : Node
 		client.ConnectToUrl(url);
 	}
 
+	public void Send(byte[] data){
+		GD.Print("Sending message. Type: " + data[0]);
+		client.Send(data);
+	}
+
 	public void SetAutoConnect(bool setTrue){
 		if (setTrue){
 			clientUser["autoConnectToServer"] = "true";
@@ -217,7 +225,7 @@ public partial class Bugcord : Node
 
 	public void OnConnected(){
 		GD.Print("connected");
-		client.Send(BuildIdentifyingPacket());
+		Send(BuildIdentifyingPacket());
 	}
 
 	#endregion
@@ -238,15 +246,20 @@ public partial class Bugcord : Node
 		if (!FileAccess.FileExists(clientSpacesPath)){
 			MakeNewSpaceFile();
 		}
+		if (!FileAccess.FileExists(knownKeysPath)){
+			MakeNewAesKeyFile();
+		}
 
 		LoadUser();
 
 		// User RSA key
-		LoadKey();
+		LoadPersonalKey();
 
 		LoadPeers();
 
 		LoadSpaces();
+
+		LoadKeys();
 
 		EmitSignal(SignalName.OnLoggedIn, clientUser);
 
@@ -272,7 +285,7 @@ public partial class Bugcord : Node
 		SaveUser();
 
 		clientAuth = new RSACryptoServiceProvider(2048);
-		SaveKey();
+		SavePersonalKey();
 
 		MakeNewPeerFile();
 		MakeNewSpaceFile();
@@ -294,6 +307,13 @@ public partial class Bugcord : Node
 		spaceList.Close();
 	}
 
+	private void MakeNewAesKeyFile(){
+		FileAccess keyList = FileAccess.Open(clientSpacesPath, FileAccess.ModeFlags.Write);
+		Godot.Collections.Dictionary<string, string> keyDict = new();
+		keyList.StoreString(Json.Stringify(keyDict));
+		keyList.Close();
+	}
+
 	public string GetClientId(){
 		return (string)clientUser["id"];
 	}
@@ -304,19 +324,22 @@ public partial class Bugcord : Node
 
 	public void GenerateSpace(string name){
 		Aes spaceKey = Aes.Create();
+		string keyGuid = Guid.NewGuid().ToString();
 
 		Dictionary spaceData = new Dictionary(){
 			{"name", name},
-			{"key", ToBase64(spaceKey.Key)}
+			{"keyId", keyGuid}
 		};
 
+		aesKeys.Add(keyGuid, spaceKey.Key);
 		spaces.Add(Guid.NewGuid().ToString(), spaceData);
+		SaveKeys();
 		SaveSpaces();
 	}
 
 	public void ConnectSpace(string guid){
 		selectedSpaceId = guid;
-		selectedSpaceKey = FromBase64((string)((Dictionary)spaces[guid])["key"]);
+
 		GD.Print("connected to space " + guid);
 		AlertPanel.PostAlert("Connected to space", guid);
 	}
@@ -327,7 +350,17 @@ public partial class Bugcord : Node
 
 		byte[] spaceInvitePacket = BuildSpaceInvite(recipiantKey, spaceGuid);
 
-		client.Send(spaceInvitePacket);
+		Send(spaceInvitePacket);
+	}
+
+	private static Dictionary GetSpace(string spaceId){
+		return (Dictionary)spaces[spaceId];
+	}
+
+	private static byte[] GetSpaceKey(string spaceId){
+		Dictionary space = (Dictionary)spaces[spaceId];
+
+		return (byte[])aesKeys[(string)space["keyId"]];
 	}
 
 	#endregion
@@ -336,6 +369,7 @@ public partial class Bugcord : Node
 
 	private void ProcessIncomingPacket(byte[] packet){
 		byte type = packet[0];
+		GD.Print("Recieved packet. Type: " + type);
 
 		switch (type){
 			case 0:
@@ -385,7 +419,7 @@ public partial class Bugcord : Node
 				if (!HasServableFile(fileGuid)) // stop if we dont have this file
 					return;
 
-				client.Send(BuildFilePacket(fileGuid, GetServableData(fileGuid)));
+				Send(BuildFilePacket(fileGuid, GetServableData(fileGuid)));
 				break;
 		}
 	}
@@ -407,7 +441,7 @@ public partial class Bugcord : Node
 			return;
 		}
 
-		client.Send(BuildFileRequest(embedId));
+		Send(BuildFileRequest(embedId));
 	}
 
 	private void ProcessSpaceInvite(byte[] packet){
@@ -417,7 +451,8 @@ public partial class Bugcord : Node
 
 		byte[] uuid = dataSpans[0];
 		byte[] spaceName = dataSpans[1];
-		byte[] encryptedSpaceKey = dataSpans[2];
+		byte[] keyId = dataSpans[2];
+		byte[] encryptedSpaceKey = dataSpans[3];
 
 		if (spaces.ContainsKey(uuid.GetStringFromUtf8())){
 			GD.Print("client already in space");
@@ -430,10 +465,12 @@ public partial class Bugcord : Node
 		if (couldDecrypt){
 			Dictionary spaceData = new Dictionary(){
 				{"name", spaceName.GetStringFromUtf8()},
-				{"key", ToBase64(spaceKey)}
+				{"keyId", keyId.GetStringFromUtf8()}
 			};
 			
+			aesKeys.Add(keyId.GetStringFromUtf8(), spaceKey);
 			spaces.Add(uuid.GetStringFromUtf8(), spaceData);
+			SaveKeys();
 			SaveSpaces();
 		}
 	}
@@ -459,7 +496,7 @@ public partial class Bugcord : Node
 
 			peers.Add(guid, newPeer);
 			SavePeers();
-			client.Send(BuildIdentifyingPacket());
+			Send(BuildIdentifyingPacket());
 		}
 	}
 
@@ -468,13 +505,14 @@ public partial class Bugcord : Node
 
 		byte[] initVector = ReadLength(packet, 1, 16);
 
-		byte[] encryptedMessage = spans[0];
-		byte[] senderGuid = spans[1];
+		byte[] keyUsed = spans[0];
+		byte[] encryptedMessage = spans[1];
+		byte[] senderGuid = spans[2];
 
 		byte[] decryptedMessage = null;
 
 		using (Aes aes = Aes.Create()){
-			aes.Key = selectedSpaceKey;
+			aes.Key = (byte[])aesKeys[keyUsed.GetStringFromUtf8()];
 			aes.IV = initVector;
 			aes.Mode = CipherMode.CBC;
 			aes.Padding = PaddingMode.PKCS7;
@@ -539,7 +577,8 @@ public partial class Bugcord : Node
 		byte[] textBuffer = text.ToUtf8Buffer();
 		byte[] encryptedMessage = null;
 
-		byte[] key = selectedSpaceKey;
+		byte[] key = GetSpaceKey(selectedSpaceId);
+		byte[] keyId = ((string)GetSpace(selectedSpaceId)["keyId"]).ToUtf8Buffer();
 
 		byte[] initVector = new byte[16];
 		new Random().NextBytes(initVector);
@@ -555,8 +594,8 @@ public partial class Bugcord : Node
 			}
 		}
 
-		
 		packetList.AddRange(initVector);
+		packetList.AddRange(MakeDataSpan(keyId));
 		packetList.AddRange(MakeDataSpan(encryptedMessage));
 		packetList.AddRange(MakeDataSpan(((string)clientUser["id"]).ToUtf8Buffer()));
 
@@ -576,6 +615,7 @@ public partial class Bugcord : Node
 		packetBytes.AddRange(MakeDataSpan(username));
 		packetBytes.AddRange(MakeDataSpan(publicKey));
 
+		GD.Print("goop " + (string)clientUser["username"]);
 		return packetBytes.ToArray();
 	}
 
@@ -653,7 +693,33 @@ public partial class Bugcord : Node
 		clientUser = (Dictionary)userParsed.Obj;
 	}
 
-	private void SaveKey(){
+	private void SaveKeys(){
+		FileAccess keyFile = FileAccess.Open(knownKeysPath, FileAccess.ModeFlags.Write);
+
+		Dictionary keysB64 = new Dictionary();
+		foreach (KeyValuePair<Variant, Variant> entry in aesKeys){
+			keysB64.Add((string)entry.Key, ToBase64((byte[])entry.Value));
+		}
+
+		keyFile.Seek(0);
+		keyFile.StoreLine(Json.Stringify(keysB64));
+		keyFile.Close();
+	}
+
+	private void LoadKeys(){
+		FileAccess keyFile = FileAccess.Open(knownKeysPath, FileAccess.ModeFlags.Read);
+		string keyFileRaw = keyFile.GetAsText();
+
+		aesKeys = new Dictionary();
+
+		foreach (KeyValuePair<Variant, Variant> entry in (Dictionary)Json.ParseString(keyFileRaw)){
+			aesKeys.Add((string)entry.Key, FromBase64((string)entry.Value));
+		}
+
+		keyFile.Close();
+	}
+
+	private void SavePersonalKey(){
 		FileAccess newKey = FileAccess.Open(clientKeyPath, FileAccess.ModeFlags.Write);
 		
 		byte[] privateKey = clientAuth.ExportRSAPrivateKey();
@@ -662,7 +728,7 @@ public partial class Bugcord : Node
 		newKey.Close();
 	}
 
-	private void LoadKey(){
+	private void LoadPersonalKey(){
 		FileAccess userKeyFile = FileAccess.Open(clientKeyPath, FileAccess.ModeFlags.Read);
 		long keyLength = (long)userKeyFile.GetLength();
 
