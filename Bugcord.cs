@@ -95,7 +95,7 @@ public partial class Bugcord : Node
 	// encrypts a copy of the file with its uuid, init vector, and true filename stored as a dataspan at the start
 	// places the plaintext version in cache (does not include filename or uuid dataspan)
 	// encrypted version is placed in client's servable folder with the filename of the file's uuid
-	public static void PrepareEmbed(string directory, string guid){
+	public static void PrepareEmbed(string directory, string guid, bool encrypted){
 		FileAccess embedFile = FileAccess.Open(directory, FileAccess.ModeFlags.Read);
 		
 		byte[] embedData = embedFile.GetBuffer((long)embedFile.GetLength());
@@ -104,18 +104,35 @@ public partial class Bugcord : Node
 
 		GD.Print("preparing embedded file " + filename);
 
-		byte [] iv = GetRandomBytes(16);
-		byte[] encryptedData = AESEncrypt(embedData, GetSpaceKey(selectedSpaceId), iv);
 		byte[] fileGuid = guid.ToUtf8Buffer();
-
 		List<byte> serveCopyData = new List<byte>();
+
 		serveCopyData.AddRange(MakeDataSpan(fileGuid));
-		serveCopyData.AddRange(MakeDataSpan(iv));
-		serveCopyData.AddRange(MakeDataSpan(filename.ToUtf8Buffer()));
-		serveCopyData.AddRange(encryptedData); // cant use dataspans for this since the files length in bytes may be more than 2^16
+
+		if (encrypted){
+			byte[] iv = GetRandomBytes(16);
+			byte[] encryptedData = AESEncrypt(embedData, GetSpaceKey(selectedSpaceId), iv);
+
+			serveCopyData.Add(0);
+
+			serveCopyData.AddRange(MakeDataSpan(fileGuid));
+			serveCopyData.AddRange(MakeDataSpan(iv));
+			serveCopyData.AddRange(MakeDataSpan(filename.ToUtf8Buffer()));
+			serveCopyData.AddRange(encryptedData); // cant use dataspans for this since the files length in bytes may be more than 2^16
+		}else{
+			serveCopyData.Add(1); // indicate encryption
+
+			serveCopyData.AddRange(MakeDataSpan(fileGuid));
+			serveCopyData.AddRange(MakeDataSpan(filename.ToUtf8Buffer()));
+			serveCopyData.AddRange(embedData);
+		}
 
 		WriteToCache(embedData, filename, guid);
 		WriteToServable(serveCopyData.ToArray(), guid);
+	}
+
+	public static void PrepareEmbed(string directory, string guid){
+		PrepareEmbed(directory, guid, true);
 	}
 
 	private static void WriteToServable(byte[] data, string guid){
