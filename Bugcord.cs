@@ -118,13 +118,13 @@ public partial class Bugcord : Node
 			serveCopyData.AddRange(MakeDataSpan(iv));
 			serveCopyData.AddRange(MakeDataSpan(selectedKeyId.ToUtf8Buffer()));
 			serveCopyData.AddRange(MakeDataSpan(filename.ToUtf8Buffer()));
-			serveCopyData.AddRange(encryptedData); // cant use dataspans for this since the files length in bytes may be more than 2^16
+			serveCopyData.AddRange(MakeDataSpan(encryptedData, 0)); // cant use dataspans for this since the files length in bytes may be more than 2^16
 		}else{
 			serveCopyData.Add(1); // indicate no encryption
 
 			serveCopyData.AddRange(MakeDataSpan(fileGuid));
 			serveCopyData.AddRange(MakeDataSpan(filename.ToUtf8Buffer()));
-			serveCopyData.AddRange(embedData);
+			serveCopyData.AddRange(MakeDataSpan(embedData, 0));
 		}
 
 		WriteToCache(embedData, filename, guid);
