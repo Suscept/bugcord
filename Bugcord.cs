@@ -37,6 +37,7 @@ public partial class Bugcord : Node
 	public static Dictionary cacheIndex;
 
 	public static string selectedSpaceId;
+	public static string selectedKeyId;
 
 	private static RSA clientAuth;
 	private static WebSocketPeer client;
@@ -117,6 +118,7 @@ public partial class Bugcord : Node
 
 			serveCopyData.AddRange(MakeDataSpan(fileGuid));
 			serveCopyData.AddRange(MakeDataSpan(iv));
+			serveCopyData.AddRange(MakeDataSpan(selectedKeyId.ToUtf8Buffer()));
 			serveCopyData.AddRange(MakeDataSpan(filename.ToUtf8Buffer()));
 			serveCopyData.AddRange(encryptedData); // cant use dataspans for this since the files length in bytes may be more than 2^16
 		}else{
@@ -133,6 +135,41 @@ public partial class Bugcord : Node
 
 	public static void PrepareEmbed(string directory, string guid){
 		PrepareEmbed(directory, guid, true);
+	}
+
+	public bool CacheServedFile(byte[] file){
+		byte[][] dataSpans = ReadDataSpans(file, 1);
+		byte flags = file[0];
+
+		switch (flags)
+		{
+			case 0: // Encrypted
+				string filename = dataSpans[3].GetStringFromUtf8();
+				string fileGuid = dataSpans[0].GetStringFromUtf8();
+
+				string keyId = dataSpans[2].GetStringFromUtf8();
+
+				if (!aesKeys.ContainsKey(keyId))
+					return false;
+
+				byte[] key = (byte[])aesKeys[keyId];
+				byte[] iv = dataSpans[1];
+
+				byte[] decryptedData = AESDecrypt(dataSpans[4], key, iv);
+
+				WriteToCache(decryptedData, filename, fileGuid);
+
+				break;
+			case 1: // Not encrypted file
+				filename = dataSpans[1].GetStringFromUtf8();
+				fileGuid = dataSpans[0].GetStringFromUtf8();
+
+				WriteToCache(dataSpans[2], filename, fileGuid);
+
+				break;
+		}
+
+		return true;
 	}
 
 	private static void WriteToServable(byte[] data, string guid){
@@ -356,6 +393,7 @@ public partial class Bugcord : Node
 
 	public void ConnectSpace(string guid){
 		selectedSpaceId = guid;
+		selectedKeyId = GetSpaceKeyId(guid);
 
 		GD.Print("connected to space " + guid);
 		AlertPanel.PostAlert("Connected to space", guid);
@@ -375,9 +413,13 @@ public partial class Bugcord : Node
 	}
 
 	private static byte[] GetSpaceKey(string spaceId){
+		return (byte[])aesKeys[GetSpaceKeyId(spaceId)];
+	}
+
+	private static string GetSpaceKeyId(string spaceId){
 		Dictionary space = (Dictionary)spaces[spaceId];
 
-		return (byte[])aesKeys[(string)space["keyId"]];
+		return (string)space["keyId"];
 	}
 
 	#endregion
@@ -416,13 +458,13 @@ public partial class Bugcord : Node
 		byte[][] dataSpans = ReadDataSpans(packet, 1);
 
 		byte[] senderGuid = dataSpans[0];
-		byte[] fileGuid = dataSpans[1];
-		byte[] fileData = dataSpans[2];
+		byte[] fileData = dataSpans[1];
+
+		byte[] fileGuid = ReadDataSpan(fileData, 1);
 		
 		WriteToServable(fileData, fileGuid.GetStringFromUtf8());
 
-		// Check if file can be decrypted
-		
+		CacheServedFile(fileData);
 	}
 
 	private void ProcessFileRequest(byte[] packet){
@@ -554,8 +596,6 @@ public partial class Bugcord : Node
 		};
 
 		packetBytes.AddRange(MakeDataSpan(GetClientId().ToUtf8Buffer()));
-		packetBytes.AddRange(MakeDataSpan(fileGuid.ToUtf8Buffer()));
-
 		packetBytes.AddRange(MakeDataSpan(data, 0));
 
 		return packetBytes.ToArray();
@@ -632,7 +672,6 @@ public partial class Bugcord : Node
 		packetBytes.AddRange(MakeDataSpan(username));
 		packetBytes.AddRange(MakeDataSpan(publicKey));
 
-		GD.Print("goop " + (string)clientUser["username"]);
 		return packetBytes.ToArray();
 	}
 
