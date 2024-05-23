@@ -679,11 +679,13 @@ public partial class Bugcord : Node
 		List<byte> packetBytes = new List<byte>{
 			4
 		};
+		GD.Print("Creating space invite for space: " + spaceGuid);
 
-		string spaceName = (string)((Dictionary)spaces[spaceGuid])["name"];
+		Dictionary space = GetSpace(spaceGuid);
 
-		string spaceKeyB64 = (string)((Dictionary)spaces[spaceGuid])["key"];
-		byte[] spaceKey = FromBase64(spaceKeyB64);
+		string spaceName = (string)space["name"];
+
+		byte[] spaceKey = GetSpaceKey(spaceGuid);;
 
 		RSA inviteAuth = RSACryptoServiceProvider.Create(2048);
 		inviteAuth.ImportRSAPublicKey(recipientKey, out int bytesRead);
@@ -691,6 +693,7 @@ public partial class Bugcord : Node
 
 		packetBytes.AddRange(MakeDataSpan(spaceGuid.ToUtf8Buffer()));
 		packetBytes.AddRange(MakeDataSpan(spaceName.ToUtf8Buffer()));
+		packetBytes.AddRange(MakeDataSpan(GetSpaceKeyId(spaceGuid).ToUtf8Buffer()));
 		packetBytes.AddRange(MakeDataSpan(spaceKeyEncrypted));
 
 		return packetBytes.ToArray();
