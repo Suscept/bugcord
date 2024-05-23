@@ -108,8 +108,6 @@ public partial class Bugcord : Node
 		byte[] fileGuid = guid.ToUtf8Buffer();
 		List<byte> serveCopyData = new List<byte>();
 
-		serveCopyData.AddRange(MakeDataSpan(fileGuid));
-
 		if (encrypted){
 			byte[] iv = GetRandomBytes(16);
 			byte[] encryptedData = AESEncrypt(embedData, GetSpaceKey(selectedSpaceId), iv);
@@ -122,7 +120,7 @@ public partial class Bugcord : Node
 			serveCopyData.AddRange(MakeDataSpan(filename.ToUtf8Buffer()));
 			serveCopyData.AddRange(encryptedData); // cant use dataspans for this since the files length in bytes may be more than 2^16
 		}else{
-			serveCopyData.Add(1); // indicate encryption
+			serveCopyData.Add(1); // indicate no encryption
 
 			serveCopyData.AddRange(MakeDataSpan(fileGuid));
 			serveCopyData.AddRange(MakeDataSpan(filename.ToUtf8Buffer()));
