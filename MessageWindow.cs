@@ -4,6 +4,7 @@ using System;
 
 public partial class MessageWindow : Control
 {
+	[Export] public Bugcord bugcord;
 	[Export] public PackedScene messageScene;
 	[Export] public VBoxContainer messageContainer;
 	[Export] public ScrollContainer scrollContainer;
@@ -35,5 +36,8 @@ public partial class MessageWindow : Control
 		MessageUI newMessage = messageScene.Instantiate<MessageUI>();
 		newMessage.InitiateMediaMode(message);
 		messageContainer.AddChild(newMessage);
+
+		newMessage.bugcord = bugcord;
+		bugcord.OnEmbedCached += newMessage.CacheUpdated;
 	}
 }

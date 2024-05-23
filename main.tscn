@@ -125,10 +125,11 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="MessageWindow" type="Control" parent="HBoxContainer/ChatMain/VBoxContainer" node_paths=PackedStringArray("messageContainer", "scrollContainer")]
+[node name="MessageWindow" type="Control" parent="HBoxContainer/ChatMain/VBoxContainer" node_paths=PackedStringArray("bugcord", "messageContainer", "scrollContainer")]
 layout_mode = 2
 size_flags_vertical = 3
 script = ExtResource("2_7eip0")
+bugcord = NodePath("../../../../Bugcord")
 messageScene = ExtResource("1_ki7uw")
 messageContainer = NodePath("ScrollContainer/Messages")
 scrollContainer = NodePath("ScrollContainer")

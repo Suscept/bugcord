@@ -16,6 +16,7 @@ public partial class Bugcord : Node
 	[Signal] public delegate void OnMessageRecievedEventHandler(Dictionary message);
 	[Signal] public delegate void OnEmbedMessageRecievedEventHandler(Dictionary message);
 	[Signal] public delegate void OnLoggedInEventHandler(Dictionary client);
+	[Signal] public delegate void OnEmbedCachedEventHandler(string id);
 
 	public const string clientSavePath = "user://client.data";
 	public const string clientKeyPath = "user://client.auth";
@@ -202,6 +203,8 @@ public partial class Bugcord : Node
 		cacheCopy.Close();
 
 		cacheIndex.Add(guid, path);
+
+		instance.EmitSignal(SignalName.OnEmbedCached, guid);
 	}
 
 	private byte[] GetServableData(string guid){
@@ -230,12 +233,12 @@ public partial class Bugcord : Node
 		EmitSignal(SignalName.OnMessageRecieved, messageDict);
 	}
 
-	public void DisplayMediaMessage(string dirInCache, string senderId){
-		GD.Print("displaying media message " + dirInCache);
+	public void DisplayMediaMessage(string mediaId, string senderId){
+		GD.Print("displaying media message " + mediaId);
 
 		Dictionary messageDict = new Dictionary
 		{
-			{"mediaDir", dirInCache},
+			{"mediaId", mediaId},
 			{"sender", ((Dictionary)peers[senderId])["username"]}
 		};
 
@@ -493,8 +496,10 @@ public partial class Bugcord : Node
 		string senderId = dataSpans[0].GetStringFromUtf8();
 		string embedId = dataSpans[1].GetStringFromUtf8();
 
+		DisplayMediaMessage(embedId, senderId);
+
 		if (cacheIndex.ContainsKey(embedId)){
-			DisplayMediaMessage((string)cacheIndex[embedId], senderId);
+			EmitSignal(SignalName.OnEmbedCached, embedId); // Call the embed message ui to update and load the image from cache
 			return;
 		}
 
