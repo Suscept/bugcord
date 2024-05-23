@@ -487,11 +487,7 @@ public partial class Bugcord : Node
 		byte[][] dataSpans = ReadDataSpans(packet, 1);
 
 		string senderId = dataSpans[0].GetStringFromUtf8();
-		string targetSpaceId = dataSpans[1].GetStringFromUtf8();
-		string embedId = dataSpans[2].GetStringFromUtf8();
-
-		if (targetSpaceId != selectedSpaceId)
-			return;
+		string embedId = dataSpans[1].GetStringFromUtf8();
 
 		if (cacheIndex.ContainsKey(embedId)){
 			DisplayMediaMessage((string)cacheIndex[embedId], senderId);
@@ -616,8 +612,6 @@ public partial class Bugcord : Node
 		};
 
 		packetBytes.AddRange(MakeDataSpan(GetClientId().ToUtf8Buffer())); // add user's guid
-		packetBytes.AddRange(MakeDataSpan(selectedSpaceId.ToUtf8Buffer())); // add target space guid
-
 		packetBytes.AddRange(MakeDataSpan(embedGuid.ToUtf8Buffer()));
 
 		return packetBytes.ToArray();
