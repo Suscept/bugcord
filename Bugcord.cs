@@ -44,9 +44,13 @@ public partial class Bugcord : Node
 
 	private static WebSocketPeer.State previousState;
 
+	private static Bugcord instance;
+
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
 	{
+		instance = this;
+
 		registerWindow.Visible = false;
 
 		if (!LogIn()){
