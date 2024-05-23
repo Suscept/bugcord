@@ -1,4 +1,4 @@
-[gd_scene load_steps=19 format=3 uid="uid://b4h65lw1u6cii"]
+[gd_scene load_steps=20 format=3 uid="uid://b4h65lw1u6cii"]
 
 [ext_resource type="Script" path="res://Bugcord.cs" id="1_jyk1e"]
 [ext_resource type="PackedScene" uid="uid://c0hr25wlgd0kt" path="res://message.tscn" id="1_ki7uw"]
@@ -15,6 +15,7 @@
 [ext_resource type="Script" path="res://SpaceInviter.cs" id="11_cskni"]
 [ext_resource type="PackedScene" uid="uid://bl2sn6odt10ns" path="res://invite_option.tscn" id="12_qp5d4"]
 [ext_resource type="Script" path="res://AlertPanel.cs" id="14_gf605"]
+[ext_resource type="Script" path="res://SettingsPanel.cs" id="15_3b65x"]
 [ext_resource type="PackedScene" uid="uid://xbjljk2f0tqf" path="res://alert_message.tscn" id="15_jvka1"]
 [ext_resource type="Script" path="res://UiToggler.cs" id="15_kgtp7"]
 [ext_resource type="Texture2D" uid="uid://6j35bsdb4w8r" path="res://icon.svg" id="16_h3cnx"]
@@ -476,14 +477,29 @@ size_flags_horizontal = 3
 [node name="HBoxContainer2" type="HBoxContainer" parent="."]
 layout_mode = 1
 anchors_preset = -1
+anchor_left = 1.0
 anchor_right = 1.0
-offset_right = -15.0
 offset_bottom = 40.0
 grow_horizontal = 0
 alignment = 2
 
-[node name="SettingsPanel" type="MarginContainer" parent="HBoxContainer2"]
+[node name="SettingsPanel" type="MarginContainer" parent="HBoxContainer2" node_paths=PackedStringArray("usernameSetting", "profilePictureDisplay", "profilePictureDialog")]
 layout_mode = 2
+script = ExtResource("15_3b65x")
+usernameSetting = NodePath("VBoxContainer/Panel/VBoxContainer/ScrollContainer/VBoxContainer/UserSettings/VBoxContainer/LineEdit")
+profilePictureDisplay = NodePath("VBoxContainer/Panel/VBoxContainer/ScrollContainer/VBoxContainer/UserSettings/VBoxContainer/ProfilePicture/TextureRect")
+profilePictureDialog = NodePath("FileDialog")
+
+[node name="FileDialog" type="FileDialog" parent="HBoxContainer2/SettingsPanel"]
+title = "Open a File"
+position = Vector2i(-450, 0)
+size = Vector2i(337, 159)
+ok_button_text = "Open"
+dialog_hide_on_ok = true
+file_mode = 0
+access = 2
+filters = PackedStringArray("*.png ; PNG Images", "*.jpg ; JPG Images")
+use_native_dialog = true
 
 [node name="VBoxContainer" type="VBoxContainer" parent="HBoxContainer2/SettingsPanel"]
 layout_mode = 2
@@ -617,5 +633,8 @@ size_flags_horizontal = 3
 [connection signal="OnInvitePeer" from="Popups/SpaceInviter" to="Bugcord" method="SendSpaceInvite"]
 [connection signal="pressed" from="Popups/SpaceInviter/VBoxContainer/HBoxContainer/Refresh" to="Popups/SpaceInviter/VBoxContainer/HBoxContainer/Refresh" method="SetInvisible"]
 [connection signal="pressed" from="Popups/SpaceInviter/VBoxContainer/HBoxContainer/Close" to="Popups/SpaceInviter/VBoxContainer/HBoxContainer/Close" method="SetInvisible"]
+[connection signal="file_selected" from="HBoxContainer2/SettingsPanel/FileDialog" to="HBoxContainer2/SettingsPanel" method="OnProfileImagePicked"]
 [connection signal="pressed" from="HBoxContainer2/SettingsPanel/VBoxContainer/Button" to="HBoxContainer2/SettingsPanel/VBoxContainer/Button" method="Toggle"]
+[connection signal="pressed" from="HBoxContainer2/SettingsPanel/VBoxContainer/Panel/VBoxContainer/ScrollContainer/VBoxContainer/UserSettings/VBoxContainer/ProfilePicture/Button" to="HBoxContainer2/SettingsPanel" method="PickProfileImage"]
+[connection signal="pressed" from="HBoxContainer2/SettingsPanel/VBoxContainer/Panel/VBoxContainer/Save" to="HBoxContainer2/SettingsPanel" method="Save"]
 [connection signal="pressed" from="HBoxContainer2/AlertPanel/VBoxContainer/Button" to="HBoxContainer2/AlertPanel" method="ToggleVisible"]
