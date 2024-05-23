@@ -362,7 +362,7 @@ public partial class Bugcord : Node
 	}
 
 	private void MakeNewAesKeyFile(){
-		FileAccess keyList = FileAccess.Open(clientSpacesPath, FileAccess.ModeFlags.Write);
+		FileAccess keyList = FileAccess.Open(knownKeysPath, FileAccess.ModeFlags.Write);
 		Godot.Collections.Dictionary<string, string> keyDict = new();
 		keyList.StoreString(Json.Stringify(keyDict));
 		keyList.Close();
