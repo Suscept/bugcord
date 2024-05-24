@@ -917,6 +917,18 @@ public partial class Bugcord : Node
 		}
 	}
 
+	public static byte[] SignData(byte[] data){
+		byte[] signature = clientAuth.SignData(data, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+		return signature;
+	}
+
+	public static bool VerifySigniture(byte[] data, byte[] signature, byte[] signeeKey){
+		RSA signetureVerifier = RSA.Create();
+		signetureVerifier.ImportRSAPublicKey(signeeKey, out int bytesRead);
+		
+		return signetureVerifier.VerifyData(data, signature, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+	}
+
 	#endregion
 
 	public Dictionary GetPeerDict(){
