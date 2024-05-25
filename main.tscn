@@ -1,4 +1,4 @@
-[gd_scene load_steps=20 format=3 uid="uid://b4h65lw1u6cii"]
+[gd_scene load_steps=21 format=3 uid="uid://b4h65lw1u6cii"]
 
 [ext_resource type="Script" path="res://Bugcord.cs" id="1_jyk1e"]
 [ext_resource type="PackedScene" uid="uid://c0hr25wlgd0kt" path="res://message.tscn" id="1_ki7uw"]
@@ -20,6 +20,10 @@
 [ext_resource type="Script" path="res://UiToggler.cs" id="15_kgtp7"]
 [ext_resource type="Texture2D" uid="uid://6j35bsdb4w8r" path="res://icon.svg" id="16_h3cnx"]
 
+[sub_resource type="AudioStreamGenerator" id="AudioStreamGenerator_6djje"]
+mix_rate = 48000.0
+buffer_length = 2.0
+
 [node name="Main" type="Control"]
 layout_mode = 3
 anchors_preset = 15
@@ -28,11 +32,22 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="Bugcord" type="Node" parent="." node_paths=PackedStringArray("messageInput", "registerWindow", "spacesList")]
+[node name="Bugcord" type="Node" parent="." node_paths=PackedStringArray("messageInput", "registerWindow", "spacesList", "audioRecorder", "audioPlayer", "voiceChatToggle")]
 script = ExtResource("1_jyk1e")
 messageInput = NodePath("../HBoxContainer/ChatMain/VBoxContainer/MessageCreator/VBoxContainer/MessageInput/MessageText")
 registerWindow = NodePath("../Popups/Register")
 spacesList = NodePath("../HBoxContainer/LeftBar/Panel/VBoxContainer/Spaces")
+audioRecorder = NodePath("vinput")
+audioPlayer = NodePath("voutput")
+voiceChatToggle = NodePath("../HBoxContainer/LeftBar/Panel/VBoxContainer/ServerInput/VBoxContainer/VoiceToggle")
+
+[node name="vinput" type="AudioStreamPlayer" parent="Bugcord"]
+autoplay = true
+bus = &"Record"
+
+[node name="voutput" type="AudioStreamPlayer" parent="Bugcord"]
+stream = SubResource("AudioStreamGenerator_6djje")
+autoplay = true
 
 [node name="HBoxContainer" type="HBoxContainer" parent="."]
 layout_mode = 1
@@ -86,6 +101,12 @@ layout_mode = 2
 size_flags_horizontal = 3
 placeholder_text = "Server:"
 virtual_keyboard_type = 7
+
+[node name="VoiceToggle" type="CheckBox" parent="HBoxContainer/LeftBar/Panel/VBoxContainer/ServerInput/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 15
+text = "Voice Chat"
+clip_text = true
 
 [node name="CheckBox" type="CheckBox" parent="HBoxContainer/LeftBar/Panel/VBoxContainer/ServerInput/VBoxContainer"]
 layout_mode = 2
