@@ -96,10 +96,6 @@ public partial class Bugcord : Node
 
 		if (voiceChatToggle.ButtonPressed)
 			Send(BuildVoicePacket(GetVoiceBuffer()));
-
-		// ((AudioStreamGeneratorPlayback)audioPlayer.GetStreamPlayback()).PushBuffer(GetVoiceBuffer());
-		
-		// GD.Print(GetVoiceBuffer()[0]);
 	}
 
     public override void _Notification(int what)
@@ -522,15 +518,12 @@ public partial class Bugcord : Node
 		byte[][] dataSpans = ReadDataSpans(packet, 1);
 
 		byte[] framesEncoded = dataSpans[0];
-		Vector2[] voiceFrames = new Vector2[framesEncoded.Length/2];
+		Vector2[] voiceFrames = new Vector2[framesEncoded.Length];
 
-		int f = 0;
-		for (int i = 0; i < framesEncoded.Length; i += 2){
-			float x = ByteToFloat(framesEncoded[i]);
-			float y = ByteToFloat(framesEncoded[i + 1]);
+		for (int i = 0; i < framesEncoded.Length; i++){
+			float f = ByteToFloat(framesEncoded[i]);
 
-			voiceFrames[f] = new Vector2(x, y);
-			f++;
+			voiceFrames[i] = new Vector2(f, f);
 		}
 
 		voicePlaybackBus.PushBuffer(voiceFrames);
@@ -680,21 +673,12 @@ public partial class Bugcord : Node
 			8
 		};
 
-		byte[] codedFrames = new byte[audioFrames.Length * 2];
+		byte[] codedFrames = new byte[audioFrames.Length];
 
-		int f = 0;
 		for (int i = 0; i < audioFrames.Length; i++){
-			byte x = FloatToByte(audioFrames[i].X);
-			byte y = FloatToByte(audioFrames[i].Y);
+			byte f = FloatToByte(audioFrames[i].X);
 
-			// codedFrames.AddRange(x);
-			// codedFrames.AddRange(y);
-
-			codedFrames[f] = x;
-			codedFrames[f + 1] = y;
-			// codedFrames[f + 2] = y[0];
-			// codedFrames[f + 3] = y[1];
-			f += 2;
+			codedFrames[i] = f;
 		}
 
 		packetBytes.AddRange(MakeDataSpan(codedFrames, 0));
