@@ -49,9 +49,10 @@ public partial class Bugcord : Node
 	public static string selectedKeyId;
 
 	private static RSA clientAuth;
-	private static WebSocketPeer client;
+	private static StreamPeerTcp tcpClient;
+	private static PacketPeerUdp udpClient;
 
-	private static WebSocketPeer.State previousState;
+	private static StreamPeerTcp.Status previousState;
 
 	private static Bugcord instance;
 
@@ -75,22 +76,29 @@ public partial class Bugcord : Node
 	// Called every frame. 'delta' is the elapsed time since the previous frame.
 	public override void _Process(double delta)
 	{
-		if (client == null || clientAuth == null){
+		if (tcpClient == null || clientAuth == null){
 			return;
 		}
 		
-		client.Poll();
-		
-		if (client.GetReadyState() == WebSocketPeer.State.Open && client.GetReadyState() != previousState){
+		tcpClient.Poll();
+
+		StreamPeerTcp.Status clientStatus = tcpClient.GetStatus();
+		if (clientStatus != StreamPeerTcp.Status.Connected){
+			return;
+		}
+
+		if (clientStatus == StreamPeerTcp.Status.Connected && previousState != StreamPeerTcp.Status.Connected){
 			OnConnected();
 		}
 
-		previousState = client.GetReadyState();
-		
-		while (client.GetAvailablePacketCount() > 0){
-			ProcessIncomingPacket(client.GetPacket());
-		}
+		previousState = clientStatus;
 
+		if (tcpClient.GetAvailableBytes() >= 8){ // 8 Bytes is the absolute minimum size for a packet
+			Godot.Collections.Array recieved = tcpClient.GetPartialData(65535);
+			byte[] rawPacket = (byte[])recieved[1];
+			ProcessRawPacket(rawPacket);
+		}
+		
 		voicePlaybackBus.PushBuffer(currentFrameAudio.ToArray());
 		currentFrameAudio.Clear();
 
@@ -101,7 +109,8 @@ public partial class Bugcord : Node
     public override void _Notification(int what)
     {
         if (what == NotificationWMCloseRequest){
-			client.Close(1000, "Application process terminated");
+			if (tcpClient != null)
+				tcpClient.DisconnectFromHost();
 			GetTree().Quit();
 		}
     }
@@ -311,10 +320,12 @@ public partial class Bugcord : Node
 		}
 
 		clientUser["defaultConnectServer"] = url;
+
+		string[] urlSplit = url.Split(":");
 		
 		GD.Print("connecting..");
-		client = new WebSocketPeer();
-		client.ConnectToUrl(url);
+		tcpClient = new StreamPeerTcp();
+		tcpClient.ConnectToHost(urlSplit[0], int.Parse(urlSplit[1]));
 	}
 
 	public void Send(byte[] data){
@@ -322,7 +333,7 @@ public partial class Bugcord : Node
 			return;
 
 		GD.Print("Sending message. Type: " + data[0]);
-		client.Send(data);
+		tcpClient.PutData(BuildMasterPacket(data));
 	}
 
 	public void SetAutoConnect(bool setTrue){
@@ -392,7 +403,7 @@ public partial class Bugcord : Node
 		{
 			{"id", Guid.NewGuid().ToString()},
 			{ "username", username },
-			{"defaultConnectServer", "ws://75.71.255.149:25987"},
+			{"defaultConnectServer", "75.71.255.149:25987"},
 			{"autoConnectToServer", "false"}
 		};
 		SaveUser();
@@ -484,6 +495,35 @@ public partial class Bugcord : Node
 	#endregion
 
 	#region packet processors
+
+	private void ProcessRawPacket(byte[] data){
+		GD.Print("Attempting to process packet");
+		int offset = 0;
+
+		while (offset < data.Length - 8){
+			int version = BitConverter.ToInt16(data, offset);
+			short checksum = BitConverter.ToInt16(data, offset + 2);
+			int length = BitConverter.ToInt16(data, offset + 4);
+
+			if (length > data.Length - (6 + offset)){
+				offset++;
+				continue;
+			}
+
+			byte[] packet = ReadLength(data, offset + 6, length);
+
+			if (!ValidateSumComplement(packet, (ushort)checksum)){
+				offset++;
+				continue;
+			}
+
+			GD.Print("Checksum verified. Offset: " + offset);
+			ProcessIncomingPacket(packet);
+			return;
+		}
+
+		GD.Print("Checksum could not be verified");
+	}
 
 	private void ProcessIncomingPacket(byte[] packet){
 		byte type = packet[0];
@@ -664,6 +704,21 @@ public partial class Bugcord : Node
 	#endregion
 
 	#region packet builders
+
+	private byte[] BuildMasterPacket(byte[] data){
+		List<byte> packetBytes = new List<byte>{
+			0, // Version
+			0, // Version
+		};
+
+		byte[] checksum = GetChecksum(data);
+		ushort packetLength = (ushort)data.Length;
+		packetBytes.AddRange(checksum);
+		packetBytes.AddRange(BitConverter.GetBytes(packetLength));
+		packetBytes.AddRange(data);
+
+		return packetBytes.ToArray();
+	}
 
 	private byte[] BuildVoicePacket(Vector2[] audioFrames){
 		if (audioFrames.Length == 0)
