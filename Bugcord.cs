@@ -1042,6 +1042,33 @@ public partial class Bugcord : Node
 		return BitConverter.GetBytes(f);
 	}
 
+	public static byte[] GetTwosComplement(byte[] number){
+		byte[] newNum = number;
+		for (int i = 0; i < number.Length; i++){
+			newNum[i] = (byte)~number[i];
+		}
+
+		return BitConverter.GetBytes((short)(BitConverter.ToInt16(newNum) + 1));
+	}
+
+	public static byte[] GetChecksum(byte[] data){
+		return GetTwosComplement(GetSumComplement(data));
+	}
+
+	public static byte[] GetSumComplement(byte[] data){
+		short total = 0;
+		for (int i = 0; i < Mathf.FloorToInt(data.Length / 2); i++){
+			total = (short)(total + BitConverter.ToInt16(data, i * 2));
+		}
+
+		return BitConverter.GetBytes(total);
+	}
+
+	public static bool ValidateSumComplement(byte[] data, byte[] checksum){
+		short final = (short)(BitConverter.ToInt16(GetSumComplement(data)) + BitConverter.ToInt16(checksum));
+		return final == 0;
+	}
+
 	#endregion
 
 	public Dictionary GetPeerDict(){
