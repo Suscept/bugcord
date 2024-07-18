@@ -1048,7 +1048,7 @@ public partial class Bugcord : Node
 			newNum[i] = (byte)~number[i];
 		}
 
-		return BitConverter.GetBytes((short)(BitConverter.ToInt16(newNum) + 1));
+		return BitConverter.GetBytes((ushort)(BitConverter.ToInt16(newNum) + 1));
 	}
 
 	public static byte[] GetChecksum(byte[] data){
@@ -1056,16 +1056,16 @@ public partial class Bugcord : Node
 	}
 
 	public static byte[] GetSumComplement(byte[] data){
-		short total = 0;
+		ushort total = 0;
 		for (int i = 0; i < Mathf.FloorToInt(data.Length / 2); i++){
-			total = (short)(total + BitConverter.ToInt16(data, i * 2));
+			total = (ushort)(total + BitConverter.ToInt16(data, i * 2));
 		}
 
 		return BitConverter.GetBytes(total);
 	}
 
-	public static bool ValidateSumComplement(byte[] data, byte[] checksum){
-		short final = (short)(BitConverter.ToInt16(GetSumComplement(data)) + BitConverter.ToInt16(checksum));
+	public static bool ValidateSumComplement(byte[] data, ushort checksum){
+		ushort final = (ushort)(BitConverter.ToInt16(GetSumComplement(data)) + checksum);
 		return final == 0;
 	}
 
