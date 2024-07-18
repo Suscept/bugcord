@@ -1080,6 +1080,10 @@ public partial class Bugcord : Node
 		ProcessSpaceInvite(FromBase64(invite));
 	}
 
+	public string ToHexString(byte[] data){
+		return BitConverter.ToString(data).Replace("-", "");
+	}
+
 	public struct User{
 		public string username;
 	}
