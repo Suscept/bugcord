@@ -36,6 +36,8 @@ public partial class Bugcord : Node
 	public const int minAudioFrames = 2048;
 	public const int maxAudioFrames = 4096;
 
+	public const int defaultPort = 25987;
+
 	public static Dictionary clientUser;
 
 	public static Dictionary peers;
@@ -98,12 +100,20 @@ public partial class Bugcord : Node
 			byte[] rawPacket = (byte[])recieved[1];
 			ProcessRawPacket(rawPacket);
 		}
+
+		if (!udpClient.IsSocketConnected()){
+			return;
+		}
+
+		while (udpClient.GetAvailablePacketCount() > 0){
+			ProcessIncomingPacket(udpClient.GetPacket());
+		}
 		
 		voicePlaybackBus.PushBuffer(currentFrameAudio.ToArray());
 		currentFrameAudio.Clear();
 
 		if (voiceChatToggle.ButtonPressed)
-			Send(BuildVoicePacket(GetVoiceBuffer()));
+			Send(BuildVoicePacket(GetVoiceBuffer()), true);
 	}
 
     public override void _Notification(int what)
@@ -320,20 +330,38 @@ public partial class Bugcord : Node
 		}
 
 		clientUser["defaultConnectServer"] = url;
+		SaveUser();
 
 		string[] urlSplit = url.Split(":");
+		string urlHost = urlSplit[0];
+		int urlPort = defaultPort;
+		if (urlSplit.Length > 1){
+			urlPort = int.Parse(urlSplit[1]);
+		}
 		
 		GD.Print("connecting..");
 		tcpClient = new StreamPeerTcp();
-		tcpClient.ConnectToHost(urlSplit[0], int.Parse(urlSplit[1]));
+		tcpClient.ConnectToHost(urlHost, urlPort);
+
+		udpClient = new PacketPeerUdp();
+		udpClient.ConnectToHost(urlHost, urlPort);
 	}
 
 	public void Send(byte[] data){
+		Send(data, false);
+	}
+
+	public void Send(byte[] data, bool sendUnrelyable){
 		if (data.Length == 0)
 			return;
 
 		GD.Print("Sending message. Type: " + data[0]);
-		tcpClient.PutData(BuildMasterPacket(data));
+
+		if (sendUnrelyable){
+			udpClient.PutPacket(data);
+		}else{
+			tcpClient.PutData(BuildMasterPacket(data));
+		}
 	}
 
 	public void SetAutoConnect(bool setTrue){
