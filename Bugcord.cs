@@ -45,7 +45,7 @@ public partial class Bugcord : Node
 
 	public static Dictionary aesKeys;
 
-	public static System.Collections.Generic.Dictionary<string, System.Collections.Generic.Dictionary<string, List<byte[]>>> incomingFileStaging;
+	public static System.Collections.Generic.Dictionary<string, System.Collections.Generic.Dictionary<string, List<byte[]>>> incomingFileStaging = new();
 	public static Dictionary cacheIndex;
 
 	public static string selectedSpaceId;
