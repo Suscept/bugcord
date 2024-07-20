@@ -45,6 +45,7 @@ public partial class Bugcord : Node
 
 	public static Dictionary aesKeys;
 
+	public static System.Collections.Generic.Dictionary<string, System.Collections.Generic.Dictionary<string, List<byte[]>>> incomingFileStaging;
 	public static Dictionary cacheIndex;
 
 	public static string selectedSpaceId;
@@ -600,16 +601,43 @@ public partial class Bugcord : Node
 	private void ProcessFilePacket(byte[] packet){
 		GD.Print("recieved file packet");
 
-		byte[][] dataSpans = ReadDataSpans(packet, 1);
+		byte[][] dataSpans = ReadDataSpans(packet, 5);
 
-		byte[] senderGuid = dataSpans[0];
-		byte[] fileData = dataSpans[1];
+		ushort filePart = BitConverter.ToUInt16(packet, 1);
+		ushort filePartMax = BitConverter.ToUInt16(packet, 3);
 
-		byte[] fileGuid = ReadDataSpan(fileData, 1);
-		
-		WriteToServable(fileData, fileGuid.GetStringFromUtf8());
+		string fileGuid = dataSpans[0].GetStringFromUtf8();
+		string senderGuid = dataSpans[1].GetStringFromUtf8();
+		byte[] fileData = dataSpans[2];
 
-		CacheServedFile(fileData);
+		// Is the file known?
+		if (!incomingFileStaging.ContainsKey(fileGuid)){
+            System.Collections.Generic.Dictionary<string, List<byte[]>> recievingFile = new();
+            incomingFileStaging.Add(fileGuid, recievingFile);
+		}
+
+		// Has this user sent parts before?
+		if (!incomingFileStaging[fileGuid].ContainsKey(senderGuid)){
+			incomingFileStaging[fileGuid].Add(senderGuid, new List<byte[]>(filePartMax)); 
+		}
+	
+		incomingFileStaging[fileGuid][senderGuid][filePart] = fileData;
+
+		for (int i = 0; i < incomingFileStaging[fileGuid][senderGuid].Count; i++){
+			if (incomingFileStaging[fileGuid][senderGuid][i] == null){
+				return;
+			}
+		}
+
+		// No parts are missing so concatinate everything and save and cache
+		List<byte> fullFile = new();
+		for (int i = 0; i < incomingFileStaging[fileGuid][senderGuid].Count; i++){
+			fullFile.AddRange(incomingFileStaging[fileGuid][senderGuid][i]);
+		}
+		incomingFileStaging[fileGuid].Remove(senderGuid);
+
+		WriteToServable(fullFile.ToArray(), fileGuid);
+		CacheServedFile(fullFile.ToArray());
 	}
 
 	private void ProcessFileRequest(byte[] packet){
@@ -623,7 +651,10 @@ public partial class Bugcord : Node
 				if (!HasServableFile(fileGuid)) // stop if we dont have this file
 					return;
 
-				Send(BuildFilePacket(fileGuid, GetServableData(fileGuid)));
+				byte[][] servePartitions = MakePartitions(GetServableData(fileGuid), 64000);
+				for(int i = 0; i < servePartitions.Length; i++){
+					Send(BuildFilePacket(fileGuid, i, servePartitions.Length - 1, servePartitions[i]));
+				}
 				break;
 		}
 	}
@@ -769,11 +800,14 @@ public partial class Bugcord : Node
 		return packetBytes.ToArray();
 	}
 
-	private byte[] BuildFilePacket(string fileGuid, byte[] data){
+	private byte[] BuildFilePacket(string fileGuid, int filePart, int lastFilePartIndex, byte[] data){
 		List<byte> packetBytes = new List<byte>{
 			7
 		};
 
+		packetBytes.AddRange(BitConverter.GetBytes((ushort)filePart));
+		packetBytes.AddRange(BitConverter.GetBytes((ushort)lastFilePartIndex));
+		packetBytes.AddRange(MakeDataSpan(fileGuid.ToUtf8Buffer()));
 		packetBytes.AddRange(MakeDataSpan(GetClientId().ToUtf8Buffer()));
 		packetBytes.AddRange(MakeDataSpan(data, 0));
 
@@ -1150,6 +1184,23 @@ public partial class Bugcord : Node
 	public static bool ValidateSumComplement(byte[] data, ushort checksum){
 		ushort final = (ushort)(BitConverter.ToInt16(GetSumComplement(data)) + checksum);
 		return final == 0;
+	}
+
+	public static byte[][] MakePartitions(byte[] data, int partitionSize){
+		List<byte[]> partitions = new List<byte[]>();
+		int dataIndex = 0;
+
+		while(dataIndex < data.Length){
+			byte[] partition = new byte[Mathf.Min(data.Length - dataIndex, partitionSize)];
+			for (int i = 0; i < partition.Length; i++){
+				partition[i] = data[dataIndex];
+
+				dataIndex++;
+			}
+			partitions.Add(partition);
+		}
+
+		return partitions.ToArray();
 	}
 
 	#endregion
