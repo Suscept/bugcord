@@ -45,6 +45,7 @@ public partial class Bugcord : Node
 
 	public static Dictionary aesKeys;
 
+	public static List<byte> incomingPacketBuffer = new List<byte>();
 	public static System.Collections.Generic.Dictionary<string, System.Collections.Generic.Dictionary<string, List<byte[]>>> incomingFileStaging = new();
 	public static Dictionary cacheIndex;
 
@@ -99,7 +100,9 @@ public partial class Bugcord : Node
 		if (tcpClient.GetAvailableBytes() >= 8){ // 8 Bytes is the absolute minimum size for a packet
 			Godot.Collections.Array recieved = tcpClient.GetPartialData(65535);
 			byte[] rawPacket = (byte[])recieved[1];
-			ProcessRawPacket(rawPacket);
+			incomingPacketBuffer.AddRange(rawPacket);
+			ProcessRawPacket(incomingPacketBuffer.ToArray(), out int usedPacketIndex, out int usedPacketLength);
+			incomingPacketBuffer.RemoveRange(usedPacketIndex, usedPacketLength);
 		}
 
 		if (!udpClient.IsSocketConnected()){
@@ -525,14 +528,14 @@ public partial class Bugcord : Node
 
 	#region packet processors
 
-	private void ProcessRawPacket(byte[] data){
+	private bool ProcessRawPacket(byte[] data, out int usedPacketIndex, out int usedPacketLength){
 		GD.Print("Attempting to process packet");
 		int offset = 0;
 
 		while (offset < data.Length - 8){
 			int version = BitConverter.ToInt16(data, offset);
 			short checksum = BitConverter.ToInt16(data, offset + 2);
-			int length = BitConverter.ToInt16(data, offset + 4);
+			ushort length = BitConverter.ToUInt16(data, offset + 4);
 
 			if (length > data.Length - (6 + offset)){
 				offset++;
@@ -546,12 +549,21 @@ public partial class Bugcord : Node
 				continue;
 			}
 
+			if (packet.Length == 0){
+				offset++;
+				continue;
+			}
+
 			GD.Print("Checksum verified. Offset: " + offset);
 			ProcessIncomingPacket(packet);
-			return;
+			usedPacketIndex = offset;
+			usedPacketLength = length;
+			return true;
 		}
 
 		GD.Print("Checksum could not be verified");
+		usedPacketIndex = usedPacketLength = 0;
+		return false;
 	}
 
 	private void ProcessIncomingPacket(byte[] packet){
