@@ -107,7 +107,7 @@ public partial class Bugcord : Node
 
 		if (incomingPacketBuffer.Count >= 8 && incomingPacketBuffer.Count != lastPacketBufferSize){ // 8 Bytes is the absolute minimum size for a packet
 			ProcessRawPacket(incomingPacketBuffer.ToArray(), out int usedPacketIndex, out int usedPacketLength);
-			incomingPacketBuffer.RemoveRange(usedPacketIndex, usedPacketLength);
+			incomingPacketBuffer.RemoveRange(0, usedPacketLength + usedPacketIndex);
 		}
 
 		lastPacketBufferSize = incomingPacketBuffer.Count;
