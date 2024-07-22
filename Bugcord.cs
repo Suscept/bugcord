@@ -665,7 +665,7 @@ public partial class Bugcord : Node
 
 				byte[][] servePartitions = MakePartitions(GetServableData(fileGuid), 64000);
 				for(int i = 0; i < servePartitions.Length; i++){
-					Send(BuildFilePacket(fileGuid, i, servePartitions.Length - 1, servePartitions[i]));
+					Send(BuildFilePacket(fileGuid, i, servePartitions.Length, servePartitions[i]));
 				}
 				break;
 		}
@@ -812,13 +812,13 @@ public partial class Bugcord : Node
 		return packetBytes.ToArray();
 	}
 
-	private byte[] BuildFilePacket(string fileGuid, int filePart, int lastFilePartIndex, byte[] data){
+	private byte[] BuildFilePacket(string fileGuid, int filePart, int totalFileParts, byte[] data){
 		List<byte> packetBytes = new List<byte>{
 			7
 		};
 
 		packetBytes.AddRange(BitConverter.GetBytes((ushort)filePart));
-		packetBytes.AddRange(BitConverter.GetBytes((ushort)lastFilePartIndex));
+		packetBytes.AddRange(BitConverter.GetBytes((ushort)totalFileParts));
 		packetBytes.AddRange(MakeDataSpan(fileGuid.ToUtf8Buffer()));
 		packetBytes.AddRange(MakeDataSpan(GetClientId().ToUtf8Buffer()));
 		packetBytes.AddRange(MakeDataSpan(data, 0));
