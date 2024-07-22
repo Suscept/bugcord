@@ -637,7 +637,10 @@ public partial class Bugcord : Node
 
 		// Has this user sent parts before?
 		if (!incomingFileStaging[fileGuid].ContainsKey(senderGuid)){
-			incomingFileStaging[fileGuid].Add(senderGuid, new List<byte[]>(filePartMax)); 
+			List<byte[]> bytesList = new List<byte[]>();
+			byte[][] bytes = new byte[filePartMax][];
+			bytesList.AddRange(bytes);
+			incomingFileStaging[fileGuid].Add(senderGuid, bytesList); 
 		}
 	
 		incomingFileStaging[fileGuid][senderGuid][filePart] = fileData;
