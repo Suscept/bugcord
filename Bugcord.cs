@@ -629,6 +629,10 @@ public partial class Bugcord : Node
 		string senderGuid = dataSpans[1].GetStringFromUtf8();
 		byte[] fileData = dataSpans[2];
 
+		if (cacheIndex.ContainsKey(fileGuid)){ // File already in cache
+			return;
+		}
+
 		// Is the file known?
 		if (!incomingFileStaging.ContainsKey(fileGuid)){
             System.Collections.Generic.Dictionary<string, List<byte[]>> recievingFile = new();
