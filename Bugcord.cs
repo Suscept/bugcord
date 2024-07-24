@@ -99,15 +99,15 @@ public partial class Bugcord : Node
 
 		previousState = clientStatus;
 
-		if (tcpClient.GetAvailableBytes() >= 8){ // 8 Bytes is the absolute minimum size for a packet
-			Godot.Collections.Array recieved = tcpClient.GetPartialData(65535);
+		if (tcpClient.GetAvailableBytes() > 0){
+			Godot.Collections.Array recieved = tcpClient.GetData(tcpClient.GetAvailableBytes());
 			byte[] rawPacket = (byte[])recieved[1];
 			incomingPacketBuffer.AddRange(rawPacket);
 		}
 
-		if (incomingPacketBuffer.Count >= 8 && incomingPacketBuffer.Count != lastPacketBufferSize){ // 8 Bytes is the absolute minimum size for a packet
-			ProcessRawPacket(incomingPacketBuffer.ToArray(), out int usedPacketIndex, out int usedPacketLength);
-			incomingPacketBuffer.RemoveRange(0, usedPacketLength + usedPacketIndex);
+		if (incomingPacketBuffer.Count > 6 && incomingPacketBuffer.Count != lastPacketBufferSize){ // 6 Bytes is the absolute minimum size for a packet
+			ProcessRawPacket(incomingPacketBuffer.ToArray(), out int usedPacketLength);
+			incomingPacketBuffer.RemoveRange(0, usedPacketLength);
 		}
 
 		lastPacketBufferSize = incomingPacketBuffer.Count;
@@ -535,42 +535,33 @@ public partial class Bugcord : Node
 
 	#region packet processors
 
-	private bool ProcessRawPacket(byte[] data, out int usedPacketIndex, out int usedPacketLength){
+	private bool ProcessRawPacket(byte[] data, out int usedPacketLength){
 		GD.Print("Attempting to process packet");
-		int offset = 0;
 
-		while (offset < data.Length - 8){
-			int version = BitConverter.ToInt16(data, offset);
-			short checksum = BitConverter.ToInt16(data, offset + 2);
-			ushort length = BitConverter.ToUInt16(data, offset + 4);
+		usedPacketLength = 0;
 
-			if (length > data.Length - (6 + offset)){
-				offset++;
-				continue;
-			}
+		int version = BitConverter.ToInt16(data, 0);
+		short checksum = BitConverter.ToInt16(data, 2);
+		ushort length = BitConverter.ToUInt16(data, 4);
 
-			byte[] packet = ReadLength(data, offset + 6, length);
-
-			if (!ValidateSumComplement(packet, (ushort)checksum)){
-				offset++;
-				continue;
-			}
-
-			if (packet.Length == 0){
-				offset++;
-				continue;
-			}
-
-			GD.Print("Checksum verified. Offset: " + offset);
-			ProcessIncomingPacket(packet);
-			usedPacketIndex = offset;
-			usedPacketLength = length + 6;
-			return true;
+		if (length > data.Length - 6){
+			return false;
 		}
 
-		GD.Print("Checksum could not be verified");
-		usedPacketIndex = usedPacketLength = 0;
-		return false;
+		byte[] packet = ReadLength(data, 6, length);
+
+		if (!ValidateSumComplement(packet, (ushort)checksum)){
+			return false;
+		}
+
+		if (packet.Length == 0){
+			return false;
+		}
+
+		GD.Print("Checksum verified.");
+		ProcessIncomingPacket(packet);
+		usedPacketLength = length + 6;
+		return true;
 	}
 
 	private void ProcessIncomingPacket(byte[] packet){
@@ -677,7 +668,7 @@ public partial class Bugcord : Node
 				if (!HasServableFile(fileGuid)) // stop if we dont have this file
 					return;
 
-				byte[][] servePartitions = MakePartitions(GetServableData(fileGuid), 64000);
+				byte[][] servePartitions = MakePartitions(GetServableData(fileGuid), 60000);
 				for(int i = 0; i < servePartitions.Length; i++){
 					Send(BuildFilePacket(fileGuid, i, servePartitions.Length, servePartitions[i]));
 				}
