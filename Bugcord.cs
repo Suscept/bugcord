@@ -564,7 +564,7 @@ public partial class Bugcord : Node
 			GD.Print("Checksum verified. Offset: " + offset);
 			ProcessIncomingPacket(packet);
 			usedPacketIndex = offset;
-			usedPacketLength = length;
+			usedPacketLength = length + 6;
 			return true;
 		}
 
