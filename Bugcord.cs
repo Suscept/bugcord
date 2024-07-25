@@ -65,8 +65,6 @@ public partial class Bugcord : Node
 
 	private static List<Vector2> currentFrameAudio = new List<Vector2>();
 
-	private int lastPacketBufferSize;
-
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
 	{
@@ -103,14 +101,10 @@ public partial class Bugcord : Node
 			Godot.Collections.Array recieved = tcpClient.GetData(tcpClient.GetAvailableBytes());
 			byte[] rawPacket = (byte[])recieved[1];
 			incomingPacketBuffer.AddRange(rawPacket);
-		}
 
-		if (incomingPacketBuffer.Count > 6 && incomingPacketBuffer.Count != lastPacketBufferSize){ // 6 Bytes is the absolute minimum size for a packet
 			ProcessRawPacket(incomingPacketBuffer.ToArray(), out int usedPacketLength);
 			incomingPacketBuffer.RemoveRange(0, usedPacketLength);
 		}
-
-		lastPacketBufferSize = incomingPacketBuffer.Count;
 
 		if (!udpClient.IsSocketConnected()){
 			return;
