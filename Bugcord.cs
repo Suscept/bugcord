@@ -22,6 +22,7 @@ public partial class Bugcord : Node
 	[Signal] public delegate void OnEmbedMessageRecievedEventHandler(Dictionary message);
 	[Signal] public delegate void OnLoggedInEventHandler(Dictionary client);
 	[Signal] public delegate void OnEmbedCachedEventHandler(string id);
+	[Signal] public delegate void OnFileBufferUpdatedEventHandler(string id, int partsHad, int partsTotal);
 
 	public const string clientSavePath = "user://client.data";
 	public const string clientKeyPath = "user://client.auth";
@@ -102,8 +103,13 @@ public partial class Bugcord : Node
 			byte[] rawPacket = (byte[])recieved[1];
 			incomingPacketBuffer.AddRange(rawPacket);
 
-			ProcessRawPacket(incomingPacketBuffer.ToArray(), out int usedPacketLength);
-			incomingPacketBuffer.RemoveRange(0, usedPacketLength);
+			for (int i = 0; i < 10; i++){ // Process multiple packets at once
+				bool processResult = ProcessRawPacket(incomingPacketBuffer.ToArray(), out int usedPacketLength);
+				incomingPacketBuffer.RemoveRange(0, usedPacketLength);
+
+				if (!processResult)
+					break;
+			}
 		}
 
 		if (!udpClient.IsSocketConnected()){
@@ -530,9 +536,11 @@ public partial class Bugcord : Node
 	#region packet processors
 
 	private bool ProcessRawPacket(byte[] data, out int usedPacketLength){
-		GD.Print("Attempting to process packet");
-
 		usedPacketLength = 0;
+
+		if (data.Length < 6){
+			return false;
+		}
 
 		int version = BitConverter.ToInt16(data, 0);
 		short checksum = BitConverter.ToInt16(data, 2);
@@ -634,10 +642,18 @@ public partial class Bugcord : Node
 	
 		incomingFileStaging[fileGuid][senderGuid][filePart] = fileData;
 
-		for (int i = 0; i < incomingFileStaging[fileGuid][senderGuid].Count; i++){
-			if (incomingFileStaging[fileGuid][senderGuid][i] == null){
-				return;
+		int filePartsRecieved = 0;
+		int filePartsTotal = incomingFileStaging[fileGuid][senderGuid].Count;
+		for (int i = 0; i < filePartsTotal; i++){
+			if (incomingFileStaging[fileGuid][senderGuid][i] != null){
+				filePartsRecieved++;
 			}
+		}
+
+		EmitSignal(SignalName.OnFileBufferUpdated, fileGuid, filePartsRecieved, filePartsTotal);
+
+		if (filePartsRecieved < filePartsTotal){
+			return;
 		}
 
 		// No parts are missing so concatinate everything and save and cache

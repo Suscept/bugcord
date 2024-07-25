@@ -37,7 +37,7 @@ public partial class MessageUI : MarginContainer
 
 		waitingForEmbedGuid = (string)message["mediaId"];
 		
-		textContent.Visible = false;
+		textContent.Text = "Loading...";
 	}
 
 	public void CacheUpdated(string guid){
@@ -47,7 +47,13 @@ public partial class MessageUI : MarginContainer
 		string cachePath = (string)Bugcord.cacheIndex[guid];
 		SetupMediaUi(cachePath);
 
+		textContent.Visible = false;
 		bugcord.OnEmbedCached -= CacheUpdated;
+		bugcord.OnFileBufferUpdated -= FileBufferUpdated;
+	}
+
+	public void FileBufferUpdated(string guid, int fileParts, int filePartsTotal){
+		textContent.Text = "Loading... " + fileParts + "/" + filePartsTotal;
 	}
 
 	private void SetupMediaUi(string cachePath){

@@ -39,5 +39,6 @@ public partial class MessageWindow : Control
 
 		newMessage.bugcord = bugcord;
 		bugcord.OnEmbedCached += newMessage.CacheUpdated;
+		bugcord.OnFileBufferUpdated += newMessage.FileBufferUpdated;
 	}
 }
