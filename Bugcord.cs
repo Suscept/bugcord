@@ -39,6 +39,8 @@ public partial class Bugcord : Node
 
 	public const int defaultPort = 25987;
 
+	public const int filePacketSize = 4096;
+
 	public static Dictionary clientUser;
 
 	public static Dictionary peers;
@@ -678,7 +680,7 @@ public partial class Bugcord : Node
 				if (!HasServableFile(fileGuid)) // stop if we dont have this file
 					return;
 
-				byte[][] servePartitions = MakePartitions(GetServableData(fileGuid), 60000);
+				byte[][] servePartitions = MakePartitions(GetServableData(fileGuid), filePacketSize);
 				for(int i = 0; i < servePartitions.Length; i++){
 					Send(BuildFilePacket(fileGuid, i, servePartitions.Length, servePartitions[i]));
 				}
