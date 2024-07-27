@@ -13,6 +13,7 @@ public partial class SpacesList : ScrollContainer
 	[Signal] public delegate void OnSpaceInviteEventHandler(string guid);
 
 	private List<Control> renderedSpaces = new List<Control>();
+	private SpaceSelector selectedSpace;
 
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
@@ -39,7 +40,13 @@ public partial class SpacesList : ScrollContainer
 		}
 	}
 
-	public void OnSpaceSelectorPicked(string guid){
+	public void OnSpaceSelectorPicked(string guid, SpaceSelector spaceButton){
+		if (selectedSpace != null){
+			selectedSpace.SetSelected(false);
+		}
+		selectedSpace = spaceButton;
+		spaceButton.SetSelected(true);
+		
 		EmitSignal(SignalName.OnSpacePicked, guid);
 	}
 

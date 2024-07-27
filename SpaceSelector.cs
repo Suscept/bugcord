@@ -4,8 +4,9 @@ using System;
 public partial class SpaceSelector : MarginContainer
 {
 	[Export] public Label label;
+	[Export] public Control selectionDisplay;
 
-	[Signal] public delegate void OnPickedEventHandler(string spaceGuid);
+	[Signal] public delegate void OnPickedEventHandler(string spaceGuid, SpaceSelector space);
 	[Signal] public delegate void OnInviteEventHandler(string spaceGuid);
 
 	public string spaceGuid;
@@ -21,10 +22,14 @@ public partial class SpaceSelector : MarginContainer
 	}
 
 	public void OnSelect(){
-		EmitSignal(SignalName.OnPicked, spaceGuid);
+		EmitSignal(SignalName.OnPicked, spaceGuid, this);
 	}
 
 	public void OnInviteClick(){
 		EmitSignal(SignalName.OnInvite, spaceGuid);
+	}
+
+	public void SetSelected(bool makeSelected){
+		selectionDisplay.Visible = makeSelected;
 	}
 }

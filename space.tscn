@@ -3,12 +3,18 @@
 [ext_resource type="Texture2D" uid="uid://6j35bsdb4w8r" path="res://icon.svg" id="1_av7sp"]
 [ext_resource type="Script" path="res://SpaceSelector.cs" id="1_q76c5"]
 
-[node name="Space" type="MarginContainer" node_paths=PackedStringArray("label")]
+[node name="Space" type="MarginContainer" node_paths=PackedStringArray("label", "selectionDisplay")]
 custom_minimum_size = Vector2(0, 30)
 script = ExtResource("1_q76c5")
 label = NodePath("HBoxContainer/MarginContainer/HBoxContainer/Label")
+selectionDisplay = NodePath("HBoxContainer/SelectionDisplay")
 
 [node name="HBoxContainer" type="HBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="SelectionDisplay" type="ColorRect" parent="HBoxContainer"]
+visible = false
+custom_minimum_size = Vector2(5, 0)
 layout_mode = 2
 
 [node name="MarginContainer" type="MarginContainer" parent="HBoxContainer"]
