@@ -49,6 +49,7 @@ public partial class Bugcord : Node
 	public static Dictionary aesKeys;
 
 	public static List<byte> incomingPacketBuffer = new List<byte>();
+	public static List<byte[]> outgoingPacketBuffer = new List<byte[]>();
 	public static System.Collections.Generic.Dictionary<string, System.Collections.Generic.Dictionary<string, List<byte[]>>> incomingFileStaging = new();
 	public static Dictionary cacheIndex;
 
@@ -112,6 +113,12 @@ public partial class Bugcord : Node
 				if (!processResult)
 					break;
 			}
+		}
+
+		// Send a pending packet
+		if (outgoingPacketBuffer.Count > 0){
+			Send(outgoingPacketBuffer[0]);
+			outgoingPacketBuffer.RemoveAt(0);
 		}
 
 		if (!udpClient.IsSocketConnected()){
@@ -682,7 +689,7 @@ public partial class Bugcord : Node
 
 				byte[][] servePartitions = MakePartitions(GetServableData(fileGuid), filePacketSize);
 				for(int i = 0; i < servePartitions.Length; i++){
-					Send(BuildFilePacket(fileGuid, i, servePartitions.Length, servePartitions[i]));
+					outgoingPacketBuffer.Add(BuildFilePacket(fileGuid, i, servePartitions.Length, servePartitions[i]));
 				}
 				break;
 		}
