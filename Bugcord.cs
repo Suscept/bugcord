@@ -51,7 +51,7 @@ public partial class Bugcord : Node
 
 	public static List<byte> incomingPacketBuffer = new List<byte>();
 	public static List<byte[]> outgoingPacketBuffer = new List<byte[]>();
-	public static System.Collections.Generic.Dictionary<string, System.Collections.Generic.Dictionary<string, List<byte[]>>> incomingFileStaging = new();
+	public static System.Collections.Generic.Dictionary<string, System.Collections.Generic.Dictionary<string, List<byte[]>>> incomingFileBuffer = new();
 	public static Dictionary cacheIndex;
 
 	public static string selectedSpaceId;
@@ -639,25 +639,25 @@ public partial class Bugcord : Node
 		}
 
 		// Is the file known?
-		if (!incomingFileStaging.ContainsKey(fileGuid)){
+		if (!incomingFileBuffer.ContainsKey(fileGuid)){
             System.Collections.Generic.Dictionary<string, List<byte[]>> recievingFile = new();
-            incomingFileStaging.Add(fileGuid, recievingFile);
+            incomingFileBuffer.Add(fileGuid, recievingFile);
 		}
 
 		// Has this user sent parts before?
-		if (!incomingFileStaging[fileGuid].ContainsKey(senderGuid)){
+		if (!incomingFileBuffer[fileGuid].ContainsKey(senderGuid)){
 			List<byte[]> bytesList = new List<byte[]>();
 			byte[][] bytes = new byte[filePartMax][];
 			bytesList.AddRange(bytes);
-			incomingFileStaging[fileGuid].Add(senderGuid, bytesList); 
+			incomingFileBuffer[fileGuid].Add(senderGuid, bytesList); 
 		}
 	
-		incomingFileStaging[fileGuid][senderGuid][filePart] = fileData;
+		incomingFileBuffer[fileGuid][senderGuid][filePart] = fileData;
 
 		int filePartsRecieved = 0;
-		int filePartsTotal = incomingFileStaging[fileGuid][senderGuid].Count;
+		int filePartsTotal = incomingFileBuffer[fileGuid][senderGuid].Count;
 		for (int i = 0; i < filePartsTotal; i++){
-			if (incomingFileStaging[fileGuid][senderGuid][i] != null){
+			if (incomingFileBuffer[fileGuid][senderGuid][i] != null){
 				filePartsRecieved++;
 			}
 		}
@@ -670,10 +670,10 @@ public partial class Bugcord : Node
 
 		// No parts are missing so concatinate everything and save and cache
 		List<byte> fullFile = new();
-		for (int i = 0; i < incomingFileStaging[fileGuid][senderGuid].Count; i++){
-			fullFile.AddRange(incomingFileStaging[fileGuid][senderGuid][i]);
+		for (int i = 0; i < incomingFileBuffer[fileGuid][senderGuid].Count; i++){
+			fullFile.AddRange(incomingFileBuffer[fileGuid][senderGuid][i]);
 		}
-		incomingFileStaging[fileGuid].Remove(senderGuid);
+		incomingFileBuffer[fileGuid].Remove(senderGuid);
 
 		WriteToServable(fullFile.ToArray(), fileGuid);
 		CacheServedFile(fullFile.ToArray());
