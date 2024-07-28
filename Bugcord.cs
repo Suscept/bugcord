@@ -23,6 +23,7 @@ public partial class Bugcord : Node
 	[Signal] public delegate void OnLoggedInEventHandler(Dictionary client);
 	[Signal] public delegate void OnEmbedCachedEventHandler(string id);
 	[Signal] public delegate void OnFileBufferUpdatedEventHandler(string id, int partsHad, int partsTotal);
+	[Signal] public delegate void OnConnectedToSpaceEventHandler(string spaceId, string spaceName);
 
 	public const string clientSavePath = "user://client.data";
 	public const string clientKeyPath = "user://client.auth";
@@ -515,6 +516,8 @@ public partial class Bugcord : Node
 
 		GD.Print("connected to space " + guid);
 		AlertPanel.PostAlert("Connected to space", guid);
+
+		EmitSignal(SignalName.OnConnectedToSpace, guid, (string)((Dictionary)spaces[guid])["name"]);
 	}
 
 	public void SendSpaceInvite(string spaceGuid, string peerGuid){

@@ -1,4 +1,4 @@
-[gd_scene load_steps=21 format=3 uid="uid://b4h65lw1u6cii"]
+[gd_scene load_steps=22 format=3 uid="uid://b4h65lw1u6cii"]
 
 [ext_resource type="Script" path="res://Bugcord.cs" id="1_jyk1e"]
 [ext_resource type="PackedScene" uid="uid://c0hr25wlgd0kt" path="res://message.tscn" id="1_ki7uw"]
@@ -7,6 +7,7 @@
 [ext_resource type="Script" path="res://SpacesList.cs" id="3_rhloj"]
 [ext_resource type="PackedScene" uid="uid://cjop4t0huwwq0" path="res://space.tscn" id="4_70f0h"]
 [ext_resource type="Script" path="res://MessageCreator.cs" id="4_weho3"]
+[ext_resource type="Script" path="res://SpaceView.cs" id="5_400hf"]
 [ext_resource type="Script" path="res://RegisterWindow.cs" id="6_jgjb0"]
 [ext_resource type="Script" path="res://MakeSpaceWindow.cs" id="7_p4jpm"]
 [ext_resource type="PackedScene" uid="uid://br4rq6oo0fvp" path="res://embed_input_display.tscn" id="8_ihghl"]
@@ -145,6 +146,151 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+
+[node name="HBoxContainer2" type="HBoxContainer" parent="HBoxContainer/ChatMain/VBoxContainer"]
+layout_mode = 2
+
+[node name="SpaceView" type="HBoxContainer" parent="HBoxContainer/ChatMain/VBoxContainer/HBoxContainer2" node_paths=PackedStringArray("spaceTitle")]
+layout_mode = 2
+size_flags_horizontal = 3
+script = ExtResource("5_400hf")
+spaceTitle = NodePath("SpaceTitle")
+
+[node name="SpaceTitle" type="Label" parent="HBoxContainer/ChatMain/VBoxContainer/HBoxContainer2/SpaceView"]
+layout_mode = 2
+text = "No space selected"
+vertical_alignment = 1
+
+[node name="Extras" type="HBoxContainer" parent="HBoxContainer/ChatMain/VBoxContainer/HBoxContainer2"]
+layout_mode = 2
+
+[node name="SettingsPanel" type="MarginContainer" parent="HBoxContainer/ChatMain/VBoxContainer/HBoxContainer2/Extras" node_paths=PackedStringArray("usernameSetting", "profilePictureDisplay", "profilePictureDialog")]
+layout_mode = 2
+script = ExtResource("15_3b65x")
+usernameSetting = NodePath("VBoxContainer/Panel/VBoxContainer/ScrollContainer/VBoxContainer/UserSettings/VBoxContainer/LineEdit")
+profilePictureDisplay = NodePath("VBoxContainer/Panel/VBoxContainer/ScrollContainer/VBoxContainer/UserSettings/VBoxContainer/ProfilePicture/TextureRect")
+profilePictureDialog = NodePath("FileDialog")
+
+[node name="FileDialog" type="FileDialog" parent="HBoxContainer/ChatMain/VBoxContainer/HBoxContainer2/Extras/SettingsPanel"]
+title = "Open a File"
+position = Vector2i(-450, 0)
+size = Vector2i(337, 159)
+ok_button_text = "Open"
+dialog_hide_on_ok = true
+file_mode = 0
+access = 2
+filters = PackedStringArray("*.png ; PNG Images", "*.jpg ; JPG Images")
+use_native_dialog = true
+
+[node name="VBoxContainer" type="VBoxContainer" parent="HBoxContainer/ChatMain/VBoxContainer/HBoxContainer2/Extras/SettingsPanel"]
+layout_mode = 2
+
+[node name="Button" type="Button" parent="HBoxContainer/ChatMain/VBoxContainer/HBoxContainer2/Extras/SettingsPanel/VBoxContainer" node_paths=PackedStringArray("target")]
+custom_minimum_size = Vector2(35, 35)
+layout_mode = 2
+size_flags_horizontal = 8
+mouse_default_cursor_shape = 2
+text = "⚙️"
+script = ExtResource("15_kgtp7")
+target = NodePath("../Panel")
+
+[node name="Panel" type="Panel" parent="HBoxContainer/ChatMain/VBoxContainer/HBoxContainer2/Extras/SettingsPanel/VBoxContainer"]
+visible = false
+custom_minimum_size = Vector2(200, 500)
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="VBoxContainer" type="VBoxContainer" parent="HBoxContainer/ChatMain/VBoxContainer/HBoxContainer2/Extras/SettingsPanel/VBoxContainer/Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="ScrollContainer" type="ScrollContainer" parent="HBoxContainer/ChatMain/VBoxContainer/HBoxContainer2/Extras/SettingsPanel/VBoxContainer/Panel/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="HBoxContainer/ChatMain/VBoxContainer/HBoxContainer2/Extras/SettingsPanel/VBoxContainer/Panel/VBoxContainer/ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="UserSettings" type="MarginContainer" parent="HBoxContainer/ChatMain/VBoxContainer/HBoxContainer2/Extras/SettingsPanel/VBoxContainer/Panel/VBoxContainer/ScrollContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="HBoxContainer/ChatMain/VBoxContainer/HBoxContainer2/Extras/SettingsPanel/VBoxContainer/Panel/VBoxContainer/ScrollContainer/VBoxContainer/UserSettings"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="HBoxContainer/ChatMain/VBoxContainer/HBoxContainer2/Extras/SettingsPanel/VBoxContainer/Panel/VBoxContainer/ScrollContainer/VBoxContainer/UserSettings/VBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "User settings"
+horizontal_alignment = 1
+
+[node name="ProfilePicture" type="MarginContainer" parent="HBoxContainer/ChatMain/VBoxContainer/HBoxContainer2/Extras/SettingsPanel/VBoxContainer/Panel/VBoxContainer/ScrollContainer/VBoxContainer/UserSettings/VBoxContainer"]
+custom_minimum_size = Vector2(100, 0)
+layout_mode = 2
+size_flags_horizontal = 0
+
+[node name="TextureRect" type="TextureRect" parent="HBoxContainer/ChatMain/VBoxContainer/HBoxContainer2/Extras/SettingsPanel/VBoxContainer/Panel/VBoxContainer/ScrollContainer/VBoxContainer/UserSettings/VBoxContainer/ProfilePicture"]
+layout_mode = 2
+texture = ExtResource("16_h3cnx")
+expand_mode = 4
+stretch_mode = 4
+
+[node name="Button" type="Button" parent="HBoxContainer/ChatMain/VBoxContainer/HBoxContainer2/Extras/SettingsPanel/VBoxContainer/Panel/VBoxContainer/ScrollContainer/VBoxContainer/UserSettings/VBoxContainer/ProfilePicture"]
+layout_mode = 2
+mouse_default_cursor_shape = 2
+flat = true
+
+[node name="LineEdit" type="LineEdit" parent="HBoxContainer/ChatMain/VBoxContainer/HBoxContainer2/Extras/SettingsPanel/VBoxContainer/Panel/VBoxContainer/ScrollContainer/VBoxContainer/UserSettings/VBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "Username:"
+
+[node name="Save" type="Button" parent="HBoxContainer/ChatMain/VBoxContainer/HBoxContainer2/Extras/SettingsPanel/VBoxContainer/Panel/VBoxContainer"]
+layout_mode = 2
+text = "Save"
+
+[node name="AlertPanel" type="MarginContainer" parent="HBoxContainer/ChatMain/VBoxContainer/HBoxContainer2/Extras" node_paths=PackedStringArray("popupWindow", "alertContainer")]
+layout_mode = 2
+script = ExtResource("14_gf605")
+popupWindow = NodePath("VBoxContainer/Panel")
+alertContainer = NodePath("VBoxContainer/Panel/ScrollContainer/VBoxContainer")
+alertMessageScene = ExtResource("15_jvka1")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="HBoxContainer/ChatMain/VBoxContainer/HBoxContainer2/Extras/AlertPanel"]
+layout_mode = 2
+
+[node name="Button" type="Button" parent="HBoxContainer/ChatMain/VBoxContainer/HBoxContainer2/Extras/AlertPanel/VBoxContainer"]
+custom_minimum_size = Vector2(35, 35)
+layout_mode = 2
+size_flags_horizontal = 8
+mouse_default_cursor_shape = 2
+text = "M"
+
+[node name="Panel" type="Panel" parent="HBoxContainer/ChatMain/VBoxContainer/HBoxContainer2/Extras/AlertPanel/VBoxContainer"]
+visible = false
+custom_minimum_size = Vector2(200, 0)
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="ScrollContainer" type="ScrollContainer" parent="HBoxContainer/ChatMain/VBoxContainer/HBoxContainer2/Extras/AlertPanel/VBoxContainer/Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="HBoxContainer/ChatMain/VBoxContainer/HBoxContainer2/Extras/AlertPanel/VBoxContainer/Panel/ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="HSeparator" type="HSeparator" parent="HBoxContainer/ChatMain/VBoxContainer"]
+layout_mode = 2
 
 [node name="MessageWindow" type="Control" parent="HBoxContainer/ChatMain/VBoxContainer" node_paths=PackedStringArray("bugcord", "messageContainer", "scrollContainer")]
 layout_mode = 2
@@ -496,140 +642,7 @@ horizontal_scroll_mode = 0
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="HBoxContainer2" type="HBoxContainer" parent="."]
-layout_mode = 1
-anchors_preset = -1
-anchor_left = 1.0
-anchor_right = 1.0
-offset_bottom = 40.0
-grow_horizontal = 0
-alignment = 2
-
-[node name="SettingsPanel" type="MarginContainer" parent="HBoxContainer2" node_paths=PackedStringArray("usernameSetting", "profilePictureDisplay", "profilePictureDialog")]
-layout_mode = 2
-script = ExtResource("15_3b65x")
-usernameSetting = NodePath("VBoxContainer/Panel/VBoxContainer/ScrollContainer/VBoxContainer/UserSettings/VBoxContainer/LineEdit")
-profilePictureDisplay = NodePath("VBoxContainer/Panel/VBoxContainer/ScrollContainer/VBoxContainer/UserSettings/VBoxContainer/ProfilePicture/TextureRect")
-profilePictureDialog = NodePath("FileDialog")
-
-[node name="FileDialog" type="FileDialog" parent="HBoxContainer2/SettingsPanel"]
-title = "Open a File"
-position = Vector2i(-450, 0)
-size = Vector2i(337, 159)
-ok_button_text = "Open"
-dialog_hide_on_ok = true
-file_mode = 0
-access = 2
-filters = PackedStringArray("*.png ; PNG Images", "*.jpg ; JPG Images")
-use_native_dialog = true
-
-[node name="VBoxContainer" type="VBoxContainer" parent="HBoxContainer2/SettingsPanel"]
-layout_mode = 2
-
-[node name="Button" type="Button" parent="HBoxContainer2/SettingsPanel/VBoxContainer" node_paths=PackedStringArray("target")]
-custom_minimum_size = Vector2(35, 35)
-layout_mode = 2
-size_flags_horizontal = 8
-mouse_default_cursor_shape = 2
-text = "⚙️"
-script = ExtResource("15_kgtp7")
-target = NodePath("../Panel")
-
-[node name="Panel" type="Panel" parent="HBoxContainer2/SettingsPanel/VBoxContainer"]
-visible = false
-custom_minimum_size = Vector2(200, 500)
-layout_mode = 2
-size_flags_vertical = 3
-
-[node name="VBoxContainer" type="VBoxContainer" parent="HBoxContainer2/SettingsPanel/VBoxContainer/Panel"]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-
-[node name="ScrollContainer" type="ScrollContainer" parent="HBoxContainer2/SettingsPanel/VBoxContainer/Panel/VBoxContainer"]
-layout_mode = 2
-size_flags_vertical = 3
-horizontal_scroll_mode = 0
-
-[node name="VBoxContainer" type="VBoxContainer" parent="HBoxContainer2/SettingsPanel/VBoxContainer/Panel/VBoxContainer/ScrollContainer"]
-layout_mode = 2
-size_flags_horizontal = 3
-
-[node name="UserSettings" type="MarginContainer" parent="HBoxContainer2/SettingsPanel/VBoxContainer/Panel/VBoxContainer/ScrollContainer/VBoxContainer"]
-layout_mode = 2
-
-[node name="VBoxContainer" type="VBoxContainer" parent="HBoxContainer2/SettingsPanel/VBoxContainer/Panel/VBoxContainer/ScrollContainer/VBoxContainer/UserSettings"]
-layout_mode = 2
-
-[node name="Title" type="Label" parent="HBoxContainer2/SettingsPanel/VBoxContainer/Panel/VBoxContainer/ScrollContainer/VBoxContainer/UserSettings/VBoxContainer"]
-layout_mode = 2
-size_flags_horizontal = 3
-text = "User settings"
-horizontal_alignment = 1
-
-[node name="ProfilePicture" type="MarginContainer" parent="HBoxContainer2/SettingsPanel/VBoxContainer/Panel/VBoxContainer/ScrollContainer/VBoxContainer/UserSettings/VBoxContainer"]
-custom_minimum_size = Vector2(100, 0)
-layout_mode = 2
-size_flags_horizontal = 0
-
-[node name="TextureRect" type="TextureRect" parent="HBoxContainer2/SettingsPanel/VBoxContainer/Panel/VBoxContainer/ScrollContainer/VBoxContainer/UserSettings/VBoxContainer/ProfilePicture"]
-layout_mode = 2
-texture = ExtResource("16_h3cnx")
-expand_mode = 4
-stretch_mode = 4
-
-[node name="Button" type="Button" parent="HBoxContainer2/SettingsPanel/VBoxContainer/Panel/VBoxContainer/ScrollContainer/VBoxContainer/UserSettings/VBoxContainer/ProfilePicture"]
-layout_mode = 2
-mouse_default_cursor_shape = 2
-flat = true
-
-[node name="LineEdit" type="LineEdit" parent="HBoxContainer2/SettingsPanel/VBoxContainer/Panel/VBoxContainer/ScrollContainer/VBoxContainer/UserSettings/VBoxContainer"]
-layout_mode = 2
-size_flags_horizontal = 3
-placeholder_text = "Username:"
-
-[node name="Save" type="Button" parent="HBoxContainer2/SettingsPanel/VBoxContainer/Panel/VBoxContainer"]
-layout_mode = 2
-text = "Save"
-
-[node name="AlertPanel" type="MarginContainer" parent="HBoxContainer2" node_paths=PackedStringArray("popupWindow", "alertContainer")]
-layout_mode = 2
-script = ExtResource("14_gf605")
-popupWindow = NodePath("VBoxContainer/Panel")
-alertContainer = NodePath("VBoxContainer/Panel/ScrollContainer/VBoxContainer")
-alertMessageScene = ExtResource("15_jvka1")
-
-[node name="VBoxContainer" type="VBoxContainer" parent="HBoxContainer2/AlertPanel"]
-layout_mode = 2
-
-[node name="Button" type="Button" parent="HBoxContainer2/AlertPanel/VBoxContainer"]
-custom_minimum_size = Vector2(35, 35)
-layout_mode = 2
-size_flags_horizontal = 8
-mouse_default_cursor_shape = 2
-text = "M"
-
-[node name="Panel" type="Panel" parent="HBoxContainer2/AlertPanel/VBoxContainer"]
-visible = false
-custom_minimum_size = Vector2(200, 0)
-layout_mode = 2
-size_flags_vertical = 3
-
-[node name="ScrollContainer" type="ScrollContainer" parent="HBoxContainer2/AlertPanel/VBoxContainer/Panel"]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-
-[node name="VBoxContainer" type="VBoxContainer" parent="HBoxContainer2/AlertPanel/VBoxContainer/Panel/ScrollContainer"]
-layout_mode = 2
-size_flags_horizontal = 3
-
+[connection signal="OnConnectedToSpace" from="Bugcord" to="HBoxContainer/ChatMain/VBoxContainer/HBoxContainer2/SpaceView" method="UpdateSpaceInfo"]
 [connection signal="OnEmbedMessageRecieved" from="Bugcord" to="HBoxContainer/ChatMain/VBoxContainer/MessageWindow" method="DisplayNewMediaMessage"]
 [connection signal="OnLoggedIn" from="Bugcord" to="HBoxContainer/LeftBar/Panel/VBoxContainer/ServerInput" method="SetupFromClientDict"]
 [connection signal="OnMessageRecieved" from="Bugcord" to="HBoxContainer/ChatMain/VBoxContainer/MessageWindow" method="DisplayNewMessage"]
@@ -640,6 +653,11 @@ size_flags_horizontal = 3
 [connection signal="OnSpaceInvite" from="HBoxContainer/LeftBar/Panel/VBoxContainer/Spaces" to="Popups/SpaceInviter" method="UpdateList"]
 [connection signal="OnSpacePicked" from="HBoxContainer/LeftBar/Panel/VBoxContainer/Spaces" to="Bugcord" method="ConnectSpace"]
 [connection signal="pressed" from="HBoxContainer/LeftBar/Panel/VBoxContainer/Spaces/VBoxContainer/NewSpace" to="Popups/MakeSpace" method="ToggleVisibility"]
+[connection signal="file_selected" from="HBoxContainer/ChatMain/VBoxContainer/HBoxContainer2/Extras/SettingsPanel/FileDialog" to="HBoxContainer/ChatMain/VBoxContainer/HBoxContainer2/Extras/SettingsPanel" method="OnProfileImagePicked"]
+[connection signal="pressed" from="HBoxContainer/ChatMain/VBoxContainer/HBoxContainer2/Extras/SettingsPanel/VBoxContainer/Button" to="HBoxContainer/ChatMain/VBoxContainer/HBoxContainer2/Extras/SettingsPanel/VBoxContainer/Button" method="Toggle"]
+[connection signal="pressed" from="HBoxContainer/ChatMain/VBoxContainer/HBoxContainer2/Extras/SettingsPanel/VBoxContainer/Panel/VBoxContainer/ScrollContainer/VBoxContainer/UserSettings/VBoxContainer/ProfilePicture/Button" to="HBoxContainer/ChatMain/VBoxContainer/HBoxContainer2/Extras/SettingsPanel" method="PickProfileImage"]
+[connection signal="pressed" from="HBoxContainer/ChatMain/VBoxContainer/HBoxContainer2/Extras/SettingsPanel/VBoxContainer/Panel/VBoxContainer/Save" to="HBoxContainer/ChatMain/VBoxContainer/HBoxContainer2/Extras/SettingsPanel" method="Save"]
+[connection signal="pressed" from="HBoxContainer/ChatMain/VBoxContainer/HBoxContainer2/Extras/AlertPanel/VBoxContainer/Button" to="HBoxContainer/ChatMain/VBoxContainer/HBoxContainer2/Extras/AlertPanel" method="ToggleVisible"]
 [connection signal="OnEmbedSubmit" from="HBoxContainer/ChatMain/VBoxContainer/MessageCreator" to="Bugcord" method="SubmitEmbed"]
 [connection signal="OnMessageSubmit" from="HBoxContainer/ChatMain/VBoxContainer/MessageCreator" to="Bugcord" method="PostMessage"]
 [connection signal="files_selected" from="HBoxContainer/ChatMain/VBoxContainer/MessageCreator/EmbedDialog" to="HBoxContainer/ChatMain/VBoxContainer/MessageCreator" method="EmbedFile"]
@@ -655,8 +673,3 @@ size_flags_horizontal = 3
 [connection signal="OnInvitePeer" from="Popups/SpaceInviter" to="Bugcord" method="SendSpaceInvite"]
 [connection signal="pressed" from="Popups/SpaceInviter/VBoxContainer/HBoxContainer/Refresh" to="Popups/SpaceInviter/VBoxContainer/HBoxContainer/Refresh" method="SetInvisible"]
 [connection signal="pressed" from="Popups/SpaceInviter/VBoxContainer/HBoxContainer/Close" to="Popups/SpaceInviter/VBoxContainer/HBoxContainer/Close" method="SetInvisible"]
-[connection signal="file_selected" from="HBoxContainer2/SettingsPanel/FileDialog" to="HBoxContainer2/SettingsPanel" method="OnProfileImagePicked"]
-[connection signal="pressed" from="HBoxContainer2/SettingsPanel/VBoxContainer/Button" to="HBoxContainer2/SettingsPanel/VBoxContainer/Button" method="Toggle"]
-[connection signal="pressed" from="HBoxContainer2/SettingsPanel/VBoxContainer/Panel/VBoxContainer/ScrollContainer/VBoxContainer/UserSettings/VBoxContainer/ProfilePicture/Button" to="HBoxContainer2/SettingsPanel" method="PickProfileImage"]
-[connection signal="pressed" from="HBoxContainer2/SettingsPanel/VBoxContainer/Panel/VBoxContainer/Save" to="HBoxContainer2/SettingsPanel" method="Save"]
-[connection signal="pressed" from="HBoxContainer2/AlertPanel/VBoxContainer/Button" to="HBoxContainer2/AlertPanel" method="ToggleVisible"]
