@@ -365,7 +365,7 @@ public partial class Bugcord : Node
 		tcpClient.ConnectToHost(urlHost, urlPort);
 
 		udpClient = new PacketPeerUdp();
-		udpClient.ConnectToHost(urlHost, urlPort);
+		udpClient.ConnectToHost(urlHost, urlPort + 1);
 	}
 
 	public void Send(byte[] data){
