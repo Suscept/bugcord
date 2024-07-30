@@ -143,6 +143,8 @@ public partial class Bugcord : Node
 		int vFrames = 0;
 		currentFrameAudio = new Vector2[audioFrames];
 		foreach (KeyValuePair<string, List<byte>> entry in incomingVoiceBuffer){
+			if (entry.Key == (string)clientUser["id"])
+				continue;
 			if (entry.Value.Count < audioFrames)
 				continue;
 
