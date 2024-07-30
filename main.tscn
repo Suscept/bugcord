@@ -22,8 +22,7 @@
 [ext_resource type="Texture2D" uid="uid://6j35bsdb4w8r" path="res://icon.svg" id="16_h3cnx"]
 
 [sub_resource type="AudioStreamGenerator" id="AudioStreamGenerator_6djje"]
-mix_rate = 48000.0
-buffer_length = 2.0
+buffer_length = 0.1
 
 [node name="Main" type="Control"]
 layout_mode = 3

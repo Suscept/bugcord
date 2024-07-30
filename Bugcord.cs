@@ -37,6 +37,7 @@ public partial class Bugcord : Node
 
 	public const int minAudioFrames = 2048;
 	public const int maxAudioFrames = 4096;
+	public const int audioFrames = 4096;
 
 	public const int defaultPort = 25987;
 
@@ -54,6 +55,8 @@ public partial class Bugcord : Node
 	public static System.Collections.Generic.Dictionary<string, System.Collections.Generic.Dictionary<string, List<byte[]>>> incomingFileBuffer = new();
 	public static Dictionary cacheIndex;
 
+	public static System.Collections.Generic.Dictionary<string, List<byte>> incomingVoiceBuffer = new();
+
 	public static string selectedSpaceId;
 	public static string selectedKeyId;
 
@@ -68,7 +71,7 @@ public partial class Bugcord : Node
 	private static AudioEffectCapture recordBusCapture;
 	private static AudioStreamGeneratorPlayback voicePlaybackBus;
 
-	private static List<Vector2> currentFrameAudio = new List<Vector2>();
+	private static Vector2[] currentFrameAudio;
 
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
@@ -126,15 +129,33 @@ public partial class Bugcord : Node
 			return;
 		}
 
+		if (voiceChatToggle.ButtonPressed){
+			Vector2[] vBuffer = GetVoiceBuffer(audioFrames);
+			if (vBuffer != null)
+				Send(BuildVoicePacket(vBuffer), true);
+		}
+
 		while (udpClient.GetAvailablePacketCount() > 0){
-			ProcessIncomingPacket(udpClient.GetPacket());
+			byte[] p = udpClient.GetPacket();
+			ProcessIncomingPacket(p);
+		}
+
+		int vFrames = 0;
+		currentFrameAudio = new Vector2[audioFrames];
+		foreach (KeyValuePair<string, List<byte>> entry in incomingVoiceBuffer){
+			if (entry.Value.Count < audioFrames)
+				continue;
+
+			for (int i = 0; i < currentFrameAudio.Length; i++){
+				float f = ByteToFloat(entry.Value[i]);
+				vFrames++;
+				currentFrameAudio[i] += new Vector2(f, f);
+			}
+			entry.Value.RemoveRange(0, audioFrames);
 		}
 		
-		voicePlaybackBus.PushBuffer(currentFrameAudio.ToArray());
-		currentFrameAudio.Clear();
-
-		if (voiceChatToggle.ButtonPressed)
-			Send(BuildVoicePacket(GetVoiceBuffer()), true);
+		if (vFrames > 0)
+			voicePlaybackBus.PushBuffer(currentFrameAudio);
 	}
 
     public override void _Notification(int what)
@@ -173,6 +194,17 @@ public partial class Bugcord : Node
 		}
 		
 		return new Vector2[0];
+	}
+
+	public Vector2[] GetVoiceBuffer(int bufferSize){
+		int framesAvailable = recordBusCapture.GetFramesAvailable();
+		
+		if (framesAvailable >= bufferSize){
+			Vector2[] frames = recordBusCapture.GetBuffer(bufferSize);
+			return frames;
+		}
+		
+		return null;
 	}
 
 	#endregion
@@ -610,16 +642,11 @@ public partial class Bugcord : Node
 	private void ProcessVoicePacket(byte[] packet){
 		byte[][] dataSpans = ReadDataSpans(packet, 1);
 
-		byte[] framesEncoded = dataSpans[0];
-		Vector2[] voiceFrames = new Vector2[framesEncoded.Length];
+		string senderId = dataSpans[0].GetStringFromUtf8();
+		byte[] framesEncoded = dataSpans[1];
 
-		for (int i = 0; i < framesEncoded.Length; i++){
-			float f = ByteToFloat(framesEncoded[i]);
-
-			voiceFrames[i] = new Vector2(f, f);
-		}
-
-		voicePlaybackBus.PushBuffer(voiceFrames);
+		incomingVoiceBuffer.TryAdd(senderId, new List<byte>());
+		incomingVoiceBuffer[senderId].AddRange(framesEncoded);
 	}
 
 	private void ProcessFilePacket(byte[] packet){
@@ -834,6 +861,7 @@ public partial class Bugcord : Node
 			codedFrames[i] = f;
 		}
 
+		packetBytes.AddRange(MakeDataSpan(((string)clientUser["id"]).ToUtf8Buffer()));
 		packetBytes.AddRange(MakeDataSpan(codedFrames, 0));
 
 		return packetBytes.ToArray();
