@@ -23,6 +23,13 @@ public partial class KeyService : Node
 	}
 
 	public void KeysSaveToFile(){
+		if (!FileAccess.FileExists(knownKeysPath)){
+			FileAccess keyList = FileAccess.Open(knownKeysPath, FileAccess.ModeFlags.Write);
+			Godot.Collections.Dictionary<string, string> keyDict = new();
+			keyList.StoreString(Json.Stringify(keyDict));
+			keyList.Close();
+		}
+
 		FileAccess keyFile = FileAccess.Open(knownKeysPath, FileAccess.ModeFlags.Write);
 
 		Godot.Collections.Dictionary keysB64 = new Godot.Collections.Dictionary();
@@ -36,6 +43,10 @@ public partial class KeyService : Node
 	}
 
 	public void KeysLoadFromFile(){
+		if (!FileAccess.FileExists(knownKeysPath)){
+			return;
+		}
+		
 		FileAccess keyFile = FileAccess.Open(knownKeysPath, FileAccess.ModeFlags.Read);
 		string keyFileRaw = keyFile.GetAsText();
 

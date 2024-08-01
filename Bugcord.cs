@@ -328,9 +328,6 @@ public partial class Bugcord : Node
 		if (!FileAccess.FileExists(clientSpacesPath)){
 			MakeNewSpaceFile();
 		}
-		if (!FileAccess.FileExists(knownKeysPath)){
-			MakeNewAesKeyFile();
-		}
 
 		userService.LoadFromFile();
 
@@ -376,13 +373,6 @@ public partial class Bugcord : Node
 		Godot.Collections.Dictionary<string, string> spaceDict = new();
 		spaceList.StoreString(Json.Stringify(spaceDict));
 		spaceList.Close();
-	}
-
-	private void MakeNewAesKeyFile(){
-		FileAccess keyList = FileAccess.Open(knownKeysPath, FileAccess.ModeFlags.Write);
-		Godot.Collections.Dictionary<string, string> keyDict = new();
-		keyList.StoreString(Json.Stringify(keyDict));
-		keyList.Close();
 	}
 
 	public string GetClientId(){
