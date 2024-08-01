@@ -9,19 +9,20 @@ public partial class SettingsPanel : MarginContainer
 
 	private string pickedProfileImageDir;
 	private FileService fileService;
+	private UserService userService;
 
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
 	{	
 		fileService = GetNode<FileService>("/root/Main/Bugcord/FileService");
+		userService = GetNode<UserService>("/root/Main/Bugcord/UserService");
 
-		string selfPfpId = (string)Bugcord.clientUser["id"] + "-pfp";
-		string username = (string)Bugcord.clientUser["username"];
+		string selfPfpId = userService.userId + "-pfp";
 		if (fileService.IsFileInCache(selfPfpId)){
 			DisplayProfileImage(fileService.cacheIndex[selfPfpId]);
 		}
 
-		usernameSetting.Text = username;
+		usernameSetting.Text = userService.userName;
 	}
 
 	// Called every frame. 'delta' is the elapsed time since the previous frame.
@@ -34,8 +35,8 @@ public partial class SettingsPanel : MarginContainer
 		// 	Bugcord.PrepareEmbed(pickedProfileImageDir, (string)Bugcord.clientUser["id"] + "-pfp", false);
 		// }
 
-		Bugcord.clientUser["username"] = usernameSetting.Text;
-		Bugcord.SaveUser();
+		userService.userName = usernameSetting.Text;
+		userService.SaveToFile();
 	}
 
 	public void PickProfileImage(){

@@ -13,10 +13,12 @@ public partial class SpaceInviter : Panel
 	private string viewingSpace;
 
 	private List<Control> inviteEntries = new List<Control>();
+	private UserService userService;
 
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
 	{
+		userService = GetNode<UserService>("/root/Main/Bugcord/UserService");
 	}
 
 	// Called every frame. 'delta' is the elapsed time since the previous frame.
@@ -38,7 +40,7 @@ public partial class SpaceInviter : Panel
 		inviteEntries.Clear();
 
 		foreach (var (guid, info) in Bugcord.peers){
-			if ((string)guid == (string)Bugcord.clientUser["id"])
+			if ((string)guid == userService.userId)
 				continue;
 
 			InvitePageEntry entry = inviteEntry.Instantiate<InvitePageEntry>();

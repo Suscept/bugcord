@@ -1,4 +1,4 @@
-[gd_scene load_steps=24 format=3 uid="uid://b4h65lw1u6cii"]
+[gd_scene load_steps=25 format=3 uid="uid://b4h65lw1u6cii"]
 
 [ext_resource type="Script" path="res://Bugcord.cs" id="1_jyk1e"]
 [ext_resource type="PackedScene" uid="uid://c0hr25wlgd0kt" path="res://message.tscn" id="1_ki7uw"]
@@ -8,6 +8,7 @@
 [ext_resource type="Script" path="res://KeyService.cs" id="3_0bq1u"]
 [ext_resource type="Script" path="res://SpacesList.cs" id="3_rhloj"]
 [ext_resource type="PackedScene" uid="uid://cjop4t0huwwq0" path="res://space.tscn" id="4_70f0h"]
+[ext_resource type="Script" path="res://UserService.cs" id="4_fd14y"]
 [ext_resource type="Script" path="res://MessageCreator.cs" id="4_weho3"]
 [ext_resource type="Script" path="res://SpaceView.cs" id="5_400hf"]
 [ext_resource type="Script" path="res://RegisterWindow.cs" id="6_jgjb0"]
@@ -56,6 +57,9 @@ script = ExtResource("2_nt2xh")
 
 [node name="KeyService" type="Node" parent="Bugcord"]
 script = ExtResource("3_0bq1u")
+
+[node name="UserService" type="Node" parent="Bugcord"]
+script = ExtResource("4_fd14y")
 
 [node name="HBoxContainer" type="HBoxContainer" parent="."]
 layout_mode = 1
@@ -658,8 +662,9 @@ size_flags_horizontal = 3
 
 [connection signal="OnConnectedToSpace" from="Bugcord" to="HBoxContainer/ChatMain/VBoxContainer/HBoxContainer2/SpaceView" method="UpdateSpaceInfo"]
 [connection signal="OnEmbedMessageRecieved" from="Bugcord" to="HBoxContainer/ChatMain/VBoxContainer/MessageWindow" method="DisplayNewMediaMessage"]
-[connection signal="OnLoggedIn" from="Bugcord" to="HBoxContainer/LeftBar/Panel/VBoxContainer/ServerInput" method="SetupFromClientDict"]
+[connection signal="OnLoggedIn" from="Bugcord" to="HBoxContainer/LeftBar/Panel/VBoxContainer/ServerInput" method="OnLoggedIn"]
 [connection signal="OnMessageRecieved" from="Bugcord" to="HBoxContainer/ChatMain/VBoxContainer/MessageWindow" method="DisplayNewMessage"]
+[connection signal="OnLoggedIn" from="Bugcord/UserService" to="HBoxContainer/LeftBar/Panel/VBoxContainer/ServerInput" method="OnLoggedIn"]
 [connection signal="OnAutoconnectSettingChanged" from="HBoxContainer/LeftBar/Panel/VBoxContainer/ServerInput" to="Bugcord" method="SetAutoConnect"]
 [connection signal="OnServerSelected" from="HBoxContainer/LeftBar/Panel/VBoxContainer/ServerInput" to="Bugcord" method="Connect"]
 [connection signal="pressed" from="HBoxContainer/LeftBar/Panel/VBoxContainer/ServerInput/VBoxContainer/ServerInput/Button" to="HBoxContainer/LeftBar/Panel/VBoxContainer/ServerInput" method="SelectServer"]

@@ -20,11 +20,8 @@ public partial class Bugcord : Node
 
 	[Signal] public delegate void OnMessageRecievedEventHandler(Dictionary message);
 	[Signal] public delegate void OnEmbedMessageRecievedEventHandler(Dictionary message);
-	[Signal] public delegate void OnLoggedInEventHandler(Dictionary client);
 	[Signal] public delegate void OnConnectedToSpaceEventHandler(string spaceId, string spaceName);
 
-	public const string clientSavePath = "user://client.data";
-	public const string clientKeyPath = "user://client.auth";
 	public const string clientPeerPath = "user://peers.json";
 	public const string clientSpacesPath = "user://spaces.json";
 
@@ -38,8 +35,6 @@ public partial class Bugcord : Node
 
 	public const int filePacketSize = 4096;
 
-	public static Dictionary clientUser;
-
 	public static Dictionary peers;
 	public static Dictionary spaces;
 
@@ -51,7 +46,6 @@ public partial class Bugcord : Node
 	public static string selectedSpaceId;
 	public static string selectedKeyId;
 
-	private static RSA clientAuth;
 	private static StreamPeerTcp tcpClient;
 	private static PacketPeerUdp udpClient;
 
@@ -66,6 +60,7 @@ public partial class Bugcord : Node
 
 	private FileService fileService;
 	private KeyService keyService;
+	private UserService userService;
 
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
@@ -76,6 +71,7 @@ public partial class Bugcord : Node
 
 		fileService = GetNode<FileService>("FileService");
 		keyService = GetNode<KeyService>("KeyService");
+		userService = GetNode<UserService>("UserService");
 
 		if (!LogIn()){
 			registerWindow.Visible = true;
@@ -85,7 +81,7 @@ public partial class Bugcord : Node
 	// Called every frame. 'delta' is the elapsed time since the previous frame.
 	public override void _Process(double delta)
 	{
-		if (tcpClient == null || clientAuth == null){
+		if (tcpClient == null || keyService.userAuthentication == null){
 			return;
 		}
 		
@@ -140,7 +136,7 @@ public partial class Bugcord : Node
 		int vFrames = 0;
 		currentFrameAudio = new Vector2[audioFrames];
 		foreach (KeyValuePair<string, List<byte>> entry in incomingVoiceBuffer){
-			if (entry.Key == (string)clientUser["id"])
+			if (entry.Key == userService.userId)
 				continue;
 			if (entry.Value.Count < audioFrames)
 				continue;
@@ -262,13 +258,13 @@ public partial class Bugcord : Node
 	#region connection & websocket interaction
 
 	public void Connect(string url){
-		if (clientAuth == null){
+		if (keyService.userAuthentication == null){
 			GD.Print("no auth");
 			return;
 		}
 
-		clientUser["defaultConnectServer"] = url;
-		SaveUser();
+		userService.savedServerIp = url;
+		userService.SaveToFile();
 
 		string[] urlSplit = url.Split(":");
 		string urlHost = urlSplit[0];
@@ -303,13 +299,9 @@ public partial class Bugcord : Node
 	}
 
 	public void SetAutoConnect(bool setTrue){
-		if (setTrue){
-			clientUser["autoConnectToServer"] = "true";
-		}else{
-			clientUser["autoConnectToServer"] = "false";
-		}
+		userService.autoConnectToServer = setTrue;
 
-		SaveUser();
+		userService.SaveToFile();
 	}
 
 	public void OnConnected(){
@@ -323,10 +315,10 @@ public partial class Bugcord : Node
 	#region user file related
 
 	public bool LogIn(){
-		if (!FileAccess.FileExists(clientSavePath)){
+		if (!FileAccess.FileExists(UserService.clientSavePath)){
 			return false;
 		}
-		if (!FileAccess.FileExists(clientKeyPath)){
+		if (!FileAccess.FileExists(KeyService.clientKeyPath)){
 			return false;
 		}
 
@@ -340,43 +332,34 @@ public partial class Bugcord : Node
 			MakeNewAesKeyFile();
 		}
 
-		LoadUser();
+		userService.LoadFromFile();
 
 		// User RSA key
-		LoadPersonalKey();
+		keyService.AuthLoadFromFile();
 
 		LoadPeers();
 
 		LoadSpaces();
 
-		LoadKeys();
+		keyService.KeysLoadFromFile();
 
-		EmitSignal(SignalName.OnLoggedIn, clientUser);
+		userService.EmitSignal(UserService.SignalName.OnLoggedIn);
 
-		if ((string)clientUser["autoConnectToServer"] == "true"){
-			Connect((string)clientUser["defaultConnectServer"]);
+		if (userService.autoConnectToServer){
+			Connect(userService.savedServerIp);
 		}
 
 		return true;
 	}
 
 	public void CreateUserFile(string username, string password){
-		GD.Print("creating new user.. " + username);
+		GD.Print("Creating new user.. " + username);
 
-		clientUser = new Dictionary
-		{
-			{"id", Guid.NewGuid().ToString()},
-			{ "username", username },
-			{"defaultConnectServer", "75.71.255.149:25987"},
-			{"autoConnectToServer", "false"}
-		};
-		SaveUser();
+		userService.MakeNewUser(username, password);
+		userService.SaveToFile();
 
-		clientAuth = new RSACryptoServiceProvider(2048);
-		SavePersonalKey();
-
-		MakeNewPeerFile();
-		MakeNewSpaceFile();
+		keyService.NewUserAuth();
+		keyService.AuthSaveToFile();
 
 		LogIn();
 	}
@@ -403,7 +386,7 @@ public partial class Bugcord : Node
 	}
 
 	public string GetClientId(){
-		return (string)clientUser["id"];
+		return userService.userId;
 	}
 
 	#endregion
@@ -421,7 +404,7 @@ public partial class Bugcord : Node
 
 		keyService.myKeys.Add(keyGuid, spaceKey.Key);
 		spaces.Add(Guid.NewGuid().ToString(), spaceData);
-		SaveKeys();
+		keyService.KeysSaveToFile();
 		SaveSpaces();
 	}
 
@@ -604,7 +587,7 @@ public partial class Bugcord : Node
 		}
 
 		byte[] spaceKey = new byte[32]; // Size of AES key in bytes. 256 bits = 32 bytes
-		bool couldDecrypt = clientAuth.TryDecrypt(encryptedSpaceKey, spaceKey, RSAEncryptionPadding.Pkcs1, out int bytesWritten);
+		bool couldDecrypt = keyService.userAuthentication.TryDecrypt(encryptedSpaceKey, spaceKey, RSAEncryptionPadding.Pkcs1, out int bytesWritten);
 
 		if (couldDecrypt){
 			Dictionary spaceData = new Dictionary(){
@@ -614,7 +597,7 @@ public partial class Bugcord : Node
 			
 			keyService.myKeys.Add(keyId.GetStringFromUtf8(), spaceKey);
 			spaces.Add(uuid.GetStringFromUtf8(), spaceData);
-			SaveKeys();
+			keyService.KeysSaveToFile();
 			SaveSpaces();
 		}
 	}
@@ -706,7 +689,7 @@ public partial class Bugcord : Node
 			codedFrames[i] = f;
 		}
 
-		packetBytes.AddRange(MakeDataSpan(((string)clientUser["id"]).ToUtf8Buffer()));
+		packetBytes.AddRange(MakeDataSpan(userService.userId.ToUtf8Buffer()));
 		packetBytes.AddRange(MakeDataSpan(codedFrames, 0));
 
 		return packetBytes.ToArray();
@@ -777,7 +760,7 @@ public partial class Bugcord : Node
 		packetList.AddRange(initVector);
 		packetList.AddRange(MakeDataSpan(keyId));
 		packetList.AddRange(MakeDataSpan(encryptedMessage));
-		packetList.AddRange(MakeDataSpan(((string)clientUser["id"]).ToUtf8Buffer()));
+		packetList.AddRange(MakeDataSpan(userService.userId.ToUtf8Buffer()));
 
 		return packetList.ToArray();
 	}
@@ -787,9 +770,9 @@ public partial class Bugcord : Node
 			1
 		};
 
-		byte[] publicKey = clientAuth.ExportRSAPublicKey();
-		byte[] username = ((string)clientUser["username"]).ToUtf8Buffer();
-		byte[] guid = ((string)clientUser["id"]).ToUtf8Buffer();
+		byte[] publicKey = keyService.userAuthentication.ExportRSAPublicKey();
+		byte[] username = userService.userName.ToUtf8Buffer();
+		byte[] guid = userService.userId.ToUtf8Buffer();
 		
 		packetBytes.AddRange(MakeDataSpan(guid));
 		packetBytes.AddRange(MakeDataSpan(username));
@@ -858,65 +841,6 @@ public partial class Bugcord : Node
 		userSpaces.Close();
 
 		spacesList.Update(spaces);
-	}
-
-	public static void SaveUser(){
-		FileAccess userFile = FileAccess.Open(clientSavePath, FileAccess.ModeFlags.Write);
-		userFile.Seek(0);
-		userFile.StoreLine(Json.Stringify(clientUser));
-		userFile.Close();
-	}
-
-	public static void LoadUser(){
-		FileAccess userData = FileAccess.Open(clientSavePath, FileAccess.ModeFlags.Read);
-		string userfileRaw = userData.GetAsText();
-		GD.Print("user: " + userfileRaw);
-		Variant userParsed = Json.ParseString(userfileRaw);
-		clientUser = (Dictionary)userParsed.Obj;
-	}
-
-	private void SaveKeys(){
-		FileAccess keyFile = FileAccess.Open(knownKeysPath, FileAccess.ModeFlags.Write);
-
-		Dictionary keysB64 = new Dictionary();
-		foreach (KeyValuePair<string, byte[]> entry in keyService.myKeys){
-			keysB64.Add(entry.Key, ToBase64(entry.Value));
-		}
-
-		keyFile.Seek(0);
-		keyFile.StoreLine(Json.Stringify(keysB64));
-		keyFile.Close();
-	}
-
-	private void LoadKeys(){
-		FileAccess keyFile = FileAccess.Open(knownKeysPath, FileAccess.ModeFlags.Read);
-		string keyFileRaw = keyFile.GetAsText();
-
-		keyService.myKeys = new System.Collections.Generic.Dictionary<string, byte[]>();
-
-		foreach (KeyValuePair<Variant, Variant> entry in (Dictionary)Json.ParseString(keyFileRaw)){
-			keyService.myKeys.Add((string)entry.Key, FromBase64((string)entry.Value));
-		}
-
-		keyFile.Close();
-	}
-
-	private void SavePersonalKey(){
-		FileAccess newKey = FileAccess.Open(clientKeyPath, FileAccess.ModeFlags.Write);
-		
-		byte[] privateKey = clientAuth.ExportRSAPrivateKey();
-
-		newKey.StoreBuffer(privateKey);
-		newKey.Close();
-	}
-
-	private void LoadPersonalKey(){
-		FileAccess userKeyFile = FileAccess.Open(clientKeyPath, FileAccess.ModeFlags.Read);
-		long keyLength = (long)userKeyFile.GetLength();
-
-		clientAuth = new RSACryptoServiceProvider(2048);
-		clientAuth.ImportRSAPrivateKey(userKeyFile.GetBuffer(keyLength), out int bytesRead);
-		userKeyFile.Close();
 	}
 
 	#endregion
@@ -1037,18 +961,6 @@ public partial class Bugcord : Node
 		foreach (byte b in bytes){
 			GD.Print("  " + b);
 		}
-	}
-
-	public static byte[] SignData(byte[] data){
-		byte[] signature = clientAuth.SignData(data, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
-		return signature;
-	}
-
-	public static bool VerifySigniture(byte[] data, byte[] signature, byte[] signeeKey){
-		RSA signetureVerifier = RSA.Create();
-		signetureVerifier.ImportRSAPublicKey(signeeKey, out int bytesRead);
-		
-		return signetureVerifier.VerifyData(data, signature, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
 	}
 
 	public static float ByteToFloat(byte b){
