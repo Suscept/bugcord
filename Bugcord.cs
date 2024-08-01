@@ -21,8 +21,6 @@ public partial class Bugcord : Node
 	[Signal] public delegate void OnMessageRecievedEventHandler(Dictionary message);
 	[Signal] public delegate void OnEmbedMessageRecievedEventHandler(Dictionary message);
 	[Signal] public delegate void OnLoggedInEventHandler(Dictionary client);
-	[Signal] public delegate void OnEmbedCachedEventHandler(string id);
-	[Signal] public delegate void OnFileBufferUpdatedEventHandler(string id, int partsHad, int partsTotal);
 	[Signal] public delegate void OnConnectedToSpaceEventHandler(string spaceId, string spaceName);
 
 	public const string clientSavePath = "user://client.data";
@@ -31,9 +29,6 @@ public partial class Bugcord : Node
 	public const string clientSpacesPath = "user://spaces.json";
 
 	public const string knownKeysPath = "user://keys.auth";
-
-	public const string cachePath = "user://cache/";
-	public const string dataServePath = "user://serve/";
 
 	public const int minAudioFrames = 2048;
 	public const int maxAudioFrames = 4096;
@@ -48,12 +43,8 @@ public partial class Bugcord : Node
 	public static Dictionary peers;
 	public static Dictionary spaces;
 
-	public static Dictionary aesKeys;
-
 	public static List<byte> incomingPacketBuffer = new List<byte>();
 	public static List<byte[]> outgoingPacketBuffer = new List<byte[]>();
-	public static System.Collections.Generic.Dictionary<string, System.Collections.Generic.Dictionary<string, List<byte[]>>> incomingFileBuffer = new();
-	public static Dictionary cacheIndex;
 
 	public static System.Collections.Generic.Dictionary<string, List<byte>> incomingVoiceBuffer = new();
 
@@ -73,12 +64,18 @@ public partial class Bugcord : Node
 
 	private static Vector2[] currentFrameAudio;
 
+	private FileService fileService;
+	private KeyService keyService;
+
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
 	{
 		instance = this;
 
 		registerWindow.Visible = false;
+
+		fileService = GetNode<FileService>("FileService");
+		keyService = GetNode<KeyService>("KeyService");
 
 		if (!LogIn()){
 			registerWindow.Visible = true;
@@ -216,131 +213,17 @@ public partial class Bugcord : Node
     // prepares a file to be served and sends an embed linked message
     public void SubmitEmbed(string directory){
 		string guidString = Guid.NewGuid().ToString();
-
-		PrepareEmbed(directory, guidString);
-
-		Send(BuildEmbedMessage(guidString));
-	}
-
-	// encrypts a copy of the file with its uuid, init vector, and true filename stored as a dataspan at the start
-	// places the plaintext version in cache (does not include filename or uuid dataspan)
-	// encrypted version is placed in client's servable folder with the filename of the file's uuid
-	public static void PrepareEmbed(string directory, string guid, bool encrypted){
-		FileAccess embedFile = FileAccess.Open(directory, FileAccess.ModeFlags.Read);
-		
-		byte[] embedData = embedFile.GetBuffer((long)embedFile.GetLength());
-		GD.Print(embedData.Length);
 		string filename = System.IO.Path.GetFileName(directory);
 
 		GD.Print("preparing embedded file " + filename);
+		
+		FileAccess embedFile = FileAccess.Open(directory, FileAccess.ModeFlags.Read);
+		byte[] embedData = embedFile.GetBuffer((long)embedFile.GetLength());
+		byte[] servableData = fileService.TransformRealFile(embedData, filename, guidString, true);
+		fileService.WriteToCache(embedData, filename, guidString);
+		fileService.WriteToServable(servableData, guidString);
 
-		byte[] fileGuid = guid.ToUtf8Buffer();
-		List<byte> serveCopyData = new List<byte>();
-
-		if (encrypted){
-			byte[] iv = GetRandomBytes(16);
-			byte[] encryptedData = AESEncrypt(embedData, GetSpaceKey(selectedSpaceId), iv);
-
-			serveCopyData.Add(0);
-
-			serveCopyData.AddRange(MakeDataSpan(fileGuid));
-			serveCopyData.AddRange(MakeDataSpan(iv));
-			serveCopyData.AddRange(MakeDataSpan(selectedKeyId.ToUtf8Buffer()));
-			serveCopyData.AddRange(MakeDataSpan(filename.ToUtf8Buffer()));
-			serveCopyData.AddRange(MakeDataSpan(encryptedData, 0)); // cant use dataspans for this since the files length in bytes may be more than 2^16
-		}else{
-			serveCopyData.Add(1); // indicate no encryption
-
-			serveCopyData.AddRange(MakeDataSpan(fileGuid));
-			serveCopyData.AddRange(MakeDataSpan(filename.ToUtf8Buffer()));
-			serveCopyData.AddRange(MakeDataSpan(embedData, 0));
-		}
-
-		WriteToCache(embedData, filename, guid);
-		WriteToServable(serveCopyData.ToArray(), guid);
-	}
-
-	public static void PrepareEmbed(string directory, string guid){
-		PrepareEmbed(directory, guid, true);
-	}
-
-	public bool CacheServedFile(byte[] file){
-		byte[][] dataSpans = ReadDataSpans(file, 1);
-		byte flags = file[0];
-
-		switch (flags)
-		{
-			case 0: // Encrypted
-				string filename = dataSpans[3].GetStringFromUtf8();
-				string fileGuid = dataSpans[0].GetStringFromUtf8();
-
-				string keyId = dataSpans[2].GetStringFromUtf8();
-
-				if (!aesKeys.ContainsKey(keyId))
-					return false;
-
-				byte[] key = (byte[])aesKeys[keyId];
-				byte[] iv = dataSpans[1];
-
-				byte[] decryptedData = AESDecrypt(dataSpans[4], key, iv);
-
-				WriteToCache(decryptedData, filename, fileGuid);
-
-				break;
-			case 1: // Not encrypted file
-				filename = dataSpans[1].GetStringFromUtf8();
-				fileGuid = dataSpans[0].GetStringFromUtf8();
-
-				WriteToCache(dataSpans[2], filename, fileGuid);
-
-				break;
-		}
-
-		return true;
-	}
-
-	private static void WriteToServable(byte[] data, string guid){
-		if (!DirAccess.DirExistsAbsolute(dataServePath)){
-			DirAccess cacheDir = DirAccess.Open("user://");
-			cacheDir.MakeDir("serve");
-		}
-
-		FileAccess serveCopy = FileAccess.Open(dataServePath + guid + ".file", FileAccess.ModeFlags.Write);
-		serveCopy.StoreBuffer(data);
-
-		serveCopy.Close();
-	}
-
-	private static void WriteToCache(byte[] data, string filename, string guid){
-		if (!DirAccess.DirExistsAbsolute(cachePath)){
-			DirAccess cacheDir = DirAccess.Open("user://");
-			cacheDir.MakeDir("cache");
-		}
-
-		string path = cachePath + filename;
-
-		GD.Print("writing to cache " + path);
-
-		FileAccess cacheCopy = FileAccess.Open(path, FileAccess.ModeFlags.Write);
-		cacheCopy.StoreBuffer(data);
-
-		cacheCopy.Close();
-
-		cacheIndex.Add(guid, path);
-
-		instance.EmitSignal(SignalName.OnEmbedCached, guid);
-	}
-
-	private byte[] GetServableData(string guid){
-		FileAccess file = FileAccess.Open(dataServePath + guid + ".file", FileAccess.ModeFlags.Read);
-		return file.GetBuffer((long)file.GetLength());
-	}
-
-	private bool HasServableFile(string guid){
-		FileAccess file = FileAccess.Open(dataServePath + guid + ".file", FileAccess.ModeFlags.Read);
-		if (file == null)
-			return false;
-		return true;
+		Send(BuildEmbedMessage(guidString));
 	}
 
 	#endregion
@@ -470,8 +353,6 @@ public partial class Bugcord : Node
 
 		EmitSignal(SignalName.OnLoggedIn, clientUser);
 
-		cacheIndex = new Dictionary();
-
 		if ((string)clientUser["autoConnectToServer"] == "true"){
 			Connect((string)clientUser["defaultConnectServer"]);
 		}
@@ -538,7 +419,7 @@ public partial class Bugcord : Node
 			{"keyId", keyGuid}
 		};
 
-		aesKeys.Add(keyGuid, spaceKey.Key);
+		keyService.myKeys.Add(keyGuid, spaceKey.Key);
 		spaces.Add(Guid.NewGuid().ToString(), spaceData);
 		SaveKeys();
 		SaveSpaces();
@@ -567,8 +448,8 @@ public partial class Bugcord : Node
 		return (Dictionary)spaces[spaceId];
 	}
 
-	private static byte[] GetSpaceKey(string spaceId){
-		return (byte[])aesKeys[GetSpaceKeyId(spaceId)];
+	public byte[] GetSpaceKey(string spaceId){
+		return keyService.myKeys[GetSpaceKeyId(spaceId)];
 	}
 
 	private static string GetSpaceKeyId(string spaceId){
@@ -663,49 +544,11 @@ public partial class Bugcord : Node
 		string senderGuid = dataSpans[1].GetStringFromUtf8();
 		byte[] fileData = dataSpans[2];
 
-		if (cacheIndex.ContainsKey(fileGuid)){ // File already in cache
+		if (fileService.IsFileInCache(fileGuid)){ // File already in cache
 			return;
 		}
 
-		// Is the file known?
-		if (!incomingFileBuffer.ContainsKey(fileGuid)){
-            System.Collections.Generic.Dictionary<string, List<byte[]>> recievingFile = new();
-            incomingFileBuffer.Add(fileGuid, recievingFile);
-		}
-
-		// Has this user sent parts before?
-		if (!incomingFileBuffer[fileGuid].ContainsKey(senderGuid)){
-			List<byte[]> bytesList = new List<byte[]>();
-			byte[][] bytes = new byte[filePartMax][];
-			bytesList.AddRange(bytes);
-			incomingFileBuffer[fileGuid].Add(senderGuid, bytesList); 
-		}
-	
-		incomingFileBuffer[fileGuid][senderGuid][filePart] = fileData;
-
-		int filePartsRecieved = 0;
-		int filePartsTotal = incomingFileBuffer[fileGuid][senderGuid].Count;
-		for (int i = 0; i < filePartsTotal; i++){
-			if (incomingFileBuffer[fileGuid][senderGuid][i] != null){
-				filePartsRecieved++;
-			}
-		}
-
-		EmitSignal(SignalName.OnFileBufferUpdated, fileGuid, filePartsRecieved, filePartsTotal);
-
-		if (filePartsRecieved < filePartsTotal){
-			return;
-		}
-
-		// No parts are missing so concatinate everything and save and cache
-		List<byte> fullFile = new();
-		for (int i = 0; i < incomingFileBuffer[fileGuid][senderGuid].Count; i++){
-			fullFile.AddRange(incomingFileBuffer[fileGuid][senderGuid][i]);
-		}
-		incomingFileBuffer[fileGuid].Remove(senderGuid);
-
-		WriteToServable(fullFile.ToArray(), fileGuid);
-		CacheServedFile(fullFile.ToArray());
+		fileService.UpdateFileBuffer(filePart, filePartMax, fileGuid, senderGuid, fileData);
 	}
 
 	private void ProcessFileRequest(byte[] packet){
@@ -716,10 +559,10 @@ public partial class Bugcord : Node
 
 		switch (subtype){
 			case 0:
-				if (!HasServableFile(fileGuid)) // stop if we dont have this file
+				if (!fileService.HasServableFile(fileGuid)) // stop if we dont have this file
 					return;
 
-				byte[][] servePartitions = MakePartitions(GetServableData(fileGuid), filePacketSize);
+				byte[][] servePartitions = MakePartitions(fileService.GetServableData(fileGuid), filePacketSize);
 				for(int i = 0; i < servePartitions.Length; i++){
 					outgoingPacketBuffer.Add(BuildFilePacket(fileGuid, i, servePartitions.Length, servePartitions[i]));
 				}
@@ -737,8 +580,8 @@ public partial class Bugcord : Node
 
 		DisplayMediaMessage(embedId, senderId);
 
-		if (cacheIndex.ContainsKey(embedId)){
-			EmitSignal(SignalName.OnEmbedCached, embedId); // Call the embed message ui to update and load the image from cache
+		if (fileService.IsFileInCache(embedId)){
+			fileService.EmitSignal(FileService.SignalName.OnCacheChanged, embedId); // Call the embed message ui to update and load the image from cache
 			return;
 		}
 
@@ -769,7 +612,7 @@ public partial class Bugcord : Node
 				{"keyId", keyId.GetStringFromUtf8()}
 			};
 			
-			aesKeys.Add(keyId.GetStringFromUtf8(), spaceKey);
+			keyService.myKeys.Add(keyId.GetStringFromUtf8(), spaceKey);
 			spaces.Add(uuid.GetStringFromUtf8(), spaceData);
 			SaveKeys();
 			SaveSpaces();
@@ -813,7 +656,7 @@ public partial class Bugcord : Node
 		byte[] decryptedMessage = null;
 
 		using (Aes aes = Aes.Create()){
-			aes.Key = (byte[])aesKeys[keyUsed.GetStringFromUtf8()];
+			aes.Key = keyService.myKeys[keyUsed.GetStringFromUtf8()];
 			aes.IV = initVector;
 			aes.Mode = CipherMode.CBC;
 			aes.Padding = PaddingMode.PKCS7;
@@ -1036,8 +879,8 @@ public partial class Bugcord : Node
 		FileAccess keyFile = FileAccess.Open(knownKeysPath, FileAccess.ModeFlags.Write);
 
 		Dictionary keysB64 = new Dictionary();
-		foreach (KeyValuePair<Variant, Variant> entry in aesKeys){
-			keysB64.Add((string)entry.Key, ToBase64((byte[])entry.Value));
+		foreach (KeyValuePair<string, byte[]> entry in keyService.myKeys){
+			keysB64.Add(entry.Key, ToBase64(entry.Value));
 		}
 
 		keyFile.Seek(0);
@@ -1049,10 +892,10 @@ public partial class Bugcord : Node
 		FileAccess keyFile = FileAccess.Open(knownKeysPath, FileAccess.ModeFlags.Read);
 		string keyFileRaw = keyFile.GetAsText();
 
-		aesKeys = new Dictionary();
+		keyService.myKeys = new System.Collections.Generic.Dictionary<string, byte[]>();
 
 		foreach (KeyValuePair<Variant, Variant> entry in (Dictionary)Json.ParseString(keyFileRaw)){
-			aesKeys.Add((string)entry.Key, FromBase64((string)entry.Value));
+			keyService.myKeys.Add((string)entry.Key, FromBase64((string)entry.Value));
 		}
 
 		keyFile.Close();

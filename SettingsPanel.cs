@@ -8,14 +8,17 @@ public partial class SettingsPanel : MarginContainer
 	[Export] public FileDialog profilePictureDialog;
 
 	private string pickedProfileImageDir;
+	private FileService fileService;
 
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
 	{	
+		fileService = GetNode<FileService>("/root/Main/Bugcord/FileService");
+
 		string selfPfpId = (string)Bugcord.clientUser["id"] + "-pfp";
 		string username = (string)Bugcord.clientUser["username"];
-		if (Bugcord.cacheIndex.ContainsKey(selfPfpId)){
-			DisplayProfileImage((string)Bugcord.cacheIndex[selfPfpId]);
+		if (fileService.IsFileInCache(selfPfpId)){
+			DisplayProfileImage(fileService.cacheIndex[selfPfpId]);
 		}
 
 		usernameSetting.Text = username;
@@ -27,9 +30,9 @@ public partial class SettingsPanel : MarginContainer
 	}
 
 	public void Save(){
-		if (pickedProfileImageDir != null && pickedProfileImageDir.Length > 0){
-			Bugcord.PrepareEmbed(pickedProfileImageDir, (string)Bugcord.clientUser["id"] + "-pfp", false);
-		}
+		// if (pickedProfileImageDir != null && pickedProfileImageDir.Length > 0){
+		// 	Bugcord.PrepareEmbed(pickedProfileImageDir, (string)Bugcord.clientUser["id"] + "-pfp", false);
+		// }
 
 		Bugcord.clientUser["username"] = usernameSetting.Text;
 		Bugcord.SaveUser();

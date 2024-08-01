@@ -4,7 +4,6 @@ using System;
 
 public partial class MessageWindow : Control
 {
-	[Export] public Bugcord bugcord;
 	[Export] public PackedScene messageScene;
 	[Export] public VBoxContainer messageContainer;
 	[Export] public ScrollContainer scrollContainer;
@@ -13,9 +12,13 @@ public partial class MessageWindow : Control
 	private bool atBottom;
 	private double maxScroll;
 
+	private FileService fileService;
+
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
 	{
+		fileService = GetNode<FileService>("/root/Main/Bugcord/FileService");
+
 		scrollBar = scrollContainer.GetVScrollBar();
 		scrollBar.Changed += OnContentAdded;
 		maxScroll = scrollBar.MaxValue;
@@ -41,9 +44,8 @@ public partial class MessageWindow : Control
 		newMessage.InitiateMediaMode(message);
 		messageContainer.AddChild(newMessage);
 
-		newMessage.bugcord = bugcord;
-		bugcord.OnEmbedCached += newMessage.CacheUpdated;
-		bugcord.OnFileBufferUpdated += newMessage.FileBufferUpdated;
+		fileService.OnCacheChanged += newMessage.CacheUpdated;
+		fileService.OnFileBufferUpdated += newMessage.FileBufferUpdated;
 	}
 	
 	public void OnContentAdded(){

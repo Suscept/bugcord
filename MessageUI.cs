@@ -4,8 +4,6 @@ using System;
 
 public partial class MessageUI : MarginContainer
 {
-	public Bugcord bugcord;
-
 	[Export] public float maxHeightFromImage;
 
 	[Export] public TextureRect imageContent;
@@ -44,12 +42,13 @@ public partial class MessageUI : MarginContainer
 		if (guid != waitingForEmbedGuid)
 			return;
 
-		string cachePath = (string)Bugcord.cacheIndex[guid];
+		FileService fileService = GetNode<FileService>("/root/Main/Bugcord/FileService");
+		string cachePath = fileService.cacheIndex[guid];
 		SetupMediaUi(cachePath);
 
 		textContent.Visible = false;
-		bugcord.OnEmbedCached -= CacheUpdated;
-		bugcord.OnFileBufferUpdated -= FileBufferUpdated;
+		fileService.OnCacheChanged -= CacheUpdated;
+		fileService.OnFileBufferUpdated -= FileBufferUpdated;
 	}
 
 	public void FileBufferUpdated(string guid, int fileParts, int filePartsTotal){

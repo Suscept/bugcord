@@ -1,9 +1,11 @@
-[gd_scene load_steps=22 format=3 uid="uid://b4h65lw1u6cii"]
+[gd_scene load_steps=24 format=3 uid="uid://b4h65lw1u6cii"]
 
 [ext_resource type="Script" path="res://Bugcord.cs" id="1_jyk1e"]
 [ext_resource type="PackedScene" uid="uid://c0hr25wlgd0kt" path="res://message.tscn" id="1_ki7uw"]
 [ext_resource type="Script" path="res://MessageWindow.cs" id="2_7eip0"]
 [ext_resource type="Script" path="res://ServerSelector.cs" id="2_jgtti"]
+[ext_resource type="Script" path="res://FileService.cs" id="2_nt2xh"]
+[ext_resource type="Script" path="res://KeyService.cs" id="3_0bq1u"]
 [ext_resource type="Script" path="res://SpacesList.cs" id="3_rhloj"]
 [ext_resource type="PackedScene" uid="uid://cjop4t0huwwq0" path="res://space.tscn" id="4_70f0h"]
 [ext_resource type="Script" path="res://MessageCreator.cs" id="4_weho3"]
@@ -48,6 +50,12 @@ bus = &"Record"
 [node name="voutput" type="AudioStreamPlayer" parent="Bugcord"]
 stream = SubResource("AudioStreamGenerator_6djje")
 autoplay = true
+
+[node name="FileService" type="Node" parent="Bugcord"]
+script = ExtResource("2_nt2xh")
+
+[node name="KeyService" type="Node" parent="Bugcord"]
+script = ExtResource("3_0bq1u")
 
 [node name="HBoxContainer" type="HBoxContainer" parent="."]
 layout_mode = 1
@@ -213,11 +221,10 @@ text = "M"
 [node name="HSeparator" type="HSeparator" parent="HBoxContainer/ChatMain/VBoxContainer"]
 layout_mode = 2
 
-[node name="MessageWindow" type="Control" parent="HBoxContainer/ChatMain/VBoxContainer" node_paths=PackedStringArray("bugcord", "messageContainer", "scrollContainer")]
+[node name="MessageWindow" type="Control" parent="HBoxContainer/ChatMain/VBoxContainer" node_paths=PackedStringArray("messageContainer", "scrollContainer")]
 layout_mode = 2
 size_flags_vertical = 3
 script = ExtResource("2_7eip0")
-bugcord = NodePath("../../../../Bugcord")
 messageScene = ExtResource("1_ki7uw")
 messageContainer = NodePath("ScrollContainer/Messages")
 scrollContainer = NodePath("ScrollContainer")
