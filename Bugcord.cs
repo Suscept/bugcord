@@ -46,6 +46,12 @@ public partial class Bugcord : Node
 	public static string selectedSpaceId;
 	public static string selectedKeyId;
 
+	public enum MessageComponentFlags{
+		None = 0,
+		Text = 1,
+		FileEmbed = 1 << 1,
+	}
+
 	private static StreamPeerTcp tcpClient;
 	private static PacketPeerUdp udpClient;
 
@@ -623,25 +629,18 @@ public partial class Bugcord : Node
 		byte[] initVector = ReadLength(packet, 1, 16);
 
 		byte[] keyUsed = spans[0];
-		byte[] encryptedMessage = spans[1];
-		byte[] senderGuid = spans[2];
+		byte[] encryptedSection = spans[1];
 
-		byte[] decryptedMessage = null;
+		byte[] decryptedSection = KeyService.AESDecrypt(encryptedSection, keyService.myKeys[keyUsed.GetStringFromUtf8()], initVector);
 
-		using (Aes aes = Aes.Create()){
-			aes.Key = keyService.myKeys[keyUsed.GetStringFromUtf8()];
-			aes.IV = initVector;
-			aes.Mode = CipherMode.CBC;
-			aes.Padding = PaddingMode.PKCS7;
-
-			using (ICryptoTransform decryptor = aes.CreateDecryptor()){
-				decryptedMessage = decryptor.TransformFinalBlock(encryptedMessage, 0, encryptedMessage.Length);
-			}
-		}
+		byte[][] decryptedSpans = ReadDataSpans(decryptedSection, 0);
+		string senderGuid = decryptedSpans[0].GetStringFromUtf8();
+		MessageComponentFlags messageFlags = (MessageComponentFlags)BitConverter.ToUInt16(decryptedSpans[1]);
+		string messageText = decryptedSpans[2].GetStringFromUtf8();
 		
-		string messageString = decryptedMessage.GetStringFromUtf8();
+		string messageString = messageText;
 		if (messageString.Length > 0)
-			DisplayMessage(messageString, senderGuid.GetStringFromUtf8());
+			DisplayMessage(messageString, senderGuid);
 	}
 
 	#endregion
@@ -727,30 +726,25 @@ public partial class Bugcord : Node
 			0
 		};
 
-		byte[] textBuffer = text.ToUtf8Buffer();
-		byte[] encryptedMessage = null;
-
 		byte[] key = GetSpaceKey(selectedSpaceId);
 		byte[] keyId = ((string)GetSpace(selectedSpaceId)["keyId"]).ToUtf8Buffer();
 
 		byte[] initVector = new byte[16];
 		new Random().NextBytes(initVector);
 
-		using (Aes aes = Aes.Create()){
-			aes.Key = key;
-			aes.IV = initVector;
-			aes.Mode = CipherMode.CBC;
-			aes.Padding = PaddingMode.PKCS7;
+		MessageComponentFlags messageFlags = new MessageComponentFlags();
+		messageFlags &= MessageComponentFlags.Text; // Set text flag
 
-			using (ICryptoTransform encryptor = aes.CreateEncryptor()){
-				encryptedMessage = encryptor.TransformFinalBlock(textBuffer, 0, textBuffer.Length);
-			}
-		}
+		List<byte> sectionToEncrypt = new List<byte>();
+		sectionToEncrypt.AddRange(MakeDataSpan(userService.userId.ToUtf8Buffer())); // Sender id
+		sectionToEncrypt.AddRange(MakeDataSpan(BitConverter.GetBytes((ushort)messageFlags))); // Message flags
+		sectionToEncrypt.AddRange(MakeDataSpan(text.ToUtf8Buffer()));
+
+		byte[] encryptedSection = KeyService.AESEncrypt(sectionToEncrypt.ToArray(), key, initVector);
 
 		packetList.AddRange(initVector);
 		packetList.AddRange(MakeDataSpan(keyId));
-		packetList.AddRange(MakeDataSpan(encryptedMessage));
-		packetList.AddRange(MakeDataSpan(userService.userId.ToUtf8Buffer()));
+		packetList.AddRange(MakeDataSpan(encryptedSection));
 
 		return packetList.ToArray();
 	}
