@@ -9,6 +9,7 @@ public partial class MessageUI : MarginContainer
 	[Export] public TextureRect imageContent;
 	[Export] public RichTextLabel textContent;
 	[Export] public Label usernameLabel;
+	[Export] public Label mediaLoadingProgressLabel;
 
 	public string waitingForEmbedGuid;
 
@@ -17,25 +18,21 @@ public partial class MessageUI : MarginContainer
 	{
 	}
 
-	// Called every frame. 'delta' is the elapsed time since the previous frame.
-	// public override void _Process(double delta)
-	// {
-	// }
-
 	public void Initiate(Dictionary message){
 		usernameLabel.Text = (string)message["sender"];
 
-		textContent.Text = (string)message["content"];
+		if (message.ContainsKey("content")){
+			textContent.Text = (string)message["content"];
+		}
 
-		imageContent.Visible = false;
-	}
-
-	public void InitiateMediaMode(Dictionary message){
-		usernameLabel.Text = (string)message["sender"];
-
-		waitingForEmbedGuid = (string)message["mediaId"];
+		if (message.ContainsKey("mediaId")){
+			waitingForEmbedGuid = (string)message["mediaId"];
 		
-		textContent.Text = "Loading...";
+			mediaLoadingProgressLabel.Text = "Loading...";
+		}else{
+			imageContent.Visible = false;
+			mediaLoadingProgressLabel.Visible = false;
+		}
 	}
 
 	public void CacheUpdated(string guid){
@@ -46,13 +43,13 @@ public partial class MessageUI : MarginContainer
 		string cachePath = fileService.cacheIndex[guid];
 		SetupMediaUi(cachePath);
 
-		textContent.Visible = false;
+		mediaLoadingProgressLabel.Visible = false;
 		fileService.OnCacheChanged -= CacheUpdated;
 		fileService.OnFileBufferUpdated -= FileBufferUpdated;
 	}
 
 	public void FileBufferUpdated(string guid, int fileParts, int filePartsTotal){
-		textContent.Text = "Loading... " + fileParts + "/" + filePartsTotal;
+		mediaLoadingProgressLabel.Text = "Loading... " + fileParts + "/" + filePartsTotal;
 	}
 
 	private void SetupMediaUi(string cachePath){

@@ -35,17 +35,11 @@ public partial class MessageWindow : Control
 		MessageUI newMessage = messageScene.Instantiate<MessageUI>();
 		newMessage.Initiate(message);
 		messageContainer.AddChild(newMessage);
-	}
 
-	public void DisplayNewMediaMessage(Dictionary message){
-		atBottom = IsScrollAtBottom();
-
-		MessageUI newMessage = messageScene.Instantiate<MessageUI>();
-		newMessage.InitiateMediaMode(message);
-		messageContainer.AddChild(newMessage);
-
-		fileService.OnCacheChanged += newMessage.CacheUpdated;
-		fileService.OnFileBufferUpdated += newMessage.FileBufferUpdated;
+		if (message.ContainsKey("mediaId")){
+			fileService.OnCacheChanged += newMessage.CacheUpdated;
+			fileService.OnFileBufferUpdated += newMessage.FileBufferUpdated;
+		}
 	}
 	
 	public void OnContentAdded(){

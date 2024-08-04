@@ -232,12 +232,19 @@ public partial class Bugcord : Node
 
 	#region message functions
 
-	public void DisplayMessage(string content, string senderId){
+	public void DisplayMessage(string senderId, string content, string mediaId){
 		Dictionary messageDict = new Dictionary
 		{
-			{"content", content},
 			{"sender", ((Dictionary)peers[senderId])["username"]}
 		};
+
+		if (content != null){
+			messageDict.Add("content", content);
+		}
+
+		if (mediaId != null){
+			messageDict.Add("mediaId", mediaId);
+		}
 
 		EmitSignal(SignalName.OnMessageRecieved, messageDict);
 	}
@@ -486,9 +493,6 @@ public partial class Bugcord : Node
 			case 4:
 				ProcessSpaceInvite(packet);
 				break;
-			case 5:
-				ProcessEmbedMessage(packet);
-				break;
 			case 6:
 				ProcessFileRequest(packet);
 				break;
@@ -547,24 +551,6 @@ public partial class Bugcord : Node
 				}
 				break;
 		}
-	}
-
-	private void ProcessEmbedMessage(byte[] packet){
-		GD.Print("Processing embedded message");
-
-		byte[][] dataSpans = ReadDataSpans(packet, 1);
-
-		string senderId = dataSpans[0].GetStringFromUtf8();
-		string embedId = dataSpans[1].GetStringFromUtf8();
-
-		DisplayMediaMessage(embedId, senderId);
-
-		if (fileService.IsFileInCache(embedId)){
-			fileService.EmitSignal(FileService.SignalName.OnCacheChanged, embedId); // Call the embed message ui to update and load the image from cache
-			return;
-		}
-
-		Send(BuildFileRequest(embedId));
 	}
 
 	private void ProcessSpaceInvite(byte[] packet){
@@ -628,19 +614,39 @@ public partial class Bugcord : Node
 
 		byte[] initVector = ReadLength(packet, 1, 16);
 
-		byte[] keyUsed = spans[0];
+		string keyUsed = spans[0].GetStringFromUtf8();
 		byte[] encryptedSection = spans[1];
 
-		byte[] decryptedSection = KeyService.AESDecrypt(encryptedSection, keyService.myKeys[keyUsed.GetStringFromUtf8()], initVector);
+		byte[] decryptedSection = KeyService.AESDecrypt(encryptedSection, keyService.myKeys[keyUsed], initVector);
 
 		byte[][] decryptedSpans = ReadDataSpans(decryptedSection, 0);
 		string senderGuid = decryptedSpans[0].GetStringFromUtf8();
 		MessageComponentFlags messageFlags = (MessageComponentFlags)BitConverter.ToUInt16(decryptedSpans[1]);
-		string messageText = decryptedSpans[2].GetStringFromUtf8();
-		
-		string messageString = messageText;
-		if (messageString.Length > 0)
-			DisplayMessage(messageString, senderGuid);
+
+		// Read all components of the message based off of present flags
+		int readingSpan = 2;
+		string messageText = null;
+		string embedId = null;
+		if (messageFlags.HasFlag(MessageComponentFlags.Text)){
+			messageText = decryptedSpans[readingSpan].GetStringFromUtf8();
+			readingSpan++;
+		}
+
+		if (messageFlags.HasFlag(MessageComponentFlags.FileEmbed)){
+			embedId = decryptedSpans[readingSpan].GetStringFromUtf8();
+			readingSpan++;
+		}
+
+		DisplayMessage(senderGuid, messageText, embedId);
+
+		if (messageFlags.HasFlag(MessageComponentFlags.FileEmbed)){
+			if (fileService.IsFileInCache(embedId)){
+				fileService.EmitSignal(FileService.SignalName.OnCacheChanged, embedId); // Call the embed message ui to update and load the image from cache
+				return;
+			}
+
+			Send(BuildFileRequest(embedId));
+		}
 	}
 
 	#endregion
@@ -710,14 +716,41 @@ public partial class Bugcord : Node
 	}
 
 	private byte[] BuildEmbedMessage(string embedGuid){
-		List<byte> packetBytes = new List<byte>{
-			5
+		// List<byte> packetBytes = new List<byte>{
+		// 	5
+		// };
+
+		// packetBytes.AddRange(MakeDataSpan(GetClientId().ToUtf8Buffer())); // add user's guid
+		// packetBytes.AddRange(MakeDataSpan(embedGuid.ToUtf8Buffer()));
+
+		// return packetBytes.ToArray();
+
+		List<byte> packetList = new List<byte>
+		{
+			0
 		};
 
-		packetBytes.AddRange(MakeDataSpan(GetClientId().ToUtf8Buffer())); // add user's guid
-		packetBytes.AddRange(MakeDataSpan(embedGuid.ToUtf8Buffer()));
+		byte[] key = GetSpaceKey(selectedSpaceId);
+		byte[] keyId = ((string)GetSpace(selectedSpaceId)["keyId"]).ToUtf8Buffer();
 
-		return packetBytes.ToArray();
+		byte[] initVector = new byte[16];
+		new Random().NextBytes(initVector);
+
+		MessageComponentFlags messageFlags = new MessageComponentFlags();
+		messageFlags |= MessageComponentFlags.FileEmbed; // Set embed
+
+		List<byte> sectionToEncrypt = new List<byte>();
+		sectionToEncrypt.AddRange(MakeDataSpan(userService.userId.ToUtf8Buffer())); // Sender id
+		sectionToEncrypt.AddRange(MakeDataSpan(BitConverter.GetBytes((ushort)messageFlags))); // Message flags
+		sectionToEncrypt.AddRange(MakeDataSpan(embedGuid.ToUtf8Buffer()));
+		
+		byte[] encryptedSection = KeyService.AESEncrypt(sectionToEncrypt.ToArray(), key, initVector);
+
+		packetList.AddRange(initVector);
+		packetList.AddRange(MakeDataSpan(keyId));
+		packetList.AddRange(MakeDataSpan(encryptedSection));
+
+		return packetList.ToArray();
 	}
 
 	private byte[] BuildMsgPacket(string text){
@@ -733,7 +766,7 @@ public partial class Bugcord : Node
 		new Random().NextBytes(initVector);
 
 		MessageComponentFlags messageFlags = new MessageComponentFlags();
-		messageFlags &= MessageComponentFlags.Text; // Set text flag
+		messageFlags |= MessageComponentFlags.Text; // Set text flag
 
 		List<byte> sectionToEncrypt = new List<byte>();
 		sectionToEncrypt.AddRange(MakeDataSpan(userService.userId.ToUtf8Buffer())); // Sender id

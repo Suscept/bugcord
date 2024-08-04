@@ -6,16 +6,17 @@
 [sub_resource type="LabelSettings" id="LabelSettings_r4x21"]
 outline_size = 1
 
-[node name="MessageUI" type="MarginContainer" node_paths=PackedStringArray("imageContent", "textContent", "usernameLabel")]
+[node name="MessageUI" type="MarginContainer" node_paths=PackedStringArray("imageContent", "textContent", "usernameLabel", "mediaLoadingProgressLabel")]
 offset_right = 328.0
 offset_bottom = 182.935
 size_flags_horizontal = 3
 size_flags_vertical = 0
 script = ExtResource("1_3f5tq")
 maxHeightFromImage = 150.0
-imageContent = NodePath("HBoxContainer/VBoxContainer/TextureRect")
-textContent = NodePath("HBoxContainer/VBoxContainer/RichTextLabel")
-usernameLabel = NodePath("HBoxContainer/VBoxContainer/Label")
+imageContent = NodePath("HBoxContainer/VBoxContainer/ImageMedia")
+textContent = NodePath("HBoxContainer/VBoxContainer/TextContent")
+usernameLabel = NodePath("HBoxContainer/VBoxContainer/Username")
+mediaLoadingProgressLabel = NodePath("HBoxContainer/VBoxContainer/MediaLoadingProgress")
 
 [node name="HBoxContainer" type="HBoxContainer" parent="."]
 layout_mode = 2
@@ -31,13 +32,13 @@ expand_mode = 1
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="Label" type="Label" parent="HBoxContainer/VBoxContainer"]
+[node name="Username" type="Label" parent="HBoxContainer/VBoxContainer"]
 layout_mode = 2
 text = "username"
 label_settings = SubResource("LabelSettings_r4x21")
 vertical_alignment = 1
 
-[node name="RichTextLabel" type="RichTextLabel" parent="HBoxContainer/VBoxContainer"]
+[node name="TextContent" type="RichTextLabel" parent="HBoxContainer/VBoxContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
 bbcode_enabled = true
@@ -46,9 +47,14 @@ text = "message
 fit_content = true
 scroll_active = false
 
-[node name="TextureRect" type="TextureRect" parent="HBoxContainer/VBoxContainer"]
+[node name="ImageMedia" type="TextureRect" parent="HBoxContainer/VBoxContainer"]
 texture_filter = 3
 layout_mode = 2
 texture = ExtResource("1_7dhvk")
 expand_mode = 1
 stretch_mode = 4
+
+[node name="MediaLoadingProgress" type="Label" parent="HBoxContainer/VBoxContainer"]
+layout_mode = 2
+label_settings = SubResource("LabelSettings_r4x21")
+vertical_alignment = 1
