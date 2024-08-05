@@ -24,6 +24,11 @@ public partial class SpacesList : ScrollContainer
 		}
 
 		renderedSpaces.Clear();
+		string selectedSpaceId = "";
+		if (selectedSpace != null){
+			selectedSpaceId = selectedSpace.spaceGuid;
+		}
+		selectedSpace = null;
 
 		foreach (KeyValuePair<string, Dictionary<string, string>> space in spaces){
 			SpaceSelector spaceUi = spaceUiPrefab.Instantiate<SpaceSelector>();
@@ -35,6 +40,12 @@ public partial class SpacesList : ScrollContainer
 			spaceContainer.AddChild(spaceUi);
 
 			renderedSpaces.Add(spaceUi);
+
+			// This was the space we had selected. So re-display it as selected
+			if (space.Key == selectedSpaceId){
+				selectedSpace = spaceUi;
+				selectedSpace.SetSelected(true);
+			}
 		}
 	}
 
