@@ -12,7 +12,7 @@ public partial class SpaceInviter : Panel
 
 	private string viewingSpace;
 
-	private List<Control> inviteEntries = new List<Control>();
+	private List<InvitePageEntry> inviteEntries = new List<InvitePageEntry>();
 	private UserService userService;
 
 	// Called when the node enters the scene tree for the first time.
@@ -24,6 +24,38 @@ public partial class SpaceInviter : Panel
 	// Called every frame. 'delta' is the elapsed time since the previous frame.
 	public override void _Process(double delta)
 	{
+	}
+
+	public void Search(string query){
+		if (inviteEntries.Count < 2){
+			return;
+		}
+
+		// Score entries
+		int[] scores = new int[inviteEntries.Count];
+		for (int i = 0; i < inviteEntries.Count; i++){
+			for (int c = 0; c < query.Length; c++){
+				if (inviteEntries[i].displayText.ToLower()[c] == query.ToLower()[c]){
+					scores[i] ++;
+				}
+			}
+		}
+
+		// Sort entries by score (bubble sort)
+		for (int i = 0; i < inviteEntries.Count; i++){
+			for (int e = 0; e < inviteEntries.Count - 1 - i; e++){
+				if (scores[e] < scores[e + 1]){
+					// Swap
+					inviteEntryContainer.MoveChild(inviteEntries[e + 1], e);
+					InvitePageEntry swap = inviteEntries[e+1];
+					inviteEntries[e+1] = inviteEntries[e];
+					inviteEntries[e] = swap;
+					int scoreSwap = scores[e+1];
+					scores[e+1] = scores[e];
+					scores[e] = scoreSwap;
+				}
+			}
+		}
 	}
 
 	public void UpdateList(){

@@ -8,6 +8,8 @@ public partial class InvitePageEntry : MarginContainer
 	[Export] Label usernameTextObject;
 	[Export] TextureRect profilePicture;
 
+	public string displayText;
+
 	private string myGuid;
 
 	// Called when the node enters the scene tree for the first time.
@@ -16,7 +18,7 @@ public partial class InvitePageEntry : MarginContainer
 	}
 
 	public void Initialize(string guid, string username){
-		usernameTextObject.Text = username;
+		usernameTextObject.Text = displayText = username;
 		myGuid = guid;
 	}
 

@@ -616,7 +616,7 @@ anchor_right = 0.5
 anchor_bottom = 0.5
 offset_left = 444.0
 offset_top = 248.0
-offset_right = 745.14
+offset_right = 832.655
 offset_bottom = 407.896
 grow_horizontal = 2
 grow_vertical = 2
@@ -641,12 +641,15 @@ size_flags_horizontal = 3
 text = "Invite to Space"
 horizontal_alignment = 1
 
-[node name="Refresh" type="Button" parent="Popups/SpaceInviter/VBoxContainer/HBoxContainer" node_paths=PackedStringArray("target")]
+[node name="LineEdit" type="LineEdit" parent="Popups/SpaceInviter/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "Search.."
+
+[node name="Refresh" type="Button" parent="Popups/SpaceInviter/VBoxContainer/HBoxContainer"]
 custom_minimum_size = Vector2(31, 0)
 layout_mode = 2
 text = "R"
-script = ExtResource("11_7p3cn")
-target = NodePath("../../..")
 
 [node name="Close" type="Button" parent="Popups/SpaceInviter/VBoxContainer/HBoxContainer" node_paths=PackedStringArray("target")]
 custom_minimum_size = Vector2(31, 0)
@@ -693,5 +696,6 @@ size_flags_horizontal = 3
 [connection signal="pressed" from="Popups/rsa tester/VBoxContainer/Button" to="Popups/rsa tester" method="OnInput"]
 [connection signal="pressed" from="Popups/space invite tester/VBoxContainer/Button" to="Popups/space invite tester" method="OnInput"]
 [connection signal="OnInvitePeer" from="Popups/SpaceInviter" to="Bugcord" method="SendSpaceInvite"]
-[connection signal="pressed" from="Popups/SpaceInviter/VBoxContainer/HBoxContainer/Refresh" to="Popups/SpaceInviter/VBoxContainer/HBoxContainer/Refresh" method="SetInvisible"]
+[connection signal="text_changed" from="Popups/SpaceInviter/VBoxContainer/HBoxContainer/LineEdit" to="Popups/SpaceInviter" method="Search"]
+[connection signal="pressed" from="Popups/SpaceInviter/VBoxContainer/HBoxContainer/Refresh" to="Popups/SpaceInviter" method="UpdateList"]
 [connection signal="pressed" from="Popups/SpaceInviter/VBoxContainer/HBoxContainer/Close" to="Popups/SpaceInviter/VBoxContainer/HBoxContainer/Close" method="SetInvisible"]
