@@ -5,6 +5,8 @@ using System.Security.Cryptography;
 
 public partial class KeyService : Node
 {
+	// PeerId, RSAKey
+	public System.Collections.Generic.Dictionary<string, byte[]> peerKeys = new();
 	// KeyId, AESKey
 	public System.Collections.Generic.Dictionary<string, byte[]> myKeys = new();
 	public RSA userAuthentication;
@@ -12,14 +14,56 @@ public partial class KeyService : Node
 	public const string clientKeyPath = "user://client.auth";
 	public const string knownKeysPath = "user://keys.auth";
 
+	private SpaceService spaceService;
+
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
 	{
+		spaceService = GetParent().GetNode<SpaceService>("SpaceService");
 	}
 
 	// Called every frame. 'delta' is the elapsed time since the previous frame.
 	public override void _Process(double delta)
 	{
+	}
+
+	public byte[] EncryptKeyForPeer(string keyId, string peerId){
+		return EncryptForPeer(myKeys[keyId], peerId);
+	}
+
+	public byte[] EncryptForPeer(byte[] data, string peerId){
+		RSA inviteAuth = RSACryptoServiceProvider.Create(2048);
+		inviteAuth.ImportRSAPublicKey(peerKeys[peerId], out int bytesRead);
+		byte[] spaceKeyEncrypted = inviteAuth.Encrypt(data, RSAEncryptionPadding.Pkcs1);
+
+		return spaceKeyEncrypted;
+	}
+
+	public byte[] EncryptWithSpace(byte[] data, string spaceId, byte[] initVector){
+		return AESEncrypt(data, myKeys[spaceService.spaces[spaceId]["keyId"]], initVector);
+	}
+
+	public byte[] DecryptWithSpace(byte[] data, string spaceId, byte[] initVector){
+		return AESDecrypt(data, myKeys[spaceService.spaces[spaceId]["keyId"]], initVector);
+	}
+
+	public string NewKey(){
+		Aes key = Aes.Create();
+		string keyGuid = Guid.NewGuid().ToString();
+
+		AddKey(keyGuid, key.Key);
+
+		return keyGuid;
+	}
+
+	public void AddKey(string keyId, byte[] key){
+		if (myKeys.ContainsKey(keyId)){
+			GD.Print("Key already known");
+			return;
+		}
+
+		myKeys.Add(keyId, key);
+		KeysSaveToFile();
 	}
 
 	public void KeysSaveToFile(){

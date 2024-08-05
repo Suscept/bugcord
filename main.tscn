@@ -1,4 +1,4 @@
-[gd_scene load_steps=25 format=3 uid="uid://b4h65lw1u6cii"]
+[gd_scene load_steps=26 format=3 uid="uid://b4h65lw1u6cii"]
 
 [ext_resource type="Script" path="res://Bugcord.cs" id="1_jyk1e"]
 [ext_resource type="PackedScene" uid="uid://c0hr25wlgd0kt" path="res://message.tscn" id="1_ki7uw"]
@@ -10,6 +10,7 @@
 [ext_resource type="PackedScene" uid="uid://cjop4t0huwwq0" path="res://space.tscn" id="4_70f0h"]
 [ext_resource type="Script" path="res://UserService.cs" id="4_fd14y"]
 [ext_resource type="Script" path="res://MessageCreator.cs" id="4_weho3"]
+[ext_resource type="Script" path="res://SpaceService.cs" id="5_2dxfl"]
 [ext_resource type="Script" path="res://SpaceView.cs" id="5_400hf"]
 [ext_resource type="Script" path="res://RegisterWindow.cs" id="6_jgjb0"]
 [ext_resource type="Script" path="res://MakeSpaceWindow.cs" id="7_p4jpm"]
@@ -35,11 +36,10 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="Bugcord" type="Node" parent="." node_paths=PackedStringArray("messageInput", "registerWindow", "spacesList", "audioRecorder", "audioPlayer", "voiceChatToggle")]
+[node name="Bugcord" type="Node" parent="." node_paths=PackedStringArray("messageInput", "registerWindow", "audioRecorder", "audioPlayer", "voiceChatToggle")]
 script = ExtResource("1_jyk1e")
 messageInput = NodePath("../HBoxContainer/ChatMain/VBoxContainer/MessageCreator/VBoxContainer/MessageInput/MessageText")
 registerWindow = NodePath("../Popups/Register")
-spacesList = NodePath("../HBoxContainer/LeftBar/Panel/VBoxContainer/Spaces")
 audioRecorder = NodePath("vinput")
 audioPlayer = NodePath("voutput")
 voiceChatToggle = NodePath("../HBoxContainer/LeftBar/Panel/VBoxContainer/ServerInput/VBoxContainer/VoiceToggle")
@@ -60,6 +60,10 @@ script = ExtResource("3_0bq1u")
 
 [node name="UserService" type="Node" parent="Bugcord"]
 script = ExtResource("4_fd14y")
+
+[node name="SpaceService" type="Node" parent="Bugcord" node_paths=PackedStringArray("spaceDisplay")]
+script = ExtResource("5_2dxfl")
+spaceDisplay = NodePath("../../HBoxContainer/LeftBar/Panel/VBoxContainer/Spaces")
 
 [node name="HBoxContainer" type="HBoxContainer" parent="."]
 layout_mode = 1
@@ -134,7 +138,7 @@ layout_mode = 2
 size_flags_vertical = 3
 horizontal_scroll_mode = 0
 script = ExtResource("3_rhloj")
-spaceUi = ExtResource("4_70f0h")
+spaceUiPrefab = ExtResource("4_70f0h")
 spaceContainer = NodePath("VBoxContainer")
 
 [node name="VBoxContainer" type="VBoxContainer" parent="HBoxContainer/LeftBar/Panel/VBoxContainer/Spaces"]
@@ -682,7 +686,7 @@ size_flags_horizontal = 3
 [connection signal="pressed" from="Popups/SettingsPanel/VBoxContainer/Save" to="HBoxContainer/ChatMain/VBoxContainer/HBoxContainer2/Extras/SettingsPanel" method="Save"]
 [connection signal="OnRegister" from="Popups/Register" to="Bugcord" method="CreateUserFile"]
 [connection signal="pressed" from="Popups/Register/VBoxContainer/Button" to="Popups/Register" method="AttemptRegister"]
-[connection signal="OnCreatingSpace" from="Popups/MakeSpace" to="Bugcord" method="GenerateSpace"]
+[connection signal="OnCreatingSpace" from="Popups/MakeSpace" to="Bugcord/SpaceService" method="GenerateSpace"]
 [connection signal="pressed" from="Popups/MakeSpace/VBoxContainer/CreateSpace" to="Popups/MakeSpace" method="OnCreateSpace"]
 [connection signal="pressed" from="Popups/MakeSpace/Button" to="Popups/MakeSpace" method="ToggleVisibility"]
 [connection signal="pressed" from="Popups/dataspan tester/VBoxContainer/Button" to="Popups/dataspan tester" method="OnInput"]

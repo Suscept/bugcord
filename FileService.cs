@@ -85,7 +85,7 @@ public partial class FileService : Node
 
 		if (encrypted){
 			byte[] iv = KeyService.GetRandomBytes(16);
-			byte[] encryptedData = KeyService.AESEncrypt(file, bugcord.GetSpaceKey(Bugcord.selectedSpaceId), iv);
+			byte[] encryptedData = keyService.EncryptWithSpace(file, Bugcord.selectedSpaceId, iv);
 
 			serveCopyData.Add(0);
 

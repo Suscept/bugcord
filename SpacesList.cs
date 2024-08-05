@@ -1,13 +1,11 @@
 using Godot;
-using Godot.Collections;
 using System;
 using System.Collections.Generic;
 
 public partial class SpacesList : ScrollContainer
 {
-	[Export] public PackedScene spaceUi;
+	[Export] public PackedScene spaceUiPrefab;
 	[Export] public Control spaceContainer;
-	[Export] public Bugcord bugcord;
 
 	[Signal] public delegate void OnSpacePickedEventHandler(string guid);
 	[Signal] public delegate void OnSpaceInviteEventHandler(string guid);
@@ -20,23 +18,23 @@ public partial class SpacesList : ScrollContainer
 	{
 	}
 
-	public void Update(Dictionary spaces){
+	public void Update(Dictionary<string, Dictionary<string, string>> spaces){
 		foreach (Control renderedSpace in renderedSpaces){
 			renderedSpace.QueueFree();
 		}
 
 		renderedSpaces.Clear();
 
-		foreach (var (guid, info) in spaces){
-			SpaceSelector space = spaceUi.Instantiate<SpaceSelector>();
-			space.Initialize((string)guid, (string)((Dictionary)info)["name"]);
+		foreach (KeyValuePair<string, Dictionary<string, string>> space in spaces){
+			SpaceSelector spaceUi = spaceUiPrefab.Instantiate<SpaceSelector>();
+			spaceUi.Initialize(space.Key, space.Value["name"]);
 
-			space.OnPicked += OnSpaceSelectorPicked;
-			space.OnInvite += OnSpaceSelectorInvite;
+			spaceUi.OnPicked += OnSpaceSelectorPicked;
+			spaceUi.OnInvite += OnSpaceSelectorInvite;
 
-			spaceContainer.AddChild(space);
+			spaceContainer.AddChild(spaceUi);
 
-			renderedSpaces.Add(space);
+			renderedSpaces.Add(spaceUi);
 		}
 	}
 
