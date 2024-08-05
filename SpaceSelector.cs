@@ -5,6 +5,7 @@ public partial class SpaceSelector : MarginContainer
 {
 	[Export] public Label label;
 	[Export] public Control selectionDisplay;
+	[Export] public Button inviteButton;
 
 	[Signal] public delegate void OnPickedEventHandler(string spaceGuid, SpaceSelector space);
 	[Signal] public delegate void OnInviteEventHandler(string spaceGuid);
@@ -19,6 +20,7 @@ public partial class SpaceSelector : MarginContainer
 	public void Initialize(string guid, string name){
 		label.Text = name;
 		spaceGuid = guid;
+		SetSelected(false);
 	}
 
 	public void OnSelect(){
@@ -31,5 +33,6 @@ public partial class SpaceSelector : MarginContainer
 
 	public void SetSelected(bool makeSelected){
 		selectionDisplay.Visible = makeSelected;
+		inviteButton.Visible = makeSelected;
 	}
 }
