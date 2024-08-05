@@ -34,7 +34,7 @@ public partial class SpaceInviter : Panel
 		// Score entries
 		int[] scores = new int[inviteEntries.Count];
 		for (int i = 0; i < inviteEntries.Count; i++){
-			for (int c = 0; c < query.Length; c++){
+			for (int c = 0; c < Mathf.Min(inviteEntries[i].displayText.Length, query.Length); c++){
 				if (inviteEntries[i].displayText.ToLower()[c] == query.ToLower()[c]){
 					scores[i] ++;
 				}
