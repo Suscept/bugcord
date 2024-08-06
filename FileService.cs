@@ -44,6 +44,10 @@ public partial class FileService : Node
 			cacheDir.MakeDir("messages");
 		}
 
+		if (!FileAccess.FileExists(packetStorePath+"/packets.jsonl")){
+			FileAccess.Open(packetStorePath+"/packets.jsonl", FileAccess.ModeFlags.Write).Close();
+		}
+
 		string packetString = Bugcord.ToBase64(packet);
 		StoredPacket stored = new StoredPacket{
 			packet = packetString,
