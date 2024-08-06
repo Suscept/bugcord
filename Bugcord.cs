@@ -127,7 +127,7 @@ public partial class Bugcord : Node
 
 		// Send a pending packet
 		if (outgoingPacketBuffer.Count > 0){
-			Send(outgoingPacketBuffer[0]);
+			SendNow(outgoingPacketBuffer[0]);
 			outgoingPacketBuffer.RemoveAt(0);
 		}
 
@@ -335,6 +335,13 @@ public partial class Bugcord : Node
 	}
 
 	public void Send(byte[] data){
+		if (data.Length == 0)
+			return;
+
+		outgoingPacketBuffer.Add(data);
+	}
+
+	public void SendNow(byte[] data){
 		if (data.Length == 0)
 			return;
 
