@@ -3,6 +3,8 @@ using System;
 
 public partial class AlertMessage : MarginContainer
 {
+	[Export] public float maxContentSize;
+
 	[Export] public Label header;
 	[Export] public Label subHeader;
 
@@ -18,6 +20,12 @@ public partial class AlertMessage : MarginContainer
 
 		header.Text = headerText;
 		subHeader.Text = subHeaderText;
-		content.Text = contentText;
+		// content.Text = contentText;
+		content.Text = ""; // clear text
+		content.AppendText(contentText);
+	}
+
+	public void OnTextLoaded(){
+		content.CustomMinimumSize = new Vector2(0, Mathf.Min(content.GetContentHeight(), maxContentSize));
 	}
 }
