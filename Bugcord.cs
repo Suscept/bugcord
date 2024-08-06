@@ -138,7 +138,7 @@ public partial class Bugcord : Node
 		if (voiceChatToggle.ButtonPressed){
 			Vector2[] vBuffer = GetVoiceBuffer(audioFrames);
 			if (vBuffer != null)
-				Send(BuildVoicePacket(vBuffer), true);
+				SendUnreliable(BuildVoicePacket(vBuffer));
 		}
 
 		while (udpClient.GetAvailablePacketCount() > 0){
@@ -335,20 +335,20 @@ public partial class Bugcord : Node
 	}
 
 	public void Send(byte[] data){
-		Send(data, false);
-	}
-
-	public void Send(byte[] data, bool sendUnrelyable){
 		if (data.Length == 0)
 			return;
 
 		GD.Print("Sending message. Type: " + data[0]);
 
-		if (sendUnrelyable){
-			udpClient.PutPacket(data);
-		}else{
-			tcpClient.PutData(BuildMasterPacket(data));
-		}
+		tcpClient.PutData(BuildMasterPacket(data));
+	}
+
+	public void SendUnreliable(byte[] data){
+		if (data.Length == 0)
+			return;
+
+		GD.Print("Sending message. Type: " + data[0]);
+		udpClient.PutPacket(data);
 	}
 
 	public void SetAutoConnect(bool setTrue){
