@@ -452,7 +452,7 @@ public partial class Bugcord : Node
 			ProcessIncomingPacket(packet);
 		}catch(Exception ex){
 			GD.PrintErr(ex.Message);
-			AlertPanel.PostAlert("Error", ex.Message);
+			AlertPanel.PostAlert("Error", ex.Message, ex.StackTrace);
 			usedPacketLength = length + 6;
 			return true;
 		}
