@@ -158,8 +158,10 @@ public partial class Bugcord : Node
     public override void _Notification(int what)
     {
         if (what == NotificationWMCloseRequest){
-			if (tcpClient != null)
+			if (tcpClient != null){
+				GD.Print("Disconnecting..");
 				tcpClient.DisconnectFromHost();
+			}
 			GetTree().Quit();
 		}
     }
