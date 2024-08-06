@@ -1,4 +1,4 @@
-[gd_scene load_steps=28 format=3 uid="uid://b4h65lw1u6cii"]
+[gd_scene load_steps=29 format=3 uid="uid://b4h65lw1u6cii"]
 
 [ext_resource type="Script" path="res://Bugcord.cs" id="1_jyk1e"]
 [ext_resource type="PackedScene" uid="uid://c0hr25wlgd0kt" path="res://message.tscn" id="1_ki7uw"]
@@ -12,6 +12,7 @@
 [ext_resource type="Script" path="res://MessageCreator.cs" id="4_weho3"]
 [ext_resource type="Script" path="res://SpaceService.cs" id="5_2dxfl"]
 [ext_resource type="Script" path="res://SpaceView.cs" id="5_400hf"]
+[ext_resource type="Script" path="res://PeerService.cs" id="6_c0npe"]
 [ext_resource type="Script" path="res://RegisterWindow.cs" id="6_jgjb0"]
 [ext_resource type="Script" path="res://MakeSpaceWindow.cs" id="7_p4jpm"]
 [ext_resource type="PackedScene" uid="uid://br4rq6oo0fvp" path="res://embed_input_display.tscn" id="8_ihghl"]
@@ -76,6 +77,9 @@ script = ExtResource("4_fd14y")
 [node name="SpaceService" type="Node" parent="Bugcord" node_paths=PackedStringArray("spaceDisplay")]
 script = ExtResource("5_2dxfl")
 spaceDisplay = NodePath("../../HBoxContainer/LeftBar/Panel/VBoxContainer/Spaces")
+
+[node name="PeerService" type="Node" parent="Bugcord"]
+script = ExtResource("6_c0npe")
 
 [node name="HBoxContainer" type="HBoxContainer" parent="."]
 layout_mode = 1

@@ -20,8 +20,6 @@ public partial class Bugcord : Node
 	[Signal] public delegate void OnEmbedMessageRecievedEventHandler(Dictionary message);
 	[Signal] public delegate void OnConnectedToSpaceEventHandler(string spaceId, string spaceName);
 
-	public const string clientPeerPath = "user://peers.json";
-
 	public const int minAudioFrames = 2048;
 	public const int maxAudioFrames = 4096;
 	public const int audioFrames = 4096;
@@ -29,8 +27,6 @@ public partial class Bugcord : Node
 	public const int defaultPort = 25987;
 
 	public const int filePacketSize = 4096;
-
-	public static Dictionary peers;
 
 	public static List<byte> incomingPacketBuffer = new List<byte>();
 	public static List<byte[]> outgoingPacketBuffer = new List<byte[]>();
@@ -62,6 +58,7 @@ public partial class Bugcord : Node
 	private KeyService keyService;
 	private UserService userService;
 	private SpaceService spaceService;
+	private PeerService peerService;
 	private PopupAlert alertService;
 
 	// Called when the node enters the scene tree for the first time.
@@ -75,6 +72,7 @@ public partial class Bugcord : Node
 		keyService = GetNode<KeyService>("KeyService");
 		userService = GetNode<UserService>("UserService");
 		spaceService = GetNode<SpaceService>("SpaceService");
+		peerService = GetNode<PeerService>("PeerService");
 		alertService = GetNode<PopupAlert>("/root/Main/Popups/GenericPopup");
 
 		if (!LogIn()){
@@ -233,7 +231,7 @@ public partial class Bugcord : Node
 	public void DisplayMessage(string senderId, string content, string mediaId){
 		Dictionary messageDict = new Dictionary
 		{
-			{"sender", ((Dictionary)peers[senderId])["username"]}
+			{"sender", peerService.peers[senderId].username}
 		};
 
 		if (content != null){
@@ -255,7 +253,7 @@ public partial class Bugcord : Node
 		Dictionary messageDict = new Dictionary
 		{
 			{"mediaId", mediaId},
-			{"sender", ((Dictionary)peers[senderId])["username"]}
+			{"sender", peerService.peers[senderId].username}
 		};
 
 		EmitSignal(SignalName.OnEmbedMessageRecieved, messageDict);
@@ -364,16 +362,12 @@ public partial class Bugcord : Node
 			return false;
 		}
 
-		if (!FileAccess.FileExists(clientPeerPath)){
-			MakeNewPeerFile();
-		}
-
 		userService.LoadFromFile();
 
 		// User RSA key
 		keyService.AuthLoadFromFile();
 
-		LoadPeers();
+		peerService.LoadFromFile();
 
 	 	spaceService.LoadFromFile();
 
@@ -398,13 +392,6 @@ public partial class Bugcord : Node
 		keyService.AuthSaveToFile();
 
 		LogIn();
-	}
-
-	private void MakeNewPeerFile(){
-		FileAccess peerList = FileAccess.Open(clientPeerPath, FileAccess.ModeFlags.Write);
-		Godot.Collections.Dictionary<string, string> peerDict = new();
-		peerList.StoreString(Json.Stringify(peerDict));
-		peerList.Close();
 	}
 
 	public string GetClientId(){
@@ -564,23 +551,24 @@ public partial class Bugcord : Node
 
 		string guid = packetDataSpans[0].GetStringFromUtf8();
 		string username = packetDataSpans[1].GetStringFromUtf8();
-		string key = ToBase64(packetDataSpans[2]);
+		byte[] key = packetDataSpans[2];
 
-		bool peerKnown = peers.ContainsKey(guid);
+		bool peerKnown = peerService.peers.ContainsKey(guid);
 		if (peerKnown){
 			GD.Print("peer already known");
 			return;
 		}else{
 			GD.Print("adding peer");
 
-			Dictionary newPeer = new Dictionary(){
-				{"username", username},
-				{"rsapublickey", key}
+			PeerService.Peer newPeer = new PeerService.Peer(){
+				username = username,
+				rsaKey = key,
+				id = guid
 			};
 
-			peers.Add(guid, newPeer);
+			peerService.peers.Add(guid, newPeer);
 			keyService.peerKeys.Add(guid, packetDataSpans[2]);
-			SavePeers();
+			peerService.SaveToFile();
 			Send(BuildIdentifyingPacket());
 		}
 	}
@@ -792,28 +780,6 @@ public partial class Bugcord : Node
 
 	#endregion
 
-	#region saveloaders
-
-	private void SavePeers(){
-		FileAccess peerFile = FileAccess.Open(clientPeerPath, FileAccess.ModeFlags.Write);
-		peerFile.Seek(0);
-		peerFile.StoreString(Json.Stringify(peers));
-		peerFile.Close();
-	}
-
-	private void LoadPeers(){
-		FileAccess userPeers = FileAccess.Open(clientPeerPath, FileAccess.ModeFlags.Read);
-		string peerFileRaw = userPeers.GetAsText();
-
-		peers = (Dictionary)Json.ParseString(peerFileRaw);
-		foreach (KeyValuePair<Variant, Variant> peer in peers){
-			keyService.peerKeys.Add((string)peer.Key, FromBase64((string)((Dictionary)peer.Value)["rsapublickey"]));
-		}
-		userPeers.Close();
-	}
-
-	#endregion
-
 	#region library functions
 
 	public static byte[] GetRandomBytes(int length){
@@ -971,10 +937,6 @@ public partial class Bugcord : Node
 	}
 
 	#endregion
-
-	public Dictionary GetPeerDict(){
-		return peers;
-	}
 
 	// Debuggers
 	public void DEBUGB64SpaceInvite(string invite){

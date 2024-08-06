@@ -14,11 +14,13 @@ public partial class SpaceInviter : Panel
 
 	private List<InvitePageEntry> inviteEntries = new List<InvitePageEntry>();
 	private UserService userService;
+	private PeerService peerService;
 
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
 	{
 		userService = GetNode<UserService>("/root/Main/Bugcord/UserService");
+		peerService = GetNode<PeerService>("/root/Main/Bugcord/PeerService");
 	}
 
 	// Called every frame. 'delta' is the elapsed time since the previous frame.
@@ -71,14 +73,14 @@ public partial class SpaceInviter : Panel
 
 		inviteEntries.Clear();
 
-		foreach (var (guid, info) in Bugcord.peers){
-			if ((string)guid == userService.userId)
+		foreach (KeyValuePair<string, PeerService.Peer> peer in peerService.peers){
+			if (peer.Value.id == userService.userId)
 				continue;
 
 			InvitePageEntry entry = inviteEntry.Instantiate<InvitePageEntry>();
 
 			inviteEntryContainer.AddChild(entry);
-			entry.Initialize((string)guid, (string)((Dictionary)info)["username"]);
+			entry.Initialize(peer.Value.id, peer.Value.username);
 
 			entry.OnEntryInvited += InvitePeer;
 
