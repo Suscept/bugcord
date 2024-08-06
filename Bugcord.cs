@@ -561,22 +561,7 @@ public partial class Bugcord : Node
 		string username = packetDataSpans[1].GetStringFromUtf8();
 		byte[] key = packetDataSpans[2];
 
-		bool peerKnown = peerService.peers.ContainsKey(guid);
-		if (peerKnown){
-			GD.Print("peer already known");
-			return;
-		}else{
-			GD.Print("adding peer");
-
-			PeerService.Peer newPeer = new PeerService.Peer(){
-				username = username,
-				rsaKey = key,
-				id = guid
-			};
-
-			peerService.peers.Add(guid, newPeer);
-			keyService.peerKeys.Add(guid, packetDataSpans[2]);
-			peerService.SaveToFile();
+		if (peerService.AddPeer(guid, username, key)){
 			Send(BuildIdentifyingPacket());
 		}
 	}
