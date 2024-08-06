@@ -14,6 +14,8 @@ public partial class AlertMessage : MarginContainer
 	}
 
 	public void Initiate(string headerText, string subHeaderText, string contentText){
+		subHeader.Visible = subHeaderText.Length > 0;
+
 		header.Text = headerText;
 		subHeader.Text = subHeaderText;
 		content.Text = contentText;
