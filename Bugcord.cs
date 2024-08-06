@@ -64,6 +64,7 @@ public partial class Bugcord : Node
 	private KeyService keyService;
 	private UserService userService;
 	private SpaceService spaceService;
+	private PopupAlert alertService;
 
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
@@ -76,6 +77,7 @@ public partial class Bugcord : Node
 		keyService = GetNode<KeyService>("KeyService");
 		userService = GetNode<UserService>("UserService");
 		spaceService = GetNode<SpaceService>("SpaceService");
+		alertService = GetNode<PopupAlert>("/root/Main/Popups/GenericPopup");
 
 		if (!LogIn()){
 			registerWindow.Visible = true;
@@ -248,6 +250,8 @@ public partial class Bugcord : Node
 	}
 
 	public void DisplayMediaMessage(string mediaId, string senderId){
+		if (!CheckSendReady())
+			return;
 		GD.Print("displaying media message " + mediaId);
 
 		Dictionary messageDict = new Dictionary
@@ -260,6 +264,8 @@ public partial class Bugcord : Node
 	}
 
 	public void PostMessage(string message){
+		if (!CheckSendReady())
+			return;
 		// client.SendText(message);
 		Send(BuildMsgPacket(message));
 	}
@@ -268,9 +274,36 @@ public partial class Bugcord : Node
 
 	#region connection & websocket interaction
 
+	public bool CheckSendReady(){
+		if (keyService.userAuthentication == null){
+			alertService.NewAlert("You must register an account");
+			return false;
+		}
+
+		if (tcpClient == null){
+			alertService.NewAlert("You must connect to a Bugcord relay server", "Enter an ip address on the top left and press the # button to connect.");
+			return false;
+		}
+		
+		tcpClient.Poll();
+
+		StreamPeerTcp.Status clientStatus = tcpClient.GetStatus();
+		if (clientStatus != StreamPeerTcp.Status.Connected){
+			alertService.NewAlert("Not connected to relay", "Connection may have been lost. Press the # button on the top left to reconnect.");
+			return false;
+		}
+
+		if (selectedSpaceId == null){
+			alertService.NewAlert("Not connected to a space", "Either create your own space using the \"Create Space\" button on the left, or have a friend invite you to one and it will automatically appear in the list.");
+			return false;
+		}
+
+		return true;
+	}
+
 	public void Connect(string url){
 		if (keyService.userAuthentication == null){
-			GD.Print("no auth");
+			alertService.NewAlert("You must register an account");
 			return;
 		}
 
