@@ -448,7 +448,15 @@ public partial class Bugcord : Node
 		}
 
 		GD.Print("Checksum verified.");
-		ProcessIncomingPacket(packet);
+		try{
+			ProcessIncomingPacket(packet);
+		}catch(Exception ex){
+			GD.PrintErr(ex.Message);
+			AlertPanel.PostAlert("Error", ex.Message);
+			usedPacketLength = length + 6;
+			return true;
+		}
+
 		usedPacketLength = length + 6;
 		return true;
 	}
