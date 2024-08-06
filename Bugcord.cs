@@ -22,8 +22,6 @@ public partial class Bugcord : Node
 
 	public const string clientPeerPath = "user://peers.json";
 
-	public const string knownKeysPath = "user://keys.auth";
-
 	public const int minAudioFrames = 2048;
 	public const int maxAudioFrames = 4096;
 	public const int audioFrames = 4096;
@@ -40,7 +38,7 @@ public partial class Bugcord : Node
 	public static System.Collections.Generic.Dictionary<string, List<byte>> incomingVoiceBuffer = new();
 
 	public static string selectedSpaceId;
-	public static string selectedKeyId;
+	public static string selectedKeyId; // Remove
 
 	public enum MessageComponentFlags{
 		None = 0,
