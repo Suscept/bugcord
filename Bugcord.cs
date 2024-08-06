@@ -28,6 +28,8 @@ public partial class Bugcord : Node
 
 	public const int filePacketSize = 4096;
 
+	public static List<byte[]> catchupBuffer = new List<byte[]>();
+
 	public static List<byte> incomingPacketBuffer = new List<byte>();
 	public static List<byte[]> outgoingPacketBuffer = new List<byte[]>();
 
@@ -99,6 +101,15 @@ public partial class Bugcord : Node
 		}
 
 		previousState = clientStatus;
+
+		if (catchupBuffer.Count > 0){
+			for (int i = 0; i < Mathf.Min(catchupBuffer.Count, 10); i++){
+				ProcessIncomingPacket(catchupBuffer[i]);
+			}
+
+			catchupBuffer.RemoveRange(0, Mathf.Min(catchupBuffer.Count, 10));
+			return;
+		}
 
 		if (tcpClient.GetAvailableBytes() > 0){
 			Godot.Collections.Array recieved = tcpClient.GetData(tcpClient.GetAvailableBytes());
@@ -348,6 +359,8 @@ public partial class Bugcord : Node
 
 	public void OnConnected(){
 		GD.Print("connected");
+		fileService.LoadCatchup();
+
 		Send(BuildIdentifyingPacket());
 		InitVoice();
 	}
@@ -538,6 +551,7 @@ public partial class Bugcord : Node
 	}
 
 	private void ProcessSpaceInvite(byte[] packet){
+		fileService.SavePacket(packet);
 		GD.Print("Processing space invite");
 
 		byte[][] dataSpans = ReadDataSpans(packet, 1);
@@ -557,6 +571,8 @@ public partial class Bugcord : Node
 	}
 
 	private void ProcessIdentify(byte[] packet){
+		fileService.SavePacket(packet);
+
 		byte[][] packetDataSpans = ReadDataSpans(packet, 1);
 
 		string guid = packetDataSpans[0].GetStringFromUtf8();
@@ -569,6 +585,8 @@ public partial class Bugcord : Node
 	}
 
 	private void ProcessMessagePacket(byte[] packet){
+		fileService.SavePacket(packet);
+
 		byte[][] spans = ReadDataSpans(packet, 17);
 
 		byte[] initVector = ReadLength(packet, 1, 16);

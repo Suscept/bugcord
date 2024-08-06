@@ -1,4 +1,5 @@
 using Godot;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 
@@ -9,12 +10,13 @@ public partial class FileService : Node
 
 	public const string cachePath = "user://cache/";
 	public const string dataServePath = "user://serve/";
+	public const string packetStorePath = "user://serve/messages";
 
 	// File ID, File path
-	public System.Collections.Generic.Dictionary<string, string> cacheIndex = new();
+	public Dictionary<string, string> cacheIndex = new();
 
 	// File ID, {Sender ID, File Parts}
-	public static System.Collections.Generic.Dictionary<string, System.Collections.Generic.Dictionary<string, List<byte[]>>> incomingFileBuffer = new();
+	public static Dictionary<string, Dictionary<string, List<byte[]>>> incomingFileBuffer = new();
 
 	private Bugcord bugcord;
 	private KeyService keyService;
@@ -31,6 +33,44 @@ public partial class FileService : Node
 	{
 	}
 
+	public void SavePacket(byte[] packet){
+		if (!DirAccess.DirExistsAbsolute(cachePath)){
+			DirAccess cacheDir = DirAccess.Open("user://");
+			cacheDir.MakeDir("cache");
+		}
+
+		if (!DirAccess.DirExistsAbsolute(packetStorePath)){
+			DirAccess cacheDir = DirAccess.Open("user://serve");
+			cacheDir.MakeDir("messages");
+		}
+
+		string packetString = Bugcord.ToBase64(packet);
+		StoredPacket stored = new StoredPacket{
+			packet = packetString,
+			timestamp = Time.GetUnixTimeFromSystem()
+		};
+
+		FileAccess file = FileAccess.Open(packetStorePath+"/packets.jsonl", FileAccess.ModeFlags.ReadWrite);
+		file.SeekEnd();
+		file.StoreLine(JsonConvert.SerializeObject(stored));
+		file.Close();
+	}
+
+	public void LoadCatchup(){
+		if (!FileAccess.FileExists(packetStorePath+"/packets.jsonl")){
+			return;
+		}
+
+		FileAccess file = FileAccess.Open(packetStorePath+"/packets.jsonl", FileAccess.ModeFlags.Read);
+		while (true){
+			string jsonl = file.GetLine();
+			if (jsonl == "")
+				break;
+			StoredPacket stored = JsonConvert.DeserializeObject<StoredPacket>(jsonl);
+			Bugcord.catchupBuffer.Add(Bugcord.FromBase64(stored.packet));
+		}
+	}
+
 	public void UpdateFileBuffer(ushort filePart, ushort filePartMax, string fileId, string senderId, byte[] file){
 		if (IsFileInCache(fileId)){ // File already in cache
 			return;
@@ -38,7 +78,7 @@ public partial class FileService : Node
 
 		// Is the file known?
 		if (!incomingFileBuffer.ContainsKey(fileId)){
-            System.Collections.Generic.Dictionary<string, List<byte[]>> recievingFile = new();
+            Dictionary<string, List<byte[]>> recievingFile = new();
             incomingFileBuffer.Add(fileId, recievingFile);
 		}
 
@@ -195,5 +235,10 @@ public partial class FileService : Node
 			DirAccess.RemoveAbsolute(path);
 		}
 		cacheIndex.Clear();
+	}
+
+	public class StoredPacket{
+		public string packet;
+		public double timestamp;
 	}
 }
