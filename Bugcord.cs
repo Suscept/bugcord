@@ -104,7 +104,7 @@ public partial class Bugcord : Node
 
 		if (catchupBuffer.Count > 0){
 			for (int i = 0; i < Mathf.Min(catchupBuffer.Count, 10); i++){
-				ProcessIncomingPacket(catchupBuffer[i]);
+				ProcessIncomingPacket(catchupBuffer[i], true);
 			}
 
 			catchupBuffer.RemoveRange(0, Mathf.Min(catchupBuffer.Count, 10));
@@ -143,7 +143,7 @@ public partial class Bugcord : Node
 
 		while (udpClient.GetAvailablePacketCount() > 0){
 			byte[] p = udpClient.GetPacket();
-			ProcessIncomingPacket(p);
+			ProcessIncomingPacket(p, false);
 		}
 
 		int vFrames = 0;
@@ -471,7 +471,7 @@ public partial class Bugcord : Node
 
 		GD.Print("Checksum verified.");
 		try{
-			ProcessIncomingPacket(packet);
+			ProcessIncomingPacket(packet, false);
 		}catch(Exception ex){
 			GD.PrintErr(ex.Message);
 			AlertPanel.PostAlert("Error", ex.Message, ex.StackTrace);
@@ -483,19 +483,19 @@ public partial class Bugcord : Node
 		return true;
 	}
 
-	private void ProcessIncomingPacket(byte[] packet){
+	private void ProcessIncomingPacket(byte[] packet, bool fromCatchup){
 		byte type = packet[0];
 		GD.Print("Recieved packet. Type: " + type);
 
 		switch (type){
 			case 0:
-				ProcessMessagePacket(packet);
+				ProcessMessagePacket(packet, fromCatchup);
 				break;
 			case 1:
-				ProcessIdentify(packet);
+				ProcessIdentify(packet, fromCatchup);
 				break;
 			case 4:
-				ProcessSpaceInvite(packet);
+				ProcessSpaceInvite(packet, fromCatchup);
 				break;
 			case 6:
 				ProcessFileRequest(packet);
@@ -557,8 +557,10 @@ public partial class Bugcord : Node
 		}
 	}
 
-	private void ProcessSpaceInvite(byte[] packet){
-		fileService.SavePacket(packet);
+	private void ProcessSpaceInvite(byte[] packet, bool fromCatchup){
+		if (!fromCatchup)
+			fileService.SavePacket(packet);
+
 		GD.Print("Processing space invite");
 
 		byte[][] dataSpans = ReadDataSpans(packet, 1);
@@ -577,8 +579,9 @@ public partial class Bugcord : Node
 		}
 	}
 
-	private void ProcessIdentify(byte[] packet){
-		fileService.SavePacket(packet);
+	private void ProcessIdentify(byte[] packet, bool fromCatchup){
+		if (!fromCatchup)
+			fileService.SavePacket(packet);
 
 		byte[][] packetDataSpans = ReadDataSpans(packet, 1);
 
@@ -591,8 +594,9 @@ public partial class Bugcord : Node
 		}
 	}
 
-	private void ProcessMessagePacket(byte[] packet){
-		fileService.SavePacket(packet);
+	private void ProcessMessagePacket(byte[] packet, bool fromCatchup){
+		if (!fromCatchup)
+			fileService.SavePacket(packet);
 
 		byte[][] spans = ReadDataSpans(packet, 17);
 
@@ -960,7 +964,7 @@ public partial class Bugcord : Node
 
 	// Debuggers
 	public void DEBUGB64SpaceInvite(string invite){
-		ProcessSpaceInvite(FromBase64(invite));
+		ProcessSpaceInvite(FromBase64(invite), false);
 	}
 
 	public string ToHexString(byte[] data){
