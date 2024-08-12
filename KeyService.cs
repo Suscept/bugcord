@@ -40,11 +40,11 @@ public partial class KeyService : Node
 	}
 
 	public byte[] EncryptWithSpace(byte[] data, string spaceId, byte[] initVector){
-		return AESEncrypt(data, myKeys[spaceService.spaces[spaceId]["keyId"]], initVector);
+		return AESEncrypt(data, myKeys[spaceService.spaces[spaceId].keyId], initVector);
 	}
 
 	public byte[] DecryptWithSpace(byte[] data, string spaceId, byte[] initVector){
-		return AESDecrypt(data, myKeys[spaceService.spaces[spaceId]["keyId"]], initVector);
+		return AESDecrypt(data, myKeys[spaceService.spaces[spaceId].keyId], initVector);
 	}
 
 	public string NewKey(){

@@ -426,12 +426,12 @@ public partial class Bugcord : Node
 
 	public void ConnectSpace(string guid){
 		selectedSpaceId = guid;
-		selectedKeyId = spaceService.spaces[guid]["keyId"];
+		selectedKeyId = spaceService.spaces[guid].keyId;
 
 		GD.Print("connected to space " + guid);
 		AlertPanel.PostAlert("Connected to space", guid);
 
-		EmitSignal(SignalName.OnConnectedToSpace, guid, spaceService.spaces[guid]["name"]);
+		EmitSignal(SignalName.OnConnectedToSpace, guid, spaceService.spaces[guid].name);
 	}
 
 	public void SendSpaceInvite(string spaceGuid, string peerGuid){
@@ -718,7 +718,7 @@ public partial class Bugcord : Node
 			0
 		};
 
-		byte[] keyId = spaceService.spaces[selectedSpaceId]["keyId"].ToUtf8Buffer();
+		byte[] keyId = spaceService.spaces[selectedSpaceId].keyId.ToUtf8Buffer();
 
 		byte[] initVector = new byte[16];
 		new Random().NextBytes(initVector);
@@ -746,7 +746,7 @@ public partial class Bugcord : Node
 			0
 		};
 
-		byte[] keyId = spaceService.spaces[selectedSpaceId]["keyId"].ToUtf8Buffer();
+		byte[] keyId = spaceService.spaces[selectedSpaceId].keyId.ToUtf8Buffer();
 
 		byte[] initVector = new byte[16];
 		new Random().NextBytes(initVector);
@@ -790,13 +790,13 @@ public partial class Bugcord : Node
 		};
 		GD.Print("Creating space invite for space: " + spaceGuid);
 
-		string spaceName = spaceService.spaces[spaceGuid]["name"];
+		string spaceName = spaceService.spaces[spaceGuid].name;
 
-		byte[] spaceKeyEncrypted = keyService.EncryptKeyForPeer(spaceService.spaces[spaceGuid]["keyId"], recipientId);
+		byte[] spaceKeyEncrypted = keyService.EncryptKeyForPeer(spaceService.spaces[spaceGuid].keyId, recipientId);
 
 		packetBytes.AddRange(MakeDataSpan(spaceGuid.ToUtf8Buffer()));
 		packetBytes.AddRange(MakeDataSpan(spaceName.ToUtf8Buffer()));
-		packetBytes.AddRange(MakeDataSpan(spaceService.spaces[spaceGuid]["keyId"].ToUtf8Buffer()));
+		packetBytes.AddRange(MakeDataSpan(spaceService.spaces[spaceGuid].keyId.ToUtf8Buffer()));
 		packetBytes.AddRange(MakeDataSpan(spaceKeyEncrypted));
 
 		return packetBytes.ToArray();

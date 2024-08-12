@@ -18,7 +18,7 @@ public partial class SpacesList : ScrollContainer
 	{
 	}
 
-	public void Update(Dictionary<string, Dictionary<string, string>> spaces){
+	public void Update(Dictionary<string, SpaceService.Space> spaces){
 		foreach (Control renderedSpace in renderedSpaces){
 			renderedSpace.QueueFree();
 		}
@@ -30,9 +30,9 @@ public partial class SpacesList : ScrollContainer
 		}
 		selectedSpace = null;
 
-		foreach (KeyValuePair<string, Dictionary<string, string>> space in spaces){
+		foreach (KeyValuePair<string, SpaceService.Space> space in spaces){
 			SpaceSelector spaceUi = spaceUiPrefab.Instantiate<SpaceSelector>();
-			spaceUi.Initialize(space.Key, space.Value["name"]);
+			spaceUi.Initialize(space.Key, space.Value.name);
 
 			spaceUi.OnPicked += OnSpaceSelectorPicked;
 			spaceUi.OnInvite += OnSpaceSelectorInvite;

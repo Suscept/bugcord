@@ -8,7 +8,9 @@ public partial class SpaceService : Node
 	[Export] public SpacesList spaceDisplay;
 
 	// Space Id, Space Data
-	public Dictionary<string, Dictionary<string, string>> spaces = new();
+	// public Dictionary<string, Dictionary<string, string>> spaces = new();
+
+	public Dictionary<string, Space> spaces = new();
 
 	public const string clientSpacesPath = "user://spaces.json";
 
@@ -25,15 +27,16 @@ public partial class SpaceService : Node
 	{
 	}
 
-	public void AddSpace(string spaceId, string spaceName, string keyId){
+	public void AddSpace(string spaceId, string spaceName, string spaceKeyId){
 		if (spaces.ContainsKey(spaceId)){
 			GD.Print("client already in space");
 			return;
 		}
 
-		Dictionary<string, string> spaceData = new(){
-			{"name", spaceName},
-			{"keyId", keyId}
+		Space spaceData = new(){
+			id = spaceId,
+			name = spaceName,
+			keyId = spaceKeyId,
 		};
 
 		spaces.Add(spaceId, spaceData);
@@ -41,13 +44,15 @@ public partial class SpaceService : Node
 
 	public void GenerateSpace(string name){
 		string keyGuid = keyService.NewKey();
+		string spaceId = Guid.NewGuid().ToString();
 
-		Dictionary<string, string> spaceData = new(){
-			{"name", name},
-			{"keyId", keyGuid}
+		Space spaceData = new(){
+			id = spaceId,
+			name = name,
+			keyId = keyGuid,
 		};
 
-		spaces.Add(Guid.NewGuid().ToString(), spaceData);
+		spaces.Add(spaceId, spaceData);
 		SaveToFile();
 	}
 
@@ -61,11 +66,12 @@ public partial class SpaceService : Node
 
 		// Convert system dictionary to godot dictionary
 		Godot.Collections.Dictionary spacesToSave = new();
-		foreach (KeyValuePair<string, Dictionary<string, string>> entry in spaces){
-			Godot.Collections.Dictionary entryData = new();
-			foreach (KeyValuePair<string, string> dataEntry in entry.Value){
-				entryData.Add(dataEntry.Key, dataEntry.Value);
-			}
+		foreach (KeyValuePair<string, Space> entry in spaces){
+			Godot.Collections.Dictionary entryData = new()
+            {
+                { "name", entry.Value.name },
+                { "keyId", entry.Value.keyId }
+            };
 			spacesToSave.Add(entry.Key, entryData);
 		}
 
@@ -87,14 +93,22 @@ public partial class SpaceService : Node
 
 		// Convert godot dictionary to system dictionary
 		foreach (KeyValuePair<Variant, Variant> entry in (Godot.Collections.Dictionary)Json.ParseString(spaceFileRaw)){
-			Dictionary<string, string> entryData = new();
-			foreach (KeyValuePair<Variant, Variant> dataEntry in (Godot.Collections.Dictionary)entry.Value){
-				entryData.Add((string)dataEntry.Key, (string)dataEntry.Value);
-			}
+            Space entryData = new()
+            {
+                id = (string)entry.Key,
+                keyId = (string)((Godot.Collections.Dictionary)entry.Value)["keyId"],
+                name = (string)((Godot.Collections.Dictionary)entry.Value)["name"]
+            };
 			spaces.Add((string)entry.Key, entryData);
 		}
 		userSpaces.Close();
 
 		spaceDisplay.Update(spaces);
+	}
+
+	public class Space{
+		public string id;
+		public string name;
+		public string keyId;
 	}
 }
