@@ -22,7 +22,7 @@ public partial class MessageUI : MarginContainer
 		usernameLabel.Text = (string)message["sender"];
 
 		if (message.ContainsKey("content")){
-			textContent.Text = (string)message["content"];
+			SetupMessageContent((string)message["content"]);
 		}
 
 		if (message.ContainsKey("mediaId")){
@@ -33,6 +33,22 @@ public partial class MessageUI : MarginContainer
 			imageContent.Visible = false;
 			mediaLoadingProgressLabel.Visible = false;
 		}
+	}
+
+	public void SetupMessageContent(string text){
+		string[] lines = text.Split('\n');
+		string processedLines = "";
+		for (int i = 0; i < lines.Length; i++){
+			if (lines[i][0] == '>'){ // Greentext
+				lines[i] = lines[i].Insert(0, "[color=green]") + "[/color]";
+			}
+
+			if (i != lines.Length - 1){
+				lines[i] += '\n';
+			}
+			processedLines += lines[i];
+		}
+		textContent.Text = processedLines;
 	}
 
 	public void CacheUpdated(string guid){
