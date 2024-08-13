@@ -1,4 +1,4 @@
-[gd_scene load_steps=4 format=3 uid="uid://c0hr25wlgd0kt"]
+[gd_scene load_steps=5 format=3 uid="uid://c0hr25wlgd0kt"]
 
 [ext_resource type="Script" path="res://MessageUI.cs" id="1_3f5tq"]
 [ext_resource type="Texture2D" uid="uid://6j35bsdb4w8r" path="res://icon.svg" id="1_7dhvk"]
@@ -6,39 +6,85 @@
 [sub_resource type="LabelSettings" id="LabelSettings_r4x21"]
 outline_size = 1
 
+[sub_resource type="LabelSettings" id="LabelSettings_bknj2"]
+font_size = 12
+font_color = Color(0.629675, 0.629675, 0.629675, 1)
+
 [node name="MessageUI" type="MarginContainer" node_paths=PackedStringArray("imageContent", "textContent", "usernameLabel", "mediaLoadingProgressLabel")]
-offset_right = 328.0
+offset_right = 486.67
 offset_bottom = 182.935
 size_flags_horizontal = 3
 size_flags_vertical = 0
 script = ExtResource("1_3f5tq")
 maxHeightFromImage = 150.0
-imageContent = NodePath("HBoxContainer/VBoxContainer/ImageMedia")
-textContent = NodePath("HBoxContainer/VBoxContainer/TextContent")
-usernameLabel = NodePath("HBoxContainer/VBoxContainer/Username")
-mediaLoadingProgressLabel = NodePath("HBoxContainer/VBoxContainer/MediaLoadingProgress")
+imageContent = NodePath("VBoxContainer/MarginContainer/HBoxContainer/VBoxContainer/ImageMedia")
+textContent = NodePath("VBoxContainer/MarginContainer/HBoxContainer/VBoxContainer/TextContent")
+usernameLabel = NodePath("VBoxContainer/MarginContainer/HBoxContainer/VBoxContainer/Metadata/Username")
+mediaLoadingProgressLabel = NodePath("VBoxContainer/MarginContainer/HBoxContainer/VBoxContainer/MediaLoadingProgress")
 
-[node name="HBoxContainer" type="HBoxContainer" parent="."]
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
 layout_mode = 2
 
-[node name="Profile" type="TextureRect" parent="HBoxContainer"]
+[node name="Reply" type="Button" parent="VBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_default_cursor_shape = 2
+theme_override_font_sizes/font_size = 12
+text = "Reply"
+flat = true
+alignment = 0
+text_overrun_behavior = 3
+clip_text = true
+
+[node name="MarginContainer" type="MarginContainer" parent="VBoxContainer"]
+layout_mode = 2
+
+[node name="MenuButton" type="MenuButton" parent="VBoxContainer/MarginContainer"]
+layout_mode = 2
+size_flags_horizontal = 8
+size_flags_vertical = 0
+mouse_default_cursor_shape = 2
+text = "..."
+flat = false
+item_count = 3
+popup/item_0/text = "Reply"
+popup/item_0/id = 0
+popup/item_1/text = "Copy Text"
+popup/item_1/id = 1
+popup/item_2/text = "Delete"
+popup/item_2/id = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer/MarginContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Profile" type="TextureRect" parent="VBoxContainer/MarginContainer/HBoxContainer"]
 custom_minimum_size = Vector2(40, 40)
 layout_mode = 2
 size_flags_vertical = 0
 texture = ExtResource("1_7dhvk")
 expand_mode = 1
 
-[node name="VBoxContainer" type="VBoxContainer" parent="HBoxContainer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="VBoxContainer/MarginContainer/HBoxContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="Username" type="Label" parent="HBoxContainer/VBoxContainer"]
+[node name="Metadata" type="HBoxContainer" parent="VBoxContainer/MarginContainer/HBoxContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="Username" type="Label" parent="VBoxContainer/MarginContainer/HBoxContainer/VBoxContainer/Metadata"]
 layout_mode = 2
 text = "username"
 label_settings = SubResource("LabelSettings_r4x21")
 vertical_alignment = 1
 
-[node name="TextContent" type="RichTextLabel" parent="HBoxContainer/VBoxContainer"]
+[node name="Timestamp" type="Label" parent="VBoxContainer/MarginContainer/HBoxContainer/VBoxContainer/Metadata"]
+layout_mode = 2
+text = "today at 12:00pm"
+label_settings = SubResource("LabelSettings_bknj2")
+vertical_alignment = 1
+
+[node name="TextContent" type="RichTextLabel" parent="VBoxContainer/MarginContainer/HBoxContainer/VBoxContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
 bbcode_enabled = true
@@ -47,14 +93,14 @@ text = "message
 fit_content = true
 scroll_active = false
 
-[node name="ImageMedia" type="TextureRect" parent="HBoxContainer/VBoxContainer"]
+[node name="ImageMedia" type="TextureRect" parent="VBoxContainer/MarginContainer/HBoxContainer/VBoxContainer"]
 texture_filter = 3
 layout_mode = 2
 texture = ExtResource("1_7dhvk")
 expand_mode = 1
 stretch_mode = 4
 
-[node name="MediaLoadingProgress" type="Label" parent="HBoxContainer/VBoxContainer"]
+[node name="MediaLoadingProgress" type="Label" parent="VBoxContainer/MarginContainer/HBoxContainer/VBoxContainer"]
 layout_mode = 2
 label_settings = SubResource("LabelSettings_r4x21")
 vertical_alignment = 1
