@@ -7,10 +7,13 @@ public partial class UserService : Node
 {
 	[Signal] public delegate void OnLoggedInEventHandler();
 
-	public string userId;
+	// User config
 	public string userName;
 	public string savedServerIp;
 	public bool autoConnectToServer;
+	public string webhookUrl;
+
+	public string userId;
 
 	public const string clientSavePath = "user://client.data";
 	public const string defaultServerIp = "75.71.255.149:25987";

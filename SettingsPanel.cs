@@ -6,6 +6,7 @@ public partial class SettingsPanel : MarginContainer
 	[Export] public LineEdit usernameSetting;
 	[Export] public TextureRect profilePictureDisplay;
 	[Export] public FileDialog profilePictureDialog;
+	[Export] public RichTextLabel userIdDisplay;
 
 	private string pickedProfileImageDir;
 	private FileService fileService;
@@ -23,6 +24,7 @@ public partial class SettingsPanel : MarginContainer
 		}
 
 		usernameSetting.Text = userService.userName;
+		userIdDisplay.Text = userService.userId;
 	}
 
 	// Called every frame. 'delta' is the elapsed time since the previous frame.
@@ -46,6 +48,10 @@ public partial class SettingsPanel : MarginContainer
 	public void OnProfileImagePicked(string dir){
 		pickedProfileImageDir = dir;
 		DisplayProfileImage(dir);
+	}
+
+	public void OnWebhookAuthChanged(string auth){
+		userService.webhookUrl = auth;
 	}
 
 	private void DisplayProfileImage(string path){

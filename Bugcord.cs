@@ -62,6 +62,7 @@ public partial class Bugcord : Node
 	private SpaceService spaceService;
 	private PeerService peerService;
 	private PopupAlert alertService;
+	private WebhookService webhookService;
 
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
@@ -75,6 +76,7 @@ public partial class Bugcord : Node
 		userService = GetNode<UserService>("UserService");
 		spaceService = GetNode<SpaceService>("SpaceService");
 		peerService = GetNode<PeerService>("PeerService");
+		webhookService = GetNode<WebhookService>("WebhookService");
 		alertService = GetNode<PopupAlert>("/root/Main/Popups/GenericPopup");
 
 		if (!LogIn()){
@@ -277,6 +279,7 @@ public partial class Bugcord : Node
 			return;
 		// client.SendText(message);
 		Send(BuildMsgPacket(message));
+		webhookService.SendMessage(message);
 	}
 
 	#endregion

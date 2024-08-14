@@ -1,4 +1,4 @@
-[gd_scene load_steps=29 format=3 uid="uid://b4h65lw1u6cii"]
+[gd_scene load_steps=30 format=3 uid="uid://b4h65lw1u6cii"]
 
 [ext_resource type="Script" path="res://Bugcord.cs" id="1_jyk1e"]
 [ext_resource type="PackedScene" uid="uid://c0hr25wlgd0kt" path="res://message.tscn" id="1_ki7uw"]
@@ -15,6 +15,7 @@
 [ext_resource type="Script" path="res://PeerService.cs" id="6_c0npe"]
 [ext_resource type="Script" path="res://RegisterWindow.cs" id="6_jgjb0"]
 [ext_resource type="Script" path="res://MakeSpaceWindow.cs" id="7_p4jpm"]
+[ext_resource type="Script" path="res://WebhookService.cs" id="7_xflsv"]
 [ext_resource type="PackedScene" uid="uid://br4rq6oo0fvp" path="res://embed_input_display.tscn" id="8_ihghl"]
 [ext_resource type="Script" path="res://FunctionTester.cs" id="9_d1uvj"]
 [ext_resource type="Script" path="res://MakeVisible.cs" id="11_7p3cn"]
@@ -80,6 +81,9 @@ spaceDisplay = NodePath("../../HBoxContainer/LeftBar/Panel/VBoxContainer/Spaces"
 
 [node name="PeerService" type="Node" parent="Bugcord"]
 script = ExtResource("6_c0npe")
+
+[node name="WebhookService" type="HTTPRequest" parent="Bugcord"]
+script = ExtResource("7_xflsv")
 
 [node name="HBoxContainer" type="HBoxContainer" parent="."]
 layout_mode = 1
@@ -195,12 +199,13 @@ vertical_alignment = 1
 [node name="Extras" type="HBoxContainer" parent="HBoxContainer/ChatMain/VBoxContainer/HBoxContainer2"]
 layout_mode = 2
 
-[node name="SettingsPanel" type="MarginContainer" parent="HBoxContainer/ChatMain/VBoxContainer/HBoxContainer2/Extras" node_paths=PackedStringArray("usernameSetting", "profilePictureDisplay", "profilePictureDialog")]
+[node name="SettingsPanel" type="MarginContainer" parent="HBoxContainer/ChatMain/VBoxContainer/HBoxContainer2/Extras" node_paths=PackedStringArray("usernameSetting", "profilePictureDisplay", "profilePictureDialog", "userIdDisplay")]
 layout_mode = 2
 script = ExtResource("15_3b65x")
 usernameSetting = NodePath("../../../../../../Popups/SettingsPanel/VBoxContainer/ScrollContainer/VBoxContainer/UserSettings/VBoxContainer/LineEdit")
 profilePictureDisplay = NodePath("../../../../../../Popups/SettingsPanel/VBoxContainer/ScrollContainer/VBoxContainer/UserSettings/VBoxContainer/ProfilePicture/TextureRect")
 profilePictureDialog = NodePath("FileDialog")
+userIdDisplay = NodePath("../../../../../../Popups/SettingsPanel/VBoxContainer/ScrollContainer/VBoxContainer/UserSettings/VBoxContainer/UserId")
 
 [node name="FileDialog" type="FileDialog" parent="HBoxContainer/ChatMain/VBoxContainer/HBoxContainer2/Extras/SettingsPanel"]
 title = "Open a File"
@@ -393,7 +398,6 @@ mouse_default_cursor_shape = 2
 text = "Okay"
 
 [node name="SettingsPanel" type="Panel" parent="Popups"]
-visible = false
 custom_minimum_size = Vector2(200, 500)
 layout_mode = 2
 offset_left = 938.0
@@ -451,6 +455,23 @@ flat = true
 layout_mode = 2
 size_flags_horizontal = 3
 placeholder_text = "Username:"
+
+[node name="Label" type="Label" parent="Popups/SettingsPanel/VBoxContainer/ScrollContainer/VBoxContainer/UserSettings/VBoxContainer"]
+layout_mode = 2
+text = "User ID"
+
+[node name="UserId" type="RichTextLabel" parent="Popups/SettingsPanel/VBoxContainer/ScrollContainer/VBoxContainer/UserSettings/VBoxContainer"]
+layout_mode = 2
+focus_mode = 2
+theme_override_font_sizes/normal_font_size = 12
+text = "aers"
+fit_content = true
+scroll_active = false
+selection_enabled = true
+
+[node name="WebhookAuth" type="LineEdit" parent="Popups/SettingsPanel/VBoxContainer/ScrollContainer/VBoxContainer/UserSettings/VBoxContainer"]
+layout_mode = 2
+placeholder_text = "Webhook Auth:"
 
 [node name="Save" type="Button" parent="Popups/SettingsPanel/VBoxContainer"]
 layout_mode = 2
@@ -751,6 +772,7 @@ size_flags_horizontal = 3
 [connection signal="OnEmbedMessageRecieved" from="Bugcord" to="HBoxContainer/ChatMain/VBoxContainer/MessageWindow" method="DisplayNewMediaMessage"]
 [connection signal="OnMessageRecieved" from="Bugcord" to="HBoxContainer/ChatMain/VBoxContainer/MessageWindow" method="DisplayNewMessage"]
 [connection signal="OnLoggedIn" from="Bugcord/UserService" to="HBoxContainer/LeftBar/Panel/VBoxContainer/ServerInput" method="OnLoggedIn"]
+[connection signal="request_completed" from="Bugcord/WebhookService" to="Bugcord/WebhookService" method="_on_request_completed"]
 [connection signal="OnAutoconnectSettingChanged" from="HBoxContainer/LeftBar/Panel/VBoxContainer/ServerInput" to="Bugcord" method="SetAutoConnect"]
 [connection signal="OnServerSelected" from="HBoxContainer/LeftBar/Panel/VBoxContainer/ServerInput" to="Bugcord" method="Connect"]
 [connection signal="pressed" from="HBoxContainer/LeftBar/Panel/VBoxContainer/ServerInput/VBoxContainer/ServerInput/Button" to="HBoxContainer/LeftBar/Panel/VBoxContainer/ServerInput" method="SelectServer"]
