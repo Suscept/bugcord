@@ -790,6 +790,7 @@ size_flags_horizontal = 3
 [connection signal="pressed" from="Popups/GenericPopup/VBoxContainer/Button" to="Popups/GenericPopup" method="DisplayNext"]
 [connection signal="pressed" from="Popups/GenericPopup/VBoxContainer/Button" to="Popups/GenericPopup/VBoxContainer/Button" method="SetInvisible"]
 [connection signal="pressed" from="Popups/SettingsPanel/VBoxContainer/ScrollContainer/VBoxContainer/UserSettings/VBoxContainer/ProfilePicture/Button" to="HBoxContainer/ChatMain/VBoxContainer/HBoxContainer2/Extras/SettingsPanel" method="PickProfileImage"]
+[connection signal="text_changed" from="Popups/SettingsPanel/VBoxContainer/ScrollContainer/VBoxContainer/UserSettings/VBoxContainer/WebhookAuth" to="HBoxContainer/ChatMain/VBoxContainer/HBoxContainer2/Extras/SettingsPanel" method="OnWebhookAuthChanged"]
 [connection signal="pressed" from="Popups/SettingsPanel/VBoxContainer/Save" to="HBoxContainer/ChatMain/VBoxContainer/HBoxContainer2/Extras/SettingsPanel" method="Save"]
 [connection signal="OnRegister" from="Popups/Register" to="Bugcord" method="CreateUserFile"]
 [connection signal="pressed" from="Popups/Register/VBoxContainer/Button" to="Popups/Register" method="AttemptRegister"]
