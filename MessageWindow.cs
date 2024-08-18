@@ -1,6 +1,7 @@
 using Godot;
 using Godot.Collections;
 using System;
+using System.Collections.Generic;
 
 public partial class MessageWindow : Control
 {
@@ -13,11 +14,17 @@ public partial class MessageWindow : Control
 	private double maxScroll;
 
 	private FileService fileService;
+	private DatabaseService databaseService;
+	private PeerService peerService;
+
+	private List<MessageUI> displayedMessages = new List<MessageUI>();
 
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
 	{
 		fileService = GetNode<FileService>("/root/Main/Bugcord/FileService");
+		databaseService = GetNode<DatabaseService>("/root/Main/Bugcord/DatabaseService");
+		peerService = GetNode<PeerService>("/root/Main/Bugcord/PeerService");
 
 		scrollBar = scrollContainer.GetVScrollBar();
 		scrollBar.Changed += OnContentAdded;
@@ -29,17 +36,36 @@ public partial class MessageWindow : Control
 	{
 	}
 
-	public void DisplayNewMessage(Dictionary message){
+	public void DisplaySpaceMessages(string spaceId, string spaceName){
+		// Clear all messages
+		foreach (MessageUI message in displayedMessages){
+			message.QueueFree();
+		}
+
+		List<DatabaseService.Message> messages = databaseService.GetMessages(spaceId);
+		GD.Print(messages.Count);
+		for (int i = 0; i < messages.Count; i++){
+			DisplayNewMessage(messages[i]);
+		}
+	}
+
+	public void DisplayNewMessage(Dictionary messageDict){
+		DisplayNewMessage((DatabaseService.Message)messageDict);
+	}
+
+	public void DisplayNewMessage(DatabaseService.Message message){
 		atBottom = IsScrollAtBottom();
 
 		MessageUI newMessage = messageScene.Instantiate<MessageUI>();
-		newMessage.Initiate(message);
+		newMessage.Initiate(message, peerService);
 		messageContainer.AddChild(newMessage);
 
-		if (message.ContainsKey("mediaId")){
+		if (message.embedId != null){
 			fileService.OnCacheChanged += newMessage.CacheUpdated;
 			fileService.OnFileBufferUpdated += newMessage.FileBufferUpdated;
 		}
+
+		displayedMessages.Add(newMessage);
 	}
 	
 	public void OnContentAdded(){

@@ -1,4 +1,4 @@
-[gd_scene load_steps=29 format=3 uid="uid://b4h65lw1u6cii"]
+[gd_scene load_steps=30 format=3 uid="uid://b4h65lw1u6cii"]
 
 [ext_resource type="Script" path="res://Bugcord.cs" id="1_jyk1e"]
 [ext_resource type="PackedScene" uid="uid://c0hr25wlgd0kt" path="res://message.tscn" id="1_ki7uw"]
@@ -14,6 +14,7 @@
 [ext_resource type="Script" path="res://SpaceView.cs" id="5_400hf"]
 [ext_resource type="Script" path="res://PeerService.cs" id="6_c0npe"]
 [ext_resource type="Script" path="res://RegisterWindow.cs" id="6_jgjb0"]
+[ext_resource type="Script" path="res://DatabaseService.cs" id="7_8sfsb"]
 [ext_resource type="Script" path="res://MakeSpaceWindow.cs" id="7_p4jpm"]
 [ext_resource type="PackedScene" uid="uid://br4rq6oo0fvp" path="res://embed_input_display.tscn" id="8_ihghl"]
 [ext_resource type="Script" path="res://FunctionTester.cs" id="9_d1uvj"]
@@ -80,6 +81,9 @@ spaceDisplay = NodePath("../../HBoxContainer/LeftBar/Panel/VBoxContainer/Spaces"
 
 [node name="PeerService" type="Node" parent="Bugcord"]
 script = ExtResource("6_c0npe")
+
+[node name="DatabaseService" type="Node" parent="Bugcord"]
+script = ExtResource("7_8sfsb")
 
 [node name="HBoxContainer" type="HBoxContainer" parent="."]
 layout_mode = 1
@@ -748,6 +752,7 @@ layout_mode = 2
 size_flags_horizontal = 3
 
 [connection signal="OnConnectedToSpace" from="Bugcord" to="HBoxContainer/ChatMain/VBoxContainer/HBoxContainer2/SpaceView" method="UpdateSpaceInfo"]
+[connection signal="OnConnectedToSpace" from="Bugcord" to="HBoxContainer/ChatMain/VBoxContainer/MessageWindow" method="DisplaySpaceMessages"]
 [connection signal="OnEmbedMessageRecieved" from="Bugcord" to="HBoxContainer/ChatMain/VBoxContainer/MessageWindow" method="DisplayNewMediaMessage"]
 [connection signal="OnMessageRecieved" from="Bugcord" to="HBoxContainer/ChatMain/VBoxContainer/MessageWindow" method="DisplayNewMessage"]
 [connection signal="OnLoggedIn" from="Bugcord/UserService" to="HBoxContainer/LeftBar/Panel/VBoxContainer/ServerInput" method="OnLoggedIn"]

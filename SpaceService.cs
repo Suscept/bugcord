@@ -15,16 +15,26 @@ public partial class SpaceService : Node
 	public const string clientSpacesPath = "user://spaces.json";
 
 	private KeyService keyService;
+	private DatabaseService databaseService;
+	private Dictionary<string, string> keyUsage = new();
 
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
 	{
 		keyService = GetParent().GetNode<KeyService>("KeyService");
+		databaseService = GetParent().GetNode<DatabaseService>("DatabaseService");
 	}
 
 	// Called every frame. 'delta' is the elapsed time since the previous frame.
 	public override void _Process(double delta)
 	{
+	}
+
+	public string GetSpaceUsingKey(string keyId){
+		if (!keyUsage.ContainsKey(keyId))
+			return null;
+		
+		return keyUsage[keyId];
 	}
 
 	public void AddSpace(string spaceId, string spaceName, string spaceKeyId){
@@ -40,6 +50,8 @@ public partial class SpaceService : Node
 		};
 
 		spaces.Add(spaceId, spaceData);
+		keyUsage.Add(spaceKeyId, spaceId);
+		databaseService.AddSpaceTable(spaceId);
 	}
 
 	public void GenerateSpace(string name){
@@ -53,6 +65,7 @@ public partial class SpaceService : Node
 		};
 
 		spaces.Add(spaceId, spaceData);
+		databaseService.AddSpaceTable(spaceId);
 		SaveToFile();
 	}
 
@@ -100,6 +113,8 @@ public partial class SpaceService : Node
                 name = (string)((Godot.Collections.Dictionary)entry.Value)["name"]
             };
 			spaces.Add((string)entry.Key, entryData);
+			keyUsage.Add(entryData.keyId, (string)entry.Key);
+			databaseService.AddSpaceTable((string)entry.Key);
 		}
 		userSpaces.Close();
 

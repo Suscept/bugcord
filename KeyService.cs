@@ -2,6 +2,7 @@ using Godot;
 using System;
 using System.Collections.Generic;
 using System.Security.Cryptography;
+using System.Text;
 
 public partial class KeyService : Node
 {
@@ -135,6 +136,22 @@ public partial class KeyService : Node
 		signetureVerifier.ImportRSAPublicKey(signeeKey, out int bytesRead);
 		
 		return signetureVerifier.VerifyData(data, signature, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+	}
+
+	public static byte[] GetSHA256Hash(byte[] data){
+		using (SHA256 sha = SHA256.Create()){
+			return sha.ComputeHash(data);
+		}
+	}
+
+	public static string GetSHA256HashString(byte[] data){ // String conversion from https://stackoverflow.com/a/17001289
+		StringBuilder builder = new StringBuilder();
+
+		foreach (byte b in GetSHA256Hash(data)){
+			builder.Append(b.ToString("x2"));
+		}
+
+		return builder.ToString();
 	}
 
 	public static byte[] AESEncrypt(byte[] plaintext, byte[] key, byte[] iv){

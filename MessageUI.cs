@@ -18,15 +18,15 @@ public partial class MessageUI : MarginContainer
 	{
 	}
 
-	public void Initiate(Dictionary message){
-		usernameLabel.Text = (string)message["sender"];
+	public void Initiate(DatabaseService.Message message, PeerService peerService){
+		usernameLabel.Text = peerService.peers[message.senderId].username;
 
-		if (message.ContainsKey("content")){
-			SetupMessageContent((string)message["content"]);
+		if (message.content != null && message.content.Length > 0){
+			SetupMessageContent(message.content);
 		}
 
-		if (message.ContainsKey("mediaId")){
-			waitingForEmbedGuid = (string)message["mediaId"];
+		if (message.embedId != null && message.embedId.Length > 0){
+			waitingForEmbedGuid = message.embedId;
 		
 			mediaLoadingProgressLabel.Text = "Loading...";
 		}else{

@@ -62,6 +62,7 @@ public partial class Bugcord : Node
 	private SpaceService spaceService;
 	private PeerService peerService;
 	private PopupAlert alertService;
+	private DatabaseService databaseService;
 
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
@@ -75,6 +76,7 @@ public partial class Bugcord : Node
 		userService = GetNode<UserService>("UserService");
 		spaceService = GetNode<SpaceService>("SpaceService");
 		peerService = GetNode<PeerService>("PeerService");
+		databaseService = GetNode<DatabaseService>("DatabaseService");
 		alertService = GetNode<PopupAlert>("/root/Main/Popups/GenericPopup");
 
 		if (!LogIn()){
@@ -101,15 +103,6 @@ public partial class Bugcord : Node
 		}
 
 		previousState = clientStatus;
-
-		if (catchupBuffer.Count > 0){
-			for (int i = 0; i < Mathf.Min(catchupBuffer.Count, 10); i++){
-				ProcessIncomingPacket(catchupBuffer[i], true);
-			}
-
-			catchupBuffer.RemoveRange(0, Mathf.Min(catchupBuffer.Count, 10));
-			return;
-		}
 
 		if (tcpClient.GetAvailableBytes() > 0){
 			Godot.Collections.Array recieved = tcpClient.GetData(tcpClient.GetAvailableBytes());
@@ -241,21 +234,21 @@ public partial class Bugcord : Node
 
 	#region message functions
 
-	public void DisplayMessage(string senderId, string content, string mediaId){
+	public void DisplayMessage(DatabaseService.Message message){
 		Dictionary messageDict = new Dictionary
 		{
-			{"sender", peerService.peers[senderId].username}
+			{"sender", peerService.peers[message.senderId].username}
 		};
 
-		if (content != null){
-			messageDict.Add("content", content);
+		if (message.content != null){
+			messageDict.Add("content", message.content);
 		}
 
-		if (mediaId != null){
-			messageDict.Add("mediaId", mediaId);
+		if (message.embedId != null){
+			messageDict.Add("mediaId", message.embedId);
 		}
 
-		EmitSignal(SignalName.OnMessageRecieved, messageDict);
+		EmitSignal(SignalName.OnMessageRecieved, (Dictionary)message);
 	}
 
 	public void DisplayMediaMessage(string mediaId, string senderId){
@@ -598,9 +591,10 @@ public partial class Bugcord : Node
 		if (!fromCatchup)
 			fileService.SavePacket(packet);
 
-		byte[][] spans = ReadDataSpans(packet, 17);
+		byte[][] spans = ReadDataSpans(packet, 19);
 
-		byte[] initVector = ReadLength(packet, 1, 16);
+		ushort hashNonce =  BitConverter.ToUInt16(ReadLength(packet, 1, 2));
+		byte[] initVector = ReadLength(packet, 3, 16);
 
 		string keyUsed = spans[0].GetStringFromUtf8();
 		byte[] encryptedSection = spans[1];
@@ -625,7 +619,18 @@ public partial class Bugcord : Node
 			readingSpan++;
 		}
 
-		DisplayMessage(senderGuid, messageText, embedId);
+		double timeRecieved = Time.GetUnixTimeFromSystem();
+
+		DatabaseService.Message message = new DatabaseService.Message(){
+			id = KeyService.GetSHA256HashString(packet),
+			senderId = senderGuid,
+			content = messageText,
+			embedId = embedId,
+			unixTimestamp = timeRecieved,
+			nonce = hashNonce
+		};
+
+		DisplayMessage(message);
 
 		if (messageFlags.HasFlag(MessageComponentFlags.FileEmbed)){
 			if (fileService.IsFileInCache(embedId)){
@@ -635,6 +640,9 @@ public partial class Bugcord : Node
 
 			Send(BuildFileRequest(embedId));
 		}
+
+		databaseService.SaveMessage(spaceService.GetSpaceUsingKey(keyUsed), message);
+		// databaseService.SaveMessage(spaceService.GetSpaceUsingKey(keyUsed), KeyService.GetSHA256HashString(packet), senderGuid, messageText, embedId, timeRecieved, hashNonce);
 	}
 
 	#endregion
@@ -720,8 +728,10 @@ public partial class Bugcord : Node
 
 		byte[] keyId = spaceService.spaces[selectedSpaceId].keyId.ToUtf8Buffer();
 
+		byte[] hashNonce = new byte[2];
 		byte[] initVector = new byte[16];
 		new Random().NextBytes(initVector);
+		new Random().NextBytes(hashNonce);
 
 		MessageComponentFlags messageFlags = new MessageComponentFlags();
 		messageFlags |= MessageComponentFlags.FileEmbed; // Set embed
@@ -733,6 +743,7 @@ public partial class Bugcord : Node
 		
 		byte[] encryptedSection = keyService.EncryptWithSpace(sectionToEncrypt.ToArray(), selectedSpaceId, initVector);
 
+		packetList.AddRange(hashNonce);
 		packetList.AddRange(initVector);
 		packetList.AddRange(MakeDataSpan(keyId));
 		packetList.AddRange(MakeDataSpan(encryptedSection));
@@ -748,8 +759,10 @@ public partial class Bugcord : Node
 
 		byte[] keyId = spaceService.spaces[selectedSpaceId].keyId.ToUtf8Buffer();
 
+		byte[] hashNonce = new byte[2];
 		byte[] initVector = new byte[16];
 		new Random().NextBytes(initVector);
+		new Random().NextBytes(hashNonce);
 
 		MessageComponentFlags messageFlags = new MessageComponentFlags();
 		messageFlags |= MessageComponentFlags.Text; // Set text flag
@@ -761,6 +774,7 @@ public partial class Bugcord : Node
 
 		byte[] encryptedSection = keyService.EncryptWithSpace(sectionToEncrypt.ToArray(), selectedSpaceId, initVector);
 
+		packetList.AddRange(hashNonce);
 		packetList.AddRange(initVector);
 		packetList.AddRange(MakeDataSpan(keyId));
 		packetList.AddRange(MakeDataSpan(encryptedSection));
