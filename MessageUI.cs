@@ -10,6 +10,7 @@ public partial class MessageUI : MarginContainer
 	[Export] public RichTextLabel textContent;
 	[Export] public Label usernameLabel;
 	[Export] public Label mediaLoadingProgressLabel;
+	[Export] public Label timestampLabel;
 
 	public string waitingForEmbedGuid;
 
@@ -20,6 +21,7 @@ public partial class MessageUI : MarginContainer
 
 	public void Initiate(DatabaseService.Message message, PeerService peerService){
 		usernameLabel.Text = peerService.peers[message.senderId].username;
+		timestampLabel.Text = GetTimestampString(message.unixTimestamp);
 
 		if (message.content != null && message.content.Length > 0){
 			SetupMessageContent(message.content);
@@ -66,6 +68,37 @@ public partial class MessageUI : MarginContainer
 
 	public void FileBufferUpdated(string guid, int fileParts, int filePartsTotal){
 		mediaLoadingProgressLabel.Text = "Loading... " + fileParts + "/" + filePartsTotal;
+	}
+
+	private string GetTimestampString(double timestamp){
+		string dateString = Time.GetDateStringFromUnixTime((long)timestamp);
+		if (Time.GetDateStringFromSystem() == dateString){
+			dateString = "Today at";
+		}
+		int timezoneOffset = (int)Time.GetTimeZoneFromSystem()["bias"] * 60;
+
+		string timeString = Time.GetTimeStringFromUnixTime((long)timestamp + timezoneOffset);
+		string[] timeSplit = timeString.Substring(0, timeString.Length - 3).Split(':'); // Remove seconds
+
+		// Convert timestamp to 12 hour time
+		int hour = timeSplit[0].ToInt();
+		string amOrPm = " AM";
+		if (hour >= 12){
+			amOrPm = " PM";
+		}
+
+		if (hour == 0){
+			hour += 12;
+		}else if (hour > 12){
+			hour -= 12;
+		}
+
+		timeSplit[0] = hour.ToString();
+		timeString = timeSplit.Join(":");
+
+		dateString = dateString.Replace('-', '/');
+
+		return dateString + " " + timeString + amOrPm;
 	}
 
 	private void SetupMediaUi(string cachePath){

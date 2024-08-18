@@ -38,7 +38,7 @@ public partial class DatabaseService : Node
 			Message readingMessage = new Message{
 				id = reader.GetString(0),
 				senderId = reader.GetString(1),
-				unixTimestamp = BitConverter.ToDouble(BitConverter.GetBytes(reader.GetInt64(4))),
+				unixTimestamp = TimestampMilisecondsToSeconds(reader.GetInt64(4)),
 				nonce = BitConverter.ToUInt16(BitConverter.GetBytes(reader.GetInt16(5))),
 			};
 
@@ -57,14 +57,14 @@ public partial class DatabaseService : Node
 		ExecuteSql(@$"
 			INSERT INTO '{spaceId}'(messageId, userId, content, embedId, unixTimestamp, nonce)
 			VALUES ($0, $1, $2, $3, $4, $5)
-		", false, id, senderId, content, embedId, BitConverter.ToInt64(BitConverter.GetBytes(unixTimestamp)), BitConverter.ToInt16(BitConverter.GetBytes(nonce)));
+		", false, id, senderId, content, embedId, TimestampSecondsToMiliseconds(unixTimestamp), BitConverter.ToInt16(BitConverter.GetBytes(nonce)));
 	}
 
 	public void SaveMessage(string spaceId, Message message){
 		ExecuteSql(@$"
 			INSERT INTO '{spaceId}'(messageId, userId, content, embedId, unixTimestamp, nonce)
 			VALUES ($0, $1, $2, $3, $4, $5)
-		", false, message.id, message.senderId, message.content, message.embedId, BitConverter.ToInt64(BitConverter.GetBytes(message.unixTimestamp)), message.nonce);
+		", false, message.id, message.senderId, message.content, message.embedId, TimestampSecondsToMiliseconds(message.unixTimestamp), BitConverter.ToInt16(BitConverter.GetBytes(message.nonce)));
 	}
 
 	public void AddSpaceTable(string spaceId){
@@ -124,6 +124,14 @@ public partial class DatabaseService : Node
 		}
 
 		return command.ExecuteReader();
+	}
+
+	public long TimestampSecondsToMiliseconds(double timestamp){
+		return (long)Math.Floor(timestamp * 1000);
+	}
+
+	public double TimestampMilisecondsToSeconds(long timestamp){
+		return timestamp / 1000d;
 	}
 
 	public class Message{

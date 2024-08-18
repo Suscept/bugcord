@@ -43,7 +43,7 @@ public partial class MessageWindow : Control
 		}
 
 		List<DatabaseService.Message> messages = databaseService.GetMessages(spaceId);
-		GD.Print(messages.Count);
+
 		for (int i = 0; i < messages.Count; i++){
 			DisplayNewMessage(messages[i]);
 		}
