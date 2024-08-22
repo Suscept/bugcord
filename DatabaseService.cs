@@ -47,24 +47,19 @@ public partial class DatabaseService : Node
 				readingMessage.content = reader.GetString(2);
 			if (!reader.IsDBNull(3))
 				readingMessage.embedId = reader.GetString(3);
+			if (!reader.IsDBNull(6))
+				readingMessage.replyingTo = reader.GetString(6);
 			gotMessages.Add(readingMessage);
 		}
 
 		return gotMessages;
 	}
 
-	public void SaveMessage(string spaceId, string id, string senderId, string content, string embedId, double unixTimestamp, ushort nonce){
-		ExecuteSql(@$"
-			INSERT INTO '{spaceId}'(messageId, userId, content, embedId, unixTimestamp, nonce)
-			VALUES ($0, $1, $2, $3, $4, $5)
-		", false, id, senderId, content, embedId, TimestampSecondsToMiliseconds(unixTimestamp), BitConverter.ToInt16(BitConverter.GetBytes(nonce)));
-	}
-
 	public void SaveMessage(string spaceId, Message message){
 		ExecuteSql(@$"
-			INSERT INTO '{spaceId}'(messageId, userId, content, embedId, unixTimestamp, nonce)
-			VALUES ($0, $1, $2, $3, $4, $5)
-		", false, message.id, message.senderId, message.content, message.embedId, TimestampSecondsToMiliseconds(message.unixTimestamp), BitConverter.ToInt16(BitConverter.GetBytes(message.nonce)));
+			INSERT INTO '{spaceId}'(messageId, userId, content, embedId, unixTimestamp, nonce, replyingTo)
+			VALUES ($0, $1, $2, $3, $4, $5, $6)
+		", false, message.id, message.senderId, message.content, message.embedId, TimestampSecondsToMiliseconds(message.unixTimestamp), BitConverter.ToInt16(BitConverter.GetBytes(message.nonce)), message.replyingTo);
 	}
 
 	public void AddSpaceTable(string spaceId){
@@ -75,7 +70,8 @@ public partial class DatabaseService : Node
 			content TEXT,
 			embedId TEXT,
 			unixTimestamp INTEGER,
-			nonce INTEGER
+			nonce INTEGER,
+			replyingTo TEXT
 			)
 		", false);
 	}
@@ -141,6 +137,7 @@ public partial class DatabaseService : Node
 		public string embedId;
 		public double unixTimestamp;
 		public ushort nonce;
+		public string replyingTo;
 
 		public static explicit operator Godot.Collections.Dictionary(Message message){
 			Godot.Collections.Dictionary messageDict = new Godot.Collections.Dictionary
@@ -151,6 +148,7 @@ public partial class DatabaseService : Node
                 { "embedId", message.embedId },
                 { "unixTimestamp", message.unixTimestamp },
                 { "nonce", message.nonce },
+                { "replyingTo", message.replyingTo },
             };
 			return messageDict;
 		}
@@ -164,6 +162,7 @@ public partial class DatabaseService : Node
                 embedId = (string)messageDict["embedId"],
                 unixTimestamp = (double)messageDict["unixTimestamp"],
                 nonce = (ushort)messageDict["nonce"],
+				replyingTo = (string)messageDict["replyingTo"],
             };
 			return message;
 		}

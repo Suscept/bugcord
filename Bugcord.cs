@@ -42,6 +42,7 @@ public partial class Bugcord : Node
 		None = 0,
 		Text = 1,
 		FileEmbed = 1 << 1,
+		IsReply = 1 << 2,
 	}
 
 	private static StreamPeerTcp tcpClient;
@@ -227,7 +228,7 @@ public partial class Bugcord : Node
 		fileService.WriteToCache(embedData, filename, guidString);
 		fileService.WriteToServable(servableData, guidString);
 
-		Send(BuildEmbedMessage(guidString));
+		Send(BuildEmbedMessage(guidString, null));
 	}
 
 	#endregion
@@ -265,11 +266,13 @@ public partial class Bugcord : Node
 		EmitSignal(SignalName.OnEmbedMessageRecieved, messageDict);
 	}
 
-	public void PostMessage(string message){
+	public void PostMessage(string message, string[] embedPaths, string replyingTo){
 		if (!CheckSendReady())
 			return;
-		// client.SendText(message);
-		Send(BuildMsgPacket(message));
+
+		if (replyingTo.Length == 0) // It appears that when null strings are sent through signals they are turned into zero length strings
+			replyingTo = null;
+		Send(BuildMsgPacket(message, replyingTo, null));
 	}
 
 	#endregion
@@ -609,6 +612,7 @@ public partial class Bugcord : Node
 		int readingSpan = 2;
 		string messageText = null;
 		string embedId = null;
+		string replyingTo = null;
 		if (messageFlags.HasFlag(MessageComponentFlags.Text)){
 			messageText = decryptedSpans[readingSpan].GetStringFromUtf8();
 			readingSpan++;
@@ -616,6 +620,11 @@ public partial class Bugcord : Node
 
 		if (messageFlags.HasFlag(MessageComponentFlags.FileEmbed)){
 			embedId = decryptedSpans[readingSpan].GetStringFromUtf8();
+			readingSpan++;
+		}
+
+		if (messageFlags.HasFlag(MessageComponentFlags.IsReply)){
+			replyingTo = decryptedSpans[readingSpan].GetStringFromUtf8();
 			readingSpan++;
 		}
 
@@ -627,7 +636,8 @@ public partial class Bugcord : Node
 			content = messageText,
 			embedId = embedId,
 			unixTimestamp = timeRecieved,
-			nonce = hashNonce
+			nonce = hashNonce,
+			replyingTo = replyingTo,
 		};
 
 		DisplayMessage(message);
@@ -711,16 +721,7 @@ public partial class Bugcord : Node
 		return packetBytes.ToArray();
 	}
 
-	private byte[] BuildEmbedMessage(string embedGuid){
-		// List<byte> packetBytes = new List<byte>{
-		// 	5
-		// };
-
-		// packetBytes.AddRange(MakeDataSpan(GetClientId().ToUtf8Buffer())); // add user's guid
-		// packetBytes.AddRange(MakeDataSpan(embedGuid.ToUtf8Buffer()));
-
-		// return packetBytes.ToArray();
-
+	private byte[] BuildEmbedMessage(string embedGuid, string replyingTo){
 		List<byte> packetList = new List<byte>
 		{
 			0
@@ -735,11 +736,15 @@ public partial class Bugcord : Node
 
 		MessageComponentFlags messageFlags = new MessageComponentFlags();
 		messageFlags |= MessageComponentFlags.FileEmbed; // Set embed
+		if (replyingTo != null)
+			messageFlags |= MessageComponentFlags.IsReply; // Set embed
 
 		List<byte> sectionToEncrypt = new List<byte>();
 		sectionToEncrypt.AddRange(MakeDataSpan(userService.userId.ToUtf8Buffer())); // Sender id
 		sectionToEncrypt.AddRange(MakeDataSpan(BitConverter.GetBytes((ushort)messageFlags))); // Message flags
 		sectionToEncrypt.AddRange(MakeDataSpan(embedGuid.ToUtf8Buffer()));
+		if (replyingTo != null)
+			sectionToEncrypt.AddRange(MakeDataSpan(replyingTo.ToUtf8Buffer()));
 		
 		byte[] encryptedSection = keyService.EncryptWithSpace(sectionToEncrypt.ToArray(), selectedSpaceId, initVector);
 
@@ -751,7 +756,7 @@ public partial class Bugcord : Node
 		return packetList.ToArray();
 	}
 
-	private byte[] BuildMsgPacket(string text){
+	private byte[] BuildMsgPacket(string text, string replyingTo, string embedId){
 		List<byte> packetList = new List<byte>
 		{
 			0
@@ -765,12 +770,22 @@ public partial class Bugcord : Node
 		new Random().NextBytes(hashNonce);
 
 		MessageComponentFlags messageFlags = new MessageComponentFlags();
-		messageFlags |= MessageComponentFlags.Text; // Set text flag
+		if (text != null)
+			messageFlags |= MessageComponentFlags.Text; // Set text flag
+		if (replyingTo != null)
+			messageFlags |= MessageComponentFlags.IsReply; // Set reply
+		if (embedId != null)
+			messageFlags |= MessageComponentFlags.FileEmbed; // Set embed
 
 		List<byte> sectionToEncrypt = new List<byte>();
 		sectionToEncrypt.AddRange(MakeDataSpan(userService.userId.ToUtf8Buffer())); // Sender id
 		sectionToEncrypt.AddRange(MakeDataSpan(BitConverter.GetBytes((ushort)messageFlags))); // Message flags
-		sectionToEncrypt.AddRange(MakeDataSpan(text.ToUtf8Buffer()));
+		if (text != null)
+			sectionToEncrypt.AddRange(MakeDataSpan(text.ToUtf8Buffer()));
+		if (embedId != null)
+			sectionToEncrypt.AddRange(MakeDataSpan(embedId.ToUtf8Buffer()));
+		if (replyingTo != null)
+			sectionToEncrypt.AddRange(MakeDataSpan(replyingTo.ToUtf8Buffer()));
 
 		byte[] encryptedSection = keyService.EncryptWithSpace(sectionToEncrypt.ToArray(), selectedSpaceId, initVector);
 

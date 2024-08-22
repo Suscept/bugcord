@@ -11,17 +11,48 @@ public partial class MessageUI : MarginContainer
 	[Export] public Label usernameLabel;
 	[Export] public Label mediaLoadingProgressLabel;
 	[Export] public Label timestampLabel;
+	[Export] public MenuButton extraOptionsDropdown;
+	[Export] public Button jumpToReplyButton;
 
 	public string waitingForEmbedGuid;
+
+	private PopupMenu popupMenu;
+	private DatabaseService.Message myMessage;
 
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
 	{
+		popupMenu = extraOptionsDropdown.GetPopup();
+		popupMenu.IdPressed += OnDropdownOptionPressed;
 	}
 
-	public void Initiate(DatabaseService.Message message, PeerService peerService){
+	public void OnDropdownOptionPressed(long optionId){
+		switch (optionId)
+		{
+			case 0: // Reply
+				MessageCreator messageCreator = GetNode<MessageCreator>("/root/Main/HBoxContainer/ChatMain/VBoxContainer/MessageCreator");
+				messageCreator.SetReply(myMessage);
+				break;
+			case 1: // Copy Text
+				DisplayServer.ClipboardSet(textContent.Text);
+				break;
+			case 2: // Delete
+				GetNode<PopupAlert>("/root/Main/Popups/GenericPopup").NewAlert("Not implemented lol");
+				break;
+			default:
+				break;
+		}
+	}
+
+	public void Initiate(DatabaseService.Message message, PeerService peerService, string replyPreview){
 		usernameLabel.Text = peerService.peers[message.senderId].username;
 		timestampLabel.Text = GetTimestampString(message.unixTimestamp);
+		myMessage = message;
+
+		jumpToReplyButton.Visible = replyPreview != null;
+		if (replyPreview != null){
+			jumpToReplyButton.Text = replyPreview;
+		}
 
 		if (message.content != null && message.content.Length > 0){
 			SetupMessageContent(message.content);

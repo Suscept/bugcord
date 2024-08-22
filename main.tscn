@@ -271,13 +271,15 @@ vertical_scroll_mode = 2
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="MessageCreator" type="MarginContainer" parent="HBoxContainer/ChatMain/VBoxContainer" node_paths=PackedStringArray("messageInput", "embedDialog", "embedContainer")]
+[node name="MessageCreator" type="MarginContainer" parent="HBoxContainer/ChatMain/VBoxContainer" node_paths=PackedStringArray("messageInput", "embedDialog", "embedContainer", "replyModel", "replyPreview")]
 layout_mode = 2
 script = ExtResource("4_weho3")
 messageInput = NodePath("VBoxContainer/MessageInput/MessageText")
 embedDialog = NodePath("EmbedDialog")
 embedContainer = NodePath("VBoxContainer/ScrollContainer/Embeds")
 embedScene = ExtResource("8_ihghl")
+replyModel = NodePath("VBoxContainer/ReplyModel")
+replyPreview = NodePath("VBoxContainer/ReplyModel/ReplyPreview")
 
 [node name="EmbedDialog" type="FileDialog" parent="HBoxContainer/ChatMain/VBoxContainer/MessageCreator"]
 title = "Open File(s)"
@@ -290,6 +292,22 @@ use_native_dialog = true
 
 [node name="VBoxContainer" type="VBoxContainer" parent="HBoxContainer/ChatMain/VBoxContainer/MessageCreator"]
 layout_mode = 2
+
+[node name="ReplyModel" type="HBoxContainer" parent="HBoxContainer/ChatMain/VBoxContainer/MessageCreator/VBoxContainer"]
+layout_mode = 2
+
+[node name="ReplyPreview" type="Label" parent="HBoxContainer/ChatMain/VBoxContainer/MessageCreator/VBoxContainer/ReplyModel"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Reply aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+text_overrun_behavior = 3
+
+[node name="ClearReply" type="Button" parent="HBoxContainer/ChatMain/VBoxContainer/MessageCreator/VBoxContainer/ReplyModel"]
+custom_minimum_size = Vector2(25, 25)
+layout_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_font_sizes/font_size = 12
+text = "X"
 
 [node name="MessageInput" type="HBoxContainer" parent="HBoxContainer/ChatMain/VBoxContainer/MessageCreator/VBoxContainer"]
 layout_mode = 2
@@ -769,6 +787,7 @@ size_flags_horizontal = 3
 [connection signal="OnEmbedSubmit" from="HBoxContainer/ChatMain/VBoxContainer/MessageCreator" to="Bugcord" method="SubmitEmbed"]
 [connection signal="OnMessageSubmit" from="HBoxContainer/ChatMain/VBoxContainer/MessageCreator" to="Bugcord" method="PostMessage"]
 [connection signal="files_selected" from="HBoxContainer/ChatMain/VBoxContainer/MessageCreator/EmbedDialog" to="HBoxContainer/ChatMain/VBoxContainer/MessageCreator" method="EmbedFile"]
+[connection signal="pressed" from="HBoxContainer/ChatMain/VBoxContainer/MessageCreator/VBoxContainer/ReplyModel/ClearReply" to="HBoxContainer/ChatMain/VBoxContainer/MessageCreator" method="ClearReply"]
 [connection signal="pressed" from="HBoxContainer/ChatMain/VBoxContainer/MessageCreator/VBoxContainer/MessageInput/EmbedButton" to="HBoxContainer/ChatMain/VBoxContainer/MessageCreator" method="OnEmbedButtonPressed"]
 [connection signal="pressed" from="Popups/GenericPopup/VBoxContainer/Button" to="Popups/GenericPopup" method="DisplayNext"]
 [connection signal="pressed" from="Popups/GenericPopup/VBoxContainer/Button" to="Popups/GenericPopup/VBoxContainer/Button" method="SetInvisible"]

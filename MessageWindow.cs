@@ -1,5 +1,4 @@
 using Godot;
-using Godot.Collections;
 using System;
 using System.Collections.Generic;
 
@@ -17,7 +16,8 @@ public partial class MessageWindow : Control
 	private DatabaseService databaseService;
 	private PeerService peerService;
 
-	private List<MessageUI> displayedMessages = new List<MessageUI>();
+	private List<MessageUI> displayedMessageUIs = new List<MessageUI>();
+	private Dictionary<string, DatabaseService.Message> displayingMessages = new Dictionary<string, DatabaseService.Message>();
 
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
@@ -38,9 +38,11 @@ public partial class MessageWindow : Control
 
 	public void DisplaySpaceMessages(string spaceId, string spaceName){
 		// Clear all messages
-		foreach (MessageUI message in displayedMessages){
+		foreach (MessageUI message in displayedMessageUIs){
 			message.QueueFree();
 		}
+		displayedMessageUIs.Clear();
+		displayingMessages.Clear();
 
 		List<DatabaseService.Message> messages = databaseService.GetMessages(spaceId);
 
@@ -49,15 +51,22 @@ public partial class MessageWindow : Control
 		}
 	}
 
-	public void DisplayNewMessage(Dictionary messageDict){
+	public void DisplayNewMessage(Godot.Collections.Dictionary messageDict){
 		DisplayNewMessage((DatabaseService.Message)messageDict);
 	}
 
 	public void DisplayNewMessage(DatabaseService.Message message){
 		atBottom = IsScrollAtBottom();
 
+		string replyPreview = null;
+		if (message.replyingTo != null && displayingMessages.ContainsKey(message.replyingTo)){
+			DatabaseService.Message replyingToMessage = displayingMessages[message.replyingTo];
+			replyPreview = peerService.peers[replyingToMessage.senderId].username;
+			replyPreview += ": " + replyingToMessage.content;
+		}
+
 		MessageUI newMessage = messageScene.Instantiate<MessageUI>();
-		newMessage.Initiate(message, peerService);
+		newMessage.Initiate(message, peerService, replyPreview);
 		messageContainer.AddChild(newMessage);
 
 		if (message.embedId != null){
@@ -65,7 +74,8 @@ public partial class MessageWindow : Control
 			fileService.OnFileBufferUpdated += newMessage.FileBufferUpdated;
 		}
 
-		displayedMessages.Add(newMessage);
+		displayedMessageUIs.Add(newMessage);
+		displayingMessages.Add(message.id, message);
 	}
 	
 	public void OnContentAdded(){

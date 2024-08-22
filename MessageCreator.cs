@@ -1,10 +1,10 @@
+using System.Collections.Generic;
 using Godot;
-using Godot.Collections;
 using Godot.NativeInterop;
 
 public partial class MessageCreator : MarginContainer
 {
-	[Signal] public delegate void OnMessageSubmitEventHandler(string message);
+	[Signal] public delegate void OnMessageSubmitEventHandler(string message, string[] embedPaths, string replyingTo);
 	[Signal] public delegate void OnEmbedSubmitEventHandler(string filePath);
 
 	[Export] public TextEdit messageInput;
@@ -14,12 +14,20 @@ public partial class MessageCreator : MarginContainer
 
 	[Export] public PackedScene embedScene;
 
+	[Export] public Control replyModel;
+	[Export] public Label replyPreview;
+
+	public string replyingToMessage;
+
 	private Dictionary<string, Node> embeds = new Dictionary<string, Node>();
+	private PeerService peerService;
 
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
 	{
+		peerService = GetNode<PeerService>("/root/Main/Bugcord/PeerService");
 		GetWindow().FilesDropped += EmbedFile;
+		ClearReply(); // Just to get rid of the reply preview
 	}
 
 	// Called every frame. 'delta' is the elapsed time since the previous frame.
@@ -35,8 +43,14 @@ public partial class MessageCreator : MarginContainer
 			string sendingText = messageInput.Text;
 
 			if (sendingText.Length > 0){ // If message is not empty
-				EmitSignal(SignalName.OnMessageSubmit, sendingText);
+				List<string> embedPaths = new List<string>();
+				foreach (string path in embeds.Keys){
+					embedPaths.Add(path);
+				}
+
+				EmitSignal(SignalName.OnMessageSubmit, sendingText, embedPaths.ToArray(), replyingToMessage);
 				messageInput.Clear();
+				ClearReply();
 			}
 
 			if (embeds.Count > 0){ // If embeds are present
@@ -50,6 +64,20 @@ public partial class MessageCreator : MarginContainer
 				embeds.Clear();
 			}
 		}
+	}
+
+	public void SetReply(DatabaseService.Message message){
+		replyingToMessage = message.id;
+		replyModel.Visible = true;
+
+		string replyPreviewText = peerService.peers[message.senderId].username;
+		replyPreviewText += ": " + message.content;
+		replyPreview.Text = replyPreviewText;
+	}
+
+	public void ClearReply(){
+		replyingToMessage = null;
+		replyModel.Visible = false;
 	}
 
 	public void EmbedFile(string[] dirs){
