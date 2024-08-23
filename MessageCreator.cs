@@ -42,27 +42,35 @@ public partial class MessageCreator : MarginContainer
 			messageInput.Undo(); // remove newline that was just added
 			string sendingText = messageInput.Text;
 
-			if (sendingText.Length > 0){ // If message is not empty
-				List<string> embedPaths = new List<string>();
-				foreach (string path in embeds.Keys){
-					embedPaths.Add(path);
-				}
-
-				EmitSignal(SignalName.OnMessageSubmit, sendingText, embedPaths.ToArray(), replyingToMessage);
-				messageInput.Clear();
-				ClearReply();
+			if (sendingText.Length == 0 && embeds.Count == 0){ // If message would be empty
+				return;
 			}
 
-			if (embeds.Count > 0){ // If embeds are present
-				foreach (string path in embeds.Keys){
-					EmitSignal(SignalName.OnEmbedSubmit, path);
-				}
-
-				foreach (Node embedNode in embeds.Values){
-					embedNode.QueueFree();
-				}
-				embeds.Clear();
+			// Convert embed dictionary to an array
+			List<string> embedPaths = new List<string>();
+			foreach (string path in embeds.Keys){
+				embedPaths.Add(path);
 			}
+
+			EmitSignal(SignalName.OnMessageSubmit, sendingText, embedPaths.ToArray(), replyingToMessage);
+			messageInput.Clear();
+			ClearReply();
+
+			foreach (Node embedNode in embeds.Values){
+				embedNode.QueueFree();
+			}
+			embeds.Clear();
+
+			// if (embeds.Count > 0){ // If embeds are present
+			// 	foreach (string path in embeds.Keys){
+			// 		EmitSignal(SignalName.OnEmbedSubmit, path);
+			// 	}
+
+			// 	foreach (Node embedNode in embeds.Values){
+			// 		embedNode.QueueFree();
+			// 	}
+			// 	embeds.Clear();
+			// }
 		}
 	}
 

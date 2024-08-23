@@ -784,7 +784,6 @@ size_flags_horizontal = 3
 [connection signal="file_selected" from="HBoxContainer/ChatMain/VBoxContainer/HBoxContainer2/Extras/SettingsPanel/FileDialog" to="HBoxContainer/ChatMain/VBoxContainer/HBoxContainer2/Extras/SettingsPanel" method="OnProfileImagePicked"]
 [connection signal="pressed" from="HBoxContainer/ChatMain/VBoxContainer/HBoxContainer2/Extras/SettingsPanel/VBoxContainer/Button" to="HBoxContainer/ChatMain/VBoxContainer/HBoxContainer2/Extras/SettingsPanel/VBoxContainer/Button" method="Toggle"]
 [connection signal="pressed" from="HBoxContainer/ChatMain/VBoxContainer/HBoxContainer2/Extras/AlertPanel/VBoxContainer/Button" to="HBoxContainer/ChatMain/VBoxContainer/HBoxContainer2/Extras/AlertPanel" method="ToggleVisible"]
-[connection signal="OnEmbedSubmit" from="HBoxContainer/ChatMain/VBoxContainer/MessageCreator" to="Bugcord" method="SubmitEmbed"]
 [connection signal="OnMessageSubmit" from="HBoxContainer/ChatMain/VBoxContainer/MessageCreator" to="Bugcord" method="PostMessage"]
 [connection signal="files_selected" from="HBoxContainer/ChatMain/VBoxContainer/MessageCreator/EmbedDialog" to="HBoxContainer/ChatMain/VBoxContainer/MessageCreator" method="EmbedFile"]
 [connection signal="pressed" from="HBoxContainer/ChatMain/VBoxContainer/MessageCreator/VBoxContainer/ReplyModel/ClearReply" to="HBoxContainer/ChatMain/VBoxContainer/MessageCreator" method="ClearReply"]

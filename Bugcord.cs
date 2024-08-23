@@ -216,7 +216,7 @@ public partial class Bugcord : Node
     #region server client
 
     // prepares a file to be served and sends an embed linked message
-    public void SubmitEmbed(string directory){
+    public string SubmitEmbed(string directory){
 		string guidString = Guid.NewGuid().ToString();
 		string filename = System.IO.Path.GetFileName(directory);
 
@@ -228,7 +228,8 @@ public partial class Bugcord : Node
 		fileService.WriteToCache(embedData, filename, guidString);
 		fileService.WriteToServable(servableData, guidString);
 
-		Send(BuildEmbedMessage(guidString, null));
+		// Send(BuildEmbedMessage(guidString, null));
+		return guidString;
 	}
 
 	#endregion
@@ -270,9 +271,28 @@ public partial class Bugcord : Node
 		if (!CheckSendReady())
 			return;
 
-		if (replyingTo.Length == 0) // It appears that when null strings are sent through signals they are turned into zero length strings
+		if (message.Length == 0) // It appears that when null strings are sent through signals they are turned into zero length strings
+			message = null;
+		if (replyingTo.Length == 0)
 			replyingTo = null;
-		Send(BuildMsgPacket(message, replyingTo, null));
+
+		GD.Print(embedPaths.Length);
+
+		if (embedPaths.Length == 0){ // If message contains no embeds
+			Send(BuildMsgPacket(message, replyingTo, null));
+			return;
+		}
+
+		for (int i = 0; i < embedPaths.Length; i++){ // Create a message for every embed
+			string embedPath = embedPaths[i];
+			string embedId = SubmitEmbed(embedPath);
+			if (i == 0){ // However, only the first message should contain the text content and be a reply
+				Send(BuildMsgPacket(message, replyingTo, embedId));
+				continue;
+			}
+
+			Send(BuildMsgPacket(null, null, embedId));
+		}
 	}
 
 	#endregion
