@@ -366,7 +366,6 @@ public partial class Bugcord : Node
 
 	public void OnConnected(){
 		GD.Print("connected");
-		fileService.LoadCatchup();
 
 		Send(BuildIdentifyingPacket());
 		InitVoice();

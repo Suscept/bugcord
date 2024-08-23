@@ -60,21 +60,6 @@ public partial class FileService : Node
 		file.Close();
 	}
 
-	public void LoadCatchup(){
-		if (!FileAccess.FileExists(packetStorePath+"/packets.jsonl")){
-			return;
-		}
-
-		FileAccess file = FileAccess.Open(packetStorePath+"/packets.jsonl", FileAccess.ModeFlags.Read);
-		while (true){
-			string jsonl = file.GetLine();
-			if (jsonl == "")
-				break;
-			StoredPacket stored = JsonConvert.DeserializeObject<StoredPacket>(jsonl);
-			Bugcord.catchupBuffer.Add(Bugcord.FromBase64(stored.packet));
-		}
-	}
-
 	public void UpdateFileBuffer(ushort filePart, ushort filePartMax, string fileId, string senderId, byte[] file){
 		if (IsFileInCache(fileId)){ // File already in cache
 			return;
