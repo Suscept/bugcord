@@ -644,6 +644,7 @@ public partial class Bugcord : Node
 		};
 
 		DisplayMessage(message);
+		databaseService.SaveMessage(spaceService.GetSpaceUsingKey(keyUsed), message);
 
 		if (messageFlags.HasFlag(MessageComponentFlags.FileEmbed)){
 			if (fileService.IsFileInCache(embedId)){
@@ -653,8 +654,6 @@ public partial class Bugcord : Node
 
 			Send(BuildFileRequest(embedId));
 		}
-
-		databaseService.SaveMessage(spaceService.GetSpaceUsingKey(keyUsed), message);
 	}
 
 	#endregion
