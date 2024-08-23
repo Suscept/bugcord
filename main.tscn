@@ -771,7 +771,6 @@ size_flags_horizontal = 3
 
 [connection signal="OnConnectedToSpace" from="Bugcord" to="HBoxContainer/ChatMain/VBoxContainer/HBoxContainer2/SpaceView" method="UpdateSpaceInfo"]
 [connection signal="OnConnectedToSpace" from="Bugcord" to="HBoxContainer/ChatMain/VBoxContainer/MessageWindow" method="DisplaySpaceMessages"]
-[connection signal="OnEmbedMessageRecieved" from="Bugcord" to="HBoxContainer/ChatMain/VBoxContainer/MessageWindow" method="DisplayNewMediaMessage"]
 [connection signal="OnMessageRecieved" from="Bugcord" to="HBoxContainer/ChatMain/VBoxContainer/MessageWindow" method="DisplayNewMessage"]
 [connection signal="OnLoggedIn" from="Bugcord/UserService" to="HBoxContainer/LeftBar/Panel/VBoxContainer/ServerInput" method="OnLoggedIn"]
 [connection signal="OnAutoconnectSettingChanged" from="HBoxContainer/LeftBar/Panel/VBoxContainer/ServerInput" to="Bugcord" method="SetAutoConnect"]

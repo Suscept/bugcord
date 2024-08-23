@@ -17,7 +17,6 @@ public partial class Bugcord : Node
 	[Export] public CheckBox voiceChatToggle;
 
 	[Signal] public delegate void OnMessageRecievedEventHandler(Dictionary message);
-	[Signal] public delegate void OnEmbedMessageRecievedEventHandler(Dictionary message);
 	[Signal] public delegate void OnConnectedToSpaceEventHandler(string spaceId, string spaceName);
 
 	public const int minAudioFrames = 2048;
@@ -228,7 +227,6 @@ public partial class Bugcord : Node
 		fileService.WriteToCache(embedData, filename, guidString);
 		fileService.WriteToServable(servableData, guidString);
 
-		// Send(BuildEmbedMessage(guidString, null));
 		return guidString;
 	}
 
@@ -251,20 +249,6 @@ public partial class Bugcord : Node
 		}
 
 		EmitSignal(SignalName.OnMessageRecieved, (Dictionary)message);
-	}
-
-	public void DisplayMediaMessage(string mediaId, string senderId){
-		if (!CheckSendReady())
-			return;
-		GD.Print("displaying media message " + mediaId);
-
-		Dictionary messageDict = new Dictionary
-		{
-			{"mediaId", mediaId},
-			{"sender", peerService.peers[senderId].username}
-		};
-
-		EmitSignal(SignalName.OnEmbedMessageRecieved, messageDict);
 	}
 
 	public void PostMessage(string message, string[] embedPaths, string replyingTo){
@@ -672,7 +656,6 @@ public partial class Bugcord : Node
 		}
 
 		databaseService.SaveMessage(spaceService.GetSpaceUsingKey(keyUsed), message);
-		// databaseService.SaveMessage(spaceService.GetSpaceUsingKey(keyUsed), KeyService.GetSHA256HashString(packet), senderGuid, messageText, embedId, timeRecieved, hashNonce);
 	}
 
 	#endregion
@@ -739,41 +722,6 @@ public partial class Bugcord : Node
 		packetBytes.AddRange(MakeDataSpan(fileGuid.ToUtf8Buffer()));
 
 		return packetBytes.ToArray();
-	}
-
-	private byte[] BuildEmbedMessage(string embedGuid, string replyingTo){
-		List<byte> packetList = new List<byte>
-		{
-			0
-		};
-
-		byte[] keyId = spaceService.spaces[selectedSpaceId].keyId.ToUtf8Buffer();
-
-		byte[] hashNonce = new byte[2];
-		byte[] initVector = new byte[16];
-		new Random().NextBytes(initVector);
-		new Random().NextBytes(hashNonce);
-
-		MessageComponentFlags messageFlags = new MessageComponentFlags();
-		messageFlags |= MessageComponentFlags.FileEmbed; // Set embed
-		if (replyingTo != null)
-			messageFlags |= MessageComponentFlags.IsReply; // Set embed
-
-		List<byte> sectionToEncrypt = new List<byte>();
-		sectionToEncrypt.AddRange(MakeDataSpan(userService.userId.ToUtf8Buffer())); // Sender id
-		sectionToEncrypt.AddRange(MakeDataSpan(BitConverter.GetBytes((ushort)messageFlags))); // Message flags
-		sectionToEncrypt.AddRange(MakeDataSpan(embedGuid.ToUtf8Buffer()));
-		if (replyingTo != null)
-			sectionToEncrypt.AddRange(MakeDataSpan(replyingTo.ToUtf8Buffer()));
-		
-		byte[] encryptedSection = keyService.EncryptWithSpace(sectionToEncrypt.ToArray(), selectedSpaceId, initVector);
-
-		packetList.AddRange(hashNonce);
-		packetList.AddRange(initVector);
-		packetList.AddRange(MakeDataSpan(keyId));
-		packetList.AddRange(MakeDataSpan(encryptedSection));
-
-		return packetList.ToArray();
 	}
 
 	private byte[] BuildMsgPacket(string text, string replyingTo, string embedId){
