@@ -171,10 +171,7 @@ public partial class FileService : Node
 	}
 
 	public bool HasServableFile(string guid){
-		FileAccess file = FileAccess.Open(dataServePath + guid + ".file", FileAccess.ModeFlags.Read);
-		if (file == null)
-			return false;
-		return true;
+		return FileAccess.FileExists(dataServePath + guid + ".file");
 	}
 
 	public byte[] GetServableData(string guid){
