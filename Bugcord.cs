@@ -557,9 +557,6 @@ public partial class Bugcord : Node
 	}
 
 	private void ProcessSpaceInvite(byte[] packet, bool fromCatchup){
-		if (!fromCatchup)
-			fileService.SavePacket(packet);
-
 		GD.Print("Processing space invite");
 
 		byte[][] dataSpans = ReadDataSpans(packet, 1);
@@ -579,9 +576,6 @@ public partial class Bugcord : Node
 	}
 
 	private void ProcessIdentify(byte[] packet, bool fromCatchup){
-		if (!fromCatchup)
-			fileService.SavePacket(packet);
-
 		byte[][] packetDataSpans = ReadDataSpans(packet, 1);
 
 		string guid = packetDataSpans[0].GetStringFromUtf8();
@@ -594,9 +588,6 @@ public partial class Bugcord : Node
 	}
 
 	private void ProcessMessagePacket(byte[] packet, bool fromCatchup){
-		if (!fromCatchup)
-			fileService.SavePacket(packet);
-
 		byte[][] spans = ReadDataSpans(packet, 19);
 
 		ushort hashNonce =  BitConverter.ToUInt16(ReadLength(packet, 1, 2));

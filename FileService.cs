@@ -33,33 +33,6 @@ public partial class FileService : Node
 	{
 	}
 
-	public void SavePacket(byte[] packet){
-		if (!DirAccess.DirExistsAbsolute(cachePath)){
-			DirAccess cacheDir = DirAccess.Open("user://");
-			cacheDir.MakeDir("cache");
-		}
-
-		if (!DirAccess.DirExistsAbsolute(packetStorePath)){
-			DirAccess cacheDir = DirAccess.Open("user://serve");
-			cacheDir.MakeDir("messages");
-		}
-
-		if (!FileAccess.FileExists(packetStorePath+"/packets.jsonl")){
-			FileAccess.Open(packetStorePath+"/packets.jsonl", FileAccess.ModeFlags.Write).Close();
-		}
-
-		string packetString = Bugcord.ToBase64(packet);
-		StoredPacket stored = new StoredPacket{
-			packet = packetString,
-			timestamp = Time.GetUnixTimeFromSystem()
-		};
-
-		FileAccess file = FileAccess.Open(packetStorePath+"/packets.jsonl", FileAccess.ModeFlags.ReadWrite);
-		file.SeekEnd();
-		file.StoreLine(JsonConvert.SerializeObject(stored));
-		file.Close();
-	}
-
 	public void UpdateFileBuffer(ushort filePart, ushort filePartMax, string fileId, string senderId, byte[] file){
 		if (IsFileInCache(fileId)){ // File already in cache
 			return;
