@@ -56,6 +56,8 @@ public partial class MessageUI : MarginContainer
 
 		if (message.content != null && message.content.Length > 0){
 			SetupMessageContent(message.content);
+		}else{
+			textContent.Visible = false;
 		}
 
 		if (message.embedId != null && message.embedId.Length > 0){
