@@ -70,8 +70,14 @@ public partial class MessageWindow : Control
 		messageContainer.AddChild(newMessage);
 
 		if (message.embedId != null){
-			fileService.OnCacheChanged += newMessage.CacheUpdated;
-			fileService.OnFileBufferUpdated += newMessage.FileBufferUpdated;
+			bool gotImmedietly = fileService.GetFile(message.embedId, out byte[] data);
+
+			if (gotImmedietly){ // File is in the cache right now. No waiting needed
+				newMessage.CacheUpdated(message.embedId);
+			}else{
+				fileService.OnCacheChanged += newMessage.CacheUpdated;
+				fileService.OnFileBufferUpdated += newMessage.FileBufferUpdated;
+			}
 		}
 
 		displayedMessageUIs.Add(newMessage);

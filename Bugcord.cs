@@ -702,7 +702,7 @@ public partial class Bugcord : Node
 		return packetBytes.ToArray();
 	}
 
-	private byte[] BuildFileRequest(string fileGuid){
+	public byte[] BuildFileRequest(string fileGuid){
 		List<byte> packetBytes = new List<byte>{
 			6,
 			0 // request subtype

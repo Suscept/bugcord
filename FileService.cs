@@ -33,8 +33,34 @@ public partial class FileService : Node
 	{
 	}
 
+	// Gets a file from serve folder or cache or peer (returns true). If it cannot be found, a request to peers is made (returns false).
+	public bool GetFile(string id, out byte[] data){
+		GD.Print("getting file " + id);
+		if (IsFileInCache(id)){
+			data = GetFromCache(id);
+			return true;
+		}
+
+		if (HasServableFile(id)){
+			bool success = TransformServefile(GetServableData(id), out byte[] fileData, out string fileId, out string filename);
+			if (success)
+				WriteToCache(fileData, filename, fileId);
+			data = fileData;
+			return success;
+		}
+
+		bugcord.Send(bugcord.BuildFileRequest(id)); // Request file from peers
+
+		data = null;
+		return false;
+	}
+
 	public void UpdateFileBuffer(ushort filePart, ushort filePartMax, string fileId, string senderId, byte[] file){
 		if (IsFileInCache(fileId)){ // File already in cache
+			return;
+		}
+
+		if (HasServableFile(fileId)){ // File already recieved
 			return;
 		}
 
@@ -166,6 +192,11 @@ public partial class FileService : Node
 
 	public bool IsFileInCache(string fileId){
 		return cacheIndex.ContainsKey(fileId);
+	}
+
+	public byte[] GetFromCache(string guid){
+		FileAccess file = FileAccess.Open(cacheIndex[guid], FileAccess.ModeFlags.Read);
+		return file.GetBuffer((long)file.GetLength());
 	}
 
 	public void WriteToCache(byte[] data, string filename, string guid){
