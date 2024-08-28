@@ -10,7 +10,6 @@ public partial class FileService : Node
 
 	public const string cachePath = "user://cache/";
 	public const string dataServePath = "user://serve/";
-	public const string packetStorePath = "user://serve/messages";
 
 	// File ID, File path
 	public Dictionary<string, string> cacheIndex = new();
@@ -178,11 +177,15 @@ public partial class FileService : Node
 		return file.GetBuffer((long)file.GetLength());
 	}
 
-	public void WriteToServable(byte[] data, string guid){
+	public void MakeServePath(){
 		if (!DirAccess.DirExistsAbsolute(dataServePath)){
 			DirAccess cacheDir = DirAccess.Open("user://");
 			cacheDir.MakeDir("serve");
 		}
+	}
+
+	public void WriteToServable(byte[] data, string guid){
+		MakeServePath();
 
 		FileAccess serveCopy = FileAccess.Open(dataServePath + guid + ".file", FileAccess.ModeFlags.Write);
 		serveCopy.StoreBuffer(data);

@@ -7,13 +7,21 @@ using System.IO;
 
 public partial class DatabaseService : Node
 {
+	public const string packetStorePath = "user://serve/messages";
 	public const string databasePath = "user://serve/messages/messageDatabase.db";
 
 	public SqliteConnection sqlite;
 
+	private FileService fileService;
+
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
 	{
+		fileService = GetParent().GetNode<FileService>("FileService");
+		fileService.MakeServePath();
+
+		MakePacketStorePath();
+
 		sqlite = new SqliteConnection("Data Source="+ProjectSettings.GlobalizePath(databasePath));
 		sqlite.Open();
 	}
@@ -22,6 +30,13 @@ public partial class DatabaseService : Node
 	public override void _Process(double delta)
 	{
 		
+	}
+
+	public void MakePacketStorePath(){
+		if (!DirAccess.DirExistsAbsolute(packetStorePath)){
+			DirAccess cacheDir = DirAccess.Open("user://serve/");
+			cacheDir.MakeDir("messages");
+		}
 	}
 
 	public List<Message> GetMessages(string spaceId){
