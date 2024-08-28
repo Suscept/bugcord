@@ -51,7 +51,7 @@ public partial class MessageUI : MarginContainer
 
 		jumpToReplyButton.Visible = replyPreview != null;
 		if (replyPreview != null){
-			jumpToReplyButton.Text = replyPreview;
+			jumpToReplyButton.Text = "┌ " + replyPreview;
 		}
 
 		if (message.content != null && message.content.Length > 0){
