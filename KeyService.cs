@@ -12,7 +12,7 @@ public partial class KeyService : Node
 	public System.Collections.Generic.Dictionary<string, byte[]> myKeys = new();
 	public RSA userAuthentication;
 
-	public const string clientKeyPath = "user://client.auth";
+	public const string clientKeyPath = "user://client.pem";
 	public const string knownKeysPath = "user://keys.auth";
 
 	private SpaceService spaceService;
@@ -110,6 +110,7 @@ public partial class KeyService : Node
 
 	public void AuthSaveToFile(){
 		FileAccess newKey = FileAccess.Open(clientKeyPath, FileAccess.ModeFlags.Write);
+		FileAccess.SetHiddenAttribute(clientKeyPath, true); // Make file hidden
 		
 		byte[] privateKey = userAuthentication.ExportRSAPrivateKey();
 

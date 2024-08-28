@@ -2,6 +2,8 @@ using Godot;
 using Microsoft.Data.Sqlite;
 using System;
 using System.Collections.Generic;
+using System.Data;
+using System.IO;
 
 public partial class DatabaseService : Node
 {
@@ -55,11 +57,47 @@ public partial class DatabaseService : Node
 		return gotMessages;
 	}
 
+	public List<PacketService.Packet> GetPackets(long afterDate){
+		SqliteDataReader reader = GetSQLReader(@$"
+			SELECT *
+			FROM packet_store
+			WHERE unixTimestamp > $0
+		", afterDate);
+
+		List<PacketService.Packet> gotPackets = new List<PacketService.Packet>();
+		while (reader.Read()){
+			PacketService.Packet readingPacket = new PacketService.Packet{
+				timestamp = TimestampMilisecondsToSeconds(reader.GetInt64(0)),
+				data = (byte[])reader["packet"]
+			};
+
+			gotPackets.Add(readingPacket);
+		}
+
+		return gotPackets;
+	}
+
+	public void SavePacket(byte[] packet, double timestamp){
+		ExecuteSql(@$"
+			INSERT INTO packet_store(packet, unixTimestamp)
+			VALUES ($0, $1)
+		", false, packet, TimestampSecondsToMiliseconds(timestamp));
+	}
+
 	public void SaveMessage(string spaceId, Message message){
 		ExecuteSql(@$"
 			INSERT INTO '{spaceId}'(messageId, userId, content, embedId, unixTimestamp, nonce, replyingTo)
 			VALUES ($0, $1, $2, $3, $4, $5, $6)
 		", false, message.id, message.senderId, message.content, message.embedId, TimestampSecondsToMiliseconds(message.unixTimestamp), BitConverter.ToInt16(BitConverter.GetBytes(message.nonce)), message.replyingTo);
+	}
+
+	public void AddPacketTable(){
+		ExecuteSql($@"
+			CREATE TABLE IF NOT EXISTS packet_store (
+			unixTimestamp INTEGER NOT NULL,
+			packet BLOB NOT NULL
+			)
+		", false);
 	}
 
 	public void AddSpaceTable(string spaceId){

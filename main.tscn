@@ -1,4 +1,4 @@
-[gd_scene load_steps=30 format=3 uid="uid://b4h65lw1u6cii"]
+[gd_scene load_steps=32 format=3 uid="uid://b4h65lw1u6cii"]
 
 [ext_resource type="Script" path="res://Bugcord.cs" id="1_jyk1e"]
 [ext_resource type="PackedScene" uid="uid://c0hr25wlgd0kt" path="res://message.tscn" id="1_ki7uw"]
@@ -16,8 +16,10 @@
 [ext_resource type="Script" path="res://RegisterWindow.cs" id="6_jgjb0"]
 [ext_resource type="Script" path="res://DatabaseService.cs" id="7_8sfsb"]
 [ext_resource type="Script" path="res://MakeSpaceWindow.cs" id="7_p4jpm"]
+[ext_resource type="Script" path="res://PacketService.cs" id="8_e1jjy"]
 [ext_resource type="PackedScene" uid="uid://br4rq6oo0fvp" path="res://embed_input_display.tscn" id="8_ihghl"]
 [ext_resource type="Script" path="res://FunctionTester.cs" id="9_d1uvj"]
+[ext_resource type="Script" path="res://StreamService.cs" id="9_igf1r"]
 [ext_resource type="Script" path="res://MakeVisible.cs" id="11_7p3cn"]
 [ext_resource type="Script" path="res://SpaceInviter.cs" id="11_cskni"]
 [ext_resource type="PackedScene" uid="uid://bl2sn6odt10ns" path="res://invite_option.tscn" id="12_qp5d4"]
@@ -28,7 +30,7 @@
 [ext_resource type="Texture2D" uid="uid://6j35bsdb4w8r" path="res://icon.svg" id="16_h3cnx"]
 [ext_resource type="Script" path="res://PopupAlert.cs" id="18_axqsm"]
 
-[sub_resource type="AudioStreamGenerator" id="AudioStreamGenerator_6djje"]
+[sub_resource type="AudioStreamGenerator" id="AudioStreamGenerator_2jvjo"]
 buffer_length = 0.1
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_fyr0g"]
@@ -50,30 +52,17 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="Bugcord" type="Node" parent="." node_paths=PackedStringArray("messageInput", "registerWindow", "audioRecorder", "audioPlayer", "voiceChatToggle")]
+[node name="Bugcord" type="Node" parent="." node_paths=PackedStringArray("messageInput", "registerWindow", "voiceChatToggle")]
 script = ExtResource("1_jyk1e")
 messageInput = NodePath("../HBoxContainer/ChatMain/VBoxContainer/MessageCreator/VBoxContainer/MessageInput/MessageText")
 registerWindow = NodePath("../Popups/Register")
-audioRecorder = NodePath("vinput")
-audioPlayer = NodePath("voutput")
 voiceChatToggle = NodePath("../HBoxContainer/LeftBar/Panel/VBoxContainer/ServerInput/VBoxContainer/VoiceToggle")
-
-[node name="vinput" type="AudioStreamPlayer" parent="Bugcord"]
-autoplay = true
-bus = &"Record"
-
-[node name="voutput" type="AudioStreamPlayer" parent="Bugcord"]
-stream = SubResource("AudioStreamGenerator_6djje")
-autoplay = true
-
-[node name="FileService" type="Node" parent="Bugcord"]
-script = ExtResource("2_nt2xh")
-
-[node name="KeyService" type="Node" parent="Bugcord"]
-script = ExtResource("3_0bq1u")
 
 [node name="UserService" type="Node" parent="Bugcord"]
 script = ExtResource("4_fd14y")
+
+[node name="KeyService" type="Node" parent="Bugcord"]
+script = ExtResource("3_0bq1u")
 
 [node name="SpaceService" type="Node" parent="Bugcord" node_paths=PackedStringArray("spaceDisplay")]
 script = ExtResource("5_2dxfl")
@@ -82,14 +71,35 @@ spaceDisplay = NodePath("../../HBoxContainer/LeftBar/Panel/VBoxContainer/Spaces"
 [node name="PeerService" type="Node" parent="Bugcord"]
 script = ExtResource("6_c0npe")
 
+[node name="FileService" type="Node" parent="Bugcord"]
+script = ExtResource("2_nt2xh")
+
 [node name="DatabaseService" type="Node" parent="Bugcord"]
 script = ExtResource("7_8sfsb")
+
+[node name="PacketService" type="Node" parent="Bugcord"]
+script = ExtResource("8_e1jjy")
+
+[node name="StreamService" type="Node" parent="Bugcord" node_paths=PackedStringArray("voiceChatToggle", "audioRecorder", "audioPlayer")]
+script = ExtResource("9_igf1r")
+voiceChatToggle = NodePath("../../HBoxContainer/LeftBar/Panel/VBoxContainer/ServerInput/VBoxContainer/VoiceToggle")
+audioRecorder = NodePath("VoiceInputStream")
+audioPlayer = NodePath("VoiceOutputStream")
+
+[node name="VoiceInputStream" type="AudioStreamPlayer" parent="Bugcord/StreamService"]
+autoplay = true
+
+[node name="VoiceOutputStream" type="AudioStreamPlayer" parent="Bugcord/StreamService"]
+stream = SubResource("AudioStreamGenerator_2jvjo")
+autoplay = true
 
 [node name="HBoxContainer" type="HBoxContainer" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+offset_left = -1.0
+offset_right = -1.0
 grow_horizontal = 2
 grow_vertical = 2
 
@@ -773,6 +783,7 @@ size_flags_horizontal = 3
 [connection signal="OnConnectedToSpace" from="Bugcord" to="HBoxContainer/ChatMain/VBoxContainer/MessageWindow" method="DisplaySpaceMessages"]
 [connection signal="OnMessageRecieved" from="Bugcord" to="HBoxContainer/ChatMain/VBoxContainer/MessageWindow" method="DisplayNewMessage"]
 [connection signal="OnLoggedIn" from="Bugcord/UserService" to="HBoxContainer/LeftBar/Panel/VBoxContainer/ServerInput" method="OnLoggedIn"]
+[connection signal="OnConnected" from="Bugcord/PacketService" to="Bugcord" method="OnConnected"]
 [connection signal="OnAutoconnectSettingChanged" from="HBoxContainer/LeftBar/Panel/VBoxContainer/ServerInput" to="Bugcord" method="SetAutoConnect"]
 [connection signal="OnServerSelected" from="HBoxContainer/LeftBar/Panel/VBoxContainer/ServerInput" to="Bugcord" method="Connect"]
 [connection signal="pressed" from="HBoxContainer/LeftBar/Panel/VBoxContainer/ServerInput/VBoxContainer/ServerInput/Button" to="HBoxContainer/LeftBar/Panel/VBoxContainer/ServerInput" method="SelectServer"]

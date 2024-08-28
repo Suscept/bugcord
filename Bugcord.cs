@@ -11,9 +11,6 @@ public partial class Bugcord : Node
 
 	[Export] public ServerSelector serverSelector;
 
-	[Export] public AudioStreamPlayer audioRecorder;
-	[Export] public AudioStreamPlayer audioPlayer;
-
 	[Export] public CheckBox voiceChatToggle;
 
 	[Signal] public delegate void OnMessageRecievedEventHandler(Dictionary message);
@@ -23,16 +20,7 @@ public partial class Bugcord : Node
 	public const int maxAudioFrames = 4096;
 	public const int audioFrames = 4096;
 
-	public const int defaultPort = 25987;
-
 	public const int filePacketSize = 4096;
-
-	public static List<byte[]> catchupBuffer = new List<byte[]>();
-
-	public static List<byte> incomingPacketBuffer = new List<byte>();
-	public static List<byte[]> outgoingPacketBuffer = new List<byte[]>();
-
-	public static System.Collections.Generic.Dictionary<string, List<byte>> incomingVoiceBuffer = new();
 
 	public static string selectedSpaceId;
 	public static string selectedKeyId; // Remove
@@ -44,18 +32,6 @@ public partial class Bugcord : Node
 		IsReply = 1 << 2,
 	}
 
-	private static StreamPeerTcp tcpClient;
-	private static PacketPeerUdp udpClient;
-
-	private static StreamPeerTcp.Status previousState;
-
-	private static Bugcord instance;
-
-	private static AudioEffectCapture recordBusCapture;
-	private static AudioStreamGeneratorPlayback voicePlaybackBus;
-
-	private static Vector2[] currentFrameAudio;
-
 	private FileService fileService;
 	private KeyService keyService;
 	private UserService userService;
@@ -63,12 +39,12 @@ public partial class Bugcord : Node
 	private PeerService peerService;
 	private PopupAlert alertService;
 	private DatabaseService databaseService;
+	private PacketService packetService;
+	private StreamService streamService;
 
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
 	{
-		instance = this;
-
 		registerWindow.Visible = false;
 
 		fileService = GetNode<FileService>("FileService");
@@ -77,6 +53,8 @@ public partial class Bugcord : Node
 		spaceService = GetNode<SpaceService>("SpaceService");
 		peerService = GetNode<PeerService>("PeerService");
 		databaseService = GetNode<DatabaseService>("DatabaseService");
+		packetService = GetNode<PacketService>("PacketService");
+		streamService = GetNode<StreamService>("StreamService");
 		alertService = GetNode<PopupAlert>("/root/Main/Popups/GenericPopup");
 
 		if (!LogIn()){
@@ -87,130 +65,15 @@ public partial class Bugcord : Node
 	// Called every frame. 'delta' is the elapsed time since the previous frame.
 	public override void _Process(double delta)
 	{
-		if (tcpClient == null || keyService.userAuthentication == null){
-			return;
-		}
-		
-		tcpClient.Poll();
-
-		StreamPeerTcp.Status clientStatus = tcpClient.GetStatus();
-		if (clientStatus != StreamPeerTcp.Status.Connected){
-			return;
-		}
-
-		if (clientStatus == StreamPeerTcp.Status.Connected && previousState != StreamPeerTcp.Status.Connected){
-			OnConnected();
-		}
-
-		previousState = clientStatus;
-
-		if (tcpClient.GetAvailableBytes() > 0){
-			Godot.Collections.Array recieved = tcpClient.GetData(tcpClient.GetAvailableBytes());
-			byte[] rawPacket = (byte[])recieved[1];
-			incomingPacketBuffer.AddRange(rawPacket);
-
-			for (int i = 0; i < 10; i++){ // Process multiple packets at once
-				bool processResult = ProcessRawPacket(incomingPacketBuffer.ToArray(), out int usedPacketLength);
-				incomingPacketBuffer.RemoveRange(0, usedPacketLength);
-
-				if (!processResult)
-					break;
-			}
-		}
-
-		// Send a pending packet
-		if (outgoingPacketBuffer.Count > 0){
-			SendNow(outgoingPacketBuffer[0]);
-			outgoingPacketBuffer.RemoveAt(0);
-		}
-
-		if (!udpClient.IsSocketConnected()){
-			return;
-		}
-
-		if (voiceChatToggle.ButtonPressed){
-			Vector2[] vBuffer = GetVoiceBuffer(audioFrames);
-			if (vBuffer != null)
-				SendUnreliable(BuildVoicePacket(vBuffer));
-		}
-
-		while (udpClient.GetAvailablePacketCount() > 0){
-			byte[] p = udpClient.GetPacket();
-			ProcessIncomingPacket(p, false);
-		}
-
-		int vFrames = 0;
-		currentFrameAudio = new Vector2[audioFrames];
-		foreach (KeyValuePair<string, List<byte>> entry in incomingVoiceBuffer){
-			if (entry.Key == userService.userId)
-				continue;
-			if (entry.Value.Count < audioFrames)
-				continue;
-
-			for (int i = 0; i < currentFrameAudio.Length; i++){
-				float f = ByteToFloat(entry.Value[i]);
-				vFrames++;
-				currentFrameAudio[i] += new Vector2(f, f);
-			}
-			entry.Value.RemoveRange(0, audioFrames);
-		}
-		
-		if (vFrames > 0)
-			voicePlaybackBus.PushBuffer(currentFrameAudio);
 	}
 
     public override void _Notification(int what)
     {
         if (what == NotificationWMCloseRequest){
-			if (tcpClient != null){
-				GD.Print("Disconnecting..");
-				tcpClient.DisconnectFromHost();
-			}
+			packetService.Disconnect();
 			GetTree().Quit();
 		}
     }
-
-	#region Voice Chat
-
-	public void InitVoice(){
-		AudioStreamMicrophone audioStreamMicrophone = new AudioStreamMicrophone();
-		audioRecorder.Stream = audioStreamMicrophone;
-		audioRecorder.Play();
-
-		int recordBusIndex = AudioServer.GetBusIndex("Record");
-		
-		recordBusCapture = (AudioEffectCapture)AudioServer.GetBusEffect(recordBusIndex, 0);
-		voicePlaybackBus = (AudioStreamGeneratorPlayback)audioPlayer.GetStreamPlayback();
-	}
-
-	public Vector2[] GetVoiceBuffer(){
-		int framesAvailable = recordBusCapture.GetFramesAvailable();
-		
-		if (framesAvailable >= minAudioFrames){
-			if (framesAvailable <= maxAudioFrames)
-				return recordBusCapture.GetBuffer(framesAvailable);
-
-			// to many frames available
-			Vector2[] frames = recordBusCapture.GetBuffer(maxAudioFrames);
-			recordBusCapture.ClearBuffer();
-			return frames;
-		}
-		
-		return new Vector2[0];
-	}
-
-	public Vector2[] GetVoiceBuffer(int bufferSize){
-		int framesAvailable = recordBusCapture.GetFramesAvailable();
-		
-		if (framesAvailable >= bufferSize){
-			Vector2[] frames = recordBusCapture.GetBuffer(bufferSize);
-			return frames;
-		}
-		
-		return null;
-	}
-
-	#endregion
 
     #region server client
 
@@ -289,18 +152,16 @@ public partial class Bugcord : Node
 			return false;
 		}
 
-		if (tcpClient == null){
+		if (packetService.currentState != StreamPeerTcp.Status.Connected){
 			alertService.NewAlert("You must connect to a Bugcord relay server", "Enter an ip address on the top left and press the # button to connect.");
 			return false;
 		}
 		
-		tcpClient.Poll();
-
-		StreamPeerTcp.Status clientStatus = tcpClient.GetStatus();
-		if (clientStatus != StreamPeerTcp.Status.Connected){
-			alertService.NewAlert("Not connected to relay", "Connection may have been lost. Press the # button on the top left to reconnect.");
-			return false;
-		}
+		// packetService.UpdateConnectionState();
+		// if (packetService.currentState != StreamPeerTcp.Status.Connected){
+		// 	alertService.NewAlert("Not connected to relay", "Connection may have been lost. Press the # button on the top left to reconnect.");
+		// 	return false;
+		// }
 
 		if (selectedSpaceId == null){
 			alertService.NewAlert("Not connected to a space", "Either create your own space using the \"Create Space\" button on the left, or have a friend invite you to one and it will automatically appear in the list.");
@@ -319,43 +180,17 @@ public partial class Bugcord : Node
 		userService.savedServerIp = url;
 		userService.SaveToFile();
 
-		string[] urlSplit = url.Split(":");
-		string urlHost = urlSplit[0];
-		int urlPort = defaultPort;
-		if (urlSplit.Length > 1){
-			urlPort = int.Parse(urlSplit[1]);
-		}
-		
-		GD.Print("connecting..");
-		tcpClient = new StreamPeerTcp();
-		tcpClient.ConnectToHost(urlHost, urlPort);
+		PacketService.ParseUrl(url, out string host, out int port);
+		packetService.Connect(host, port);
 
-		udpClient = new PacketPeerUdp();
-		udpClient.ConnectToHost(urlHost, urlPort + 1);
+		streamService.Connect(host, port + 1);
 	}
 
 	public void Send(byte[] data){
 		if (data.Length == 0)
 			return;
 
-		outgoingPacketBuffer.Add(data);
-	}
-
-	public void SendNow(byte[] data){
-		if (data.Length == 0)
-			return;
-
-		GD.Print("Sending message. Type: " + data[0]);
-
-		tcpClient.PutData(BuildMasterPacket(data));
-	}
-
-	public void SendUnreliable(byte[] data){
-		if (data.Length == 0)
-			return;
-
-		GD.Print("Sending message. Type: " + data[0]);
-		udpClient.PutPacket(data);
+		packetService.SendPacket(data);
 	}
 
 	public void SetAutoConnect(bool setTrue){
@@ -368,7 +203,6 @@ public partial class Bugcord : Node
 		GD.Print("connected");
 
 		Send(BuildIdentifyingPacket());
-		InitVoice();
 	}
 
 	#endregion
@@ -443,79 +277,27 @@ public partial class Bugcord : Node
 
 	#region packet processors
 
-	private bool ProcessRawPacket(byte[] data, out int usedPacketLength){
-		usedPacketLength = 0;
-
-		if (data.Length < 6){
-			return false;
-		}
-
-		int version = BitConverter.ToInt16(data, 0);
-		short checksum = BitConverter.ToInt16(data, 2);
-		ushort length = BitConverter.ToUInt16(data, 4);
-
-		if (length > data.Length - 6){
-			return false;
-		}
-
-		byte[] packet = ReadLength(data, 6, length);
-
-		if (!ValidateSumComplement(packet, (ushort)checksum)){
-			return false;
-		}
-
-		if (packet.Length == 0){
-			return false;
-		}
-
-		GD.Print("Checksum verified.");
-		try{
-			ProcessIncomingPacket(packet, false);
-		}catch(Exception ex){
-			GD.PrintErr(ex.Message);
-			AlertPanel.PostAlert("Error", ex.Message, ex.StackTrace);
-			usedPacketLength = length + 6;
-			return true;
-		}
-
-		usedPacketLength = length + 6;
-		return true;
-	}
-
-	private void ProcessIncomingPacket(byte[] packet, bool fromCatchup){
-		byte type = packet[0];
+	public void ProcessIncomingPacket(PacketService.Packet packet){
+		byte type = packet.data[0];
 		GD.Print("Recieved packet. Type: " + type);
 
 		switch (type){
 			case 0:
-				ProcessMessagePacket(packet, fromCatchup);
+				ProcessMessagePacket(packet.data);
 				break;
 			case 1:
-				ProcessIdentify(packet, fromCatchup);
+				ProcessIdentify(packet.data);
 				break;
 			case 4:
-				ProcessSpaceInvite(packet, fromCatchup);
+				ProcessSpaceInvite(packet.data);
 				break;
 			case 6:
-				ProcessFileRequest(packet);
+				ProcessFileRequest(packet.data);
 				break;
 			case 7:
-				ProcessFilePacket(packet);
-				break;
-			case 8:
-				ProcessVoicePacket(packet);
+				ProcessFilePacket(packet.data);
 				break;
 		}
-	}
-
-	private void ProcessVoicePacket(byte[] packet){
-		byte[][] dataSpans = ReadDataSpans(packet, 1);
-
-		string senderId = dataSpans[0].GetStringFromUtf8();
-		byte[] framesEncoded = dataSpans[1];
-
-		incomingVoiceBuffer.TryAdd(senderId, new List<byte>());
-		incomingVoiceBuffer[senderId].AddRange(framesEncoded);
 	}
 
 	private void ProcessFilePacket(byte[] packet){
@@ -541,22 +323,42 @@ public partial class Bugcord : Node
 		GD.Print("Recieved file request");
 		
 		byte subtype = packet[1];
-		string fileGuid = ReadDataSpan(packet, 2).GetStringFromUtf8();
 
 		switch (subtype){
 			case 0:
+				string fileGuid = ReadDataSpan(packet, 2).GetStringFromUtf8();
 				if (!fileService.HasServableFile(fileGuid)) // stop if we dont have this file
 					return;
 
 				byte[][] servePartitions = MakePartitions(fileService.GetServableData(fileGuid), filePacketSize);
 				for(int i = 0; i < servePartitions.Length; i++){
-					outgoingPacketBuffer.Add(BuildFilePacket(fileGuid, i, servePartitions.Length, servePartitions[i]));
+					packetService.SendPacket(BuildFilePacket(fileGuid, i, servePartitions.Length, servePartitions[i]));
 				}
+				break;
+			case 1: // Eventfile request
+				long timestamp = BitConverter.ToInt64(packet, 3);
+				string requestedGuid = ReadDataSpan(packet, 10).GetStringFromUtf8();
+				List<PacketService.Packet> packets = databaseService.GetPackets(timestamp);
+				
+				// Turn packets into single span of bytes
+				List<byte> mergedPackets = new List<byte>();
+				for (int i = 0; i < packets.Count; i++){
+					List<byte> packetBytes = new List<byte>();
+					packetBytes.AddRange(MakeDataSpan(BitConverter.GetBytes(packets[i].timestamp)));
+					packetBytes.AddRange(MakeDataSpan(packets[i].data));
+					mergedPackets.AddRange(MakeDataSpan(packetBytes.ToArray()));
+				}
+
+				byte[][] packetPartitions = MakePartitions(mergedPackets.ToArray(), filePacketSize);
+				for(int i = 0; i < packetPartitions.Length; i++){
+					packetService.SendPacket(BuildFilePacket(requestedGuid, i, packetPartitions.Length, packetPartitions[i]));
+				}
+				
 				break;
 		}
 	}
 
-	private void ProcessSpaceInvite(byte[] packet, bool fromCatchup){
+	private void ProcessSpaceInvite(byte[] packet){
 		GD.Print("Processing space invite");
 
 		byte[][] dataSpans = ReadDataSpans(packet, 1);
@@ -575,7 +377,7 @@ public partial class Bugcord : Node
 		}
 	}
 
-	private void ProcessIdentify(byte[] packet, bool fromCatchup){
+	private void ProcessIdentify(byte[] packet){
 		byte[][] packetDataSpans = ReadDataSpans(packet, 1);
 
 		string guid = packetDataSpans[0].GetStringFromUtf8();
@@ -587,7 +389,7 @@ public partial class Bugcord : Node
 		}
 	}
 
-	private void ProcessMessagePacket(byte[] packet, bool fromCatchup){
+	private void ProcessMessagePacket(byte[] packet){
 		byte[][] spans = ReadDataSpans(packet, 19);
 
 		ushort hashNonce =  BitConverter.ToUInt16(ReadLength(packet, 1, 2));
@@ -651,43 +453,6 @@ public partial class Bugcord : Node
 
 	#region packet builders
 
-	private byte[] BuildMasterPacket(byte[] data){
-		List<byte> packetBytes = new List<byte>{
-			0, // Version
-			0, // Version
-		};
-
-		byte[] checksum = GetChecksum(data);
-		ushort packetLength = (ushort)data.Length;
-		packetBytes.AddRange(checksum);
-		packetBytes.AddRange(BitConverter.GetBytes(packetLength));
-		packetBytes.AddRange(data);
-
-		return packetBytes.ToArray();
-	}
-
-	private byte[] BuildVoicePacket(Vector2[] audioFrames){
-		if (audioFrames.Length == 0)
-			return new byte[0];
-
-		List<byte> packetBytes = new List<byte>{
-			8
-		};
-
-		byte[] codedFrames = new byte[audioFrames.Length];
-
-		for (int i = 0; i < audioFrames.Length; i++){
-			byte f = FloatToByte(audioFrames[i].X);
-
-			codedFrames[i] = f;
-		}
-
-		packetBytes.AddRange(MakeDataSpan(userService.userId.ToUtf8Buffer()));
-		packetBytes.AddRange(MakeDataSpan(codedFrames, 0));
-
-		return packetBytes.ToArray();
-	}
-
 	private byte[] BuildFilePacket(string fileGuid, int filePart, int totalFileParts, byte[] data){
 		List<byte> packetBytes = new List<byte>{
 			7
@@ -698,6 +463,18 @@ public partial class Bugcord : Node
 		packetBytes.AddRange(MakeDataSpan(fileGuid.ToUtf8Buffer()));
 		packetBytes.AddRange(MakeDataSpan(GetClientId().ToUtf8Buffer()));
 		packetBytes.AddRange(MakeDataSpan(data, 0));
+
+		return packetBytes.ToArray();
+	}
+
+	public byte[] BuildEventRequest(string eventFileGuid, long afterDate){
+		List<byte> packetBytes = new List<byte>{
+			6,
+			1 // request subtype
+		};
+		
+		packetBytes.AddRange(BitConverter.GetBytes(afterDate));
+		packetBytes.AddRange(MakeDataSpan(eventFileGuid.ToUtf8Buffer()));
 
 		return packetBytes.ToArray();
 	}
@@ -950,7 +727,7 @@ public partial class Bugcord : Node
 
 	// Debuggers
 	public void DEBUGB64SpaceInvite(string invite){
-		ProcessSpaceInvite(FromBase64(invite), false);
+		ProcessSpaceInvite(FromBase64(invite));
 	}
 
 	public string ToHexString(byte[] data){
