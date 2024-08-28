@@ -77,11 +77,11 @@ public partial class DatabaseService : Node
 		return gotPackets;
 	}
 
-	public void SavePacket(byte[] packet, double timestamp){
+	public void SavePacket(PacketService.Packet packet){
 		ExecuteSql(@$"
 			INSERT INTO packet_store(packet, unixTimestamp)
 			VALUES ($0, $1)
-		", false, packet, TimestampSecondsToMiliseconds(timestamp));
+		", false, packet.data, TimestampSecondsToMiliseconds(packet.timestamp));
 	}
 
 	public void SaveMessage(string spaceId, Message message){
