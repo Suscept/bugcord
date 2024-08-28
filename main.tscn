@@ -88,6 +88,7 @@ audioPlayer = NodePath("VoiceOutputStream")
 
 [node name="VoiceInputStream" type="AudioStreamPlayer" parent="Bugcord/StreamService"]
 autoplay = true
+bus = &"Record"
 
 [node name="VoiceOutputStream" type="AudioStreamPlayer" parent="Bugcord/StreamService"]
 stream = SubResource("AudioStreamGenerator_2jvjo")
