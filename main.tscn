@@ -64,12 +64,12 @@ script = ExtResource("4_fd14y")
 [node name="KeyService" type="Node" parent="Bugcord"]
 script = ExtResource("3_0bq1u")
 
+[node name="PeerService" type="Node" parent="Bugcord"]
+script = ExtResource("6_c0npe")
+
 [node name="SpaceService" type="Node" parent="Bugcord" node_paths=PackedStringArray("spaceDisplay")]
 script = ExtResource("5_2dxfl")
 spaceDisplay = NodePath("../../HBoxContainer/LeftBar/Panel/VBoxContainer/Spaces")
-
-[node name="PeerService" type="Node" parent="Bugcord"]
-script = ExtResource("6_c0npe")
 
 [node name="FileService" type="Node" parent="Bugcord"]
 script = ExtResource("2_nt2xh")

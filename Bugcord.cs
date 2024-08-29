@@ -267,9 +267,11 @@ public partial class Bugcord : Node
 	}
 
 	public void SendSpaceInvite(string spaceGuid, string peerGuid){
-		byte[] spaceInvitePacket = BuildSpaceInvite(peerGuid, spaceGuid);
+		byte[] spaceInvitePacket = BuildKeyPackage(spaceService.spaces[spaceGuid].keyId, spaceGuid);
 
 		Send(spaceInvitePacket);
+
+		Send(BuildSpaceUpdatePacket(spaceService.spaces[spaceGuid]));
 	}
 
 	#endregion
@@ -288,7 +290,7 @@ public partial class Bugcord : Node
 				ProcessIdentify(packet.data);
 				break;
 			case 4:
-				ProcessSpaceInvite(packet.data);
+				ProcessKeyPackage(packet.data);
 				break;
 			case 6:
 				ProcessFileRequest(packet.data);
@@ -296,7 +298,28 @@ public partial class Bugcord : Node
 			case 7:
 				ProcessFilePacket(packet.data);
 				break;
+			case 9:
+				ProcessSpaceUpdatePacket(packet);
+				break;
 		}
+	}
+
+	private void ProcessSpaceUpdatePacket(PacketService.Packet packet){
+		byte[][] dataSpans = ReadDataSpans(packet.data, 1);
+
+		string spaceId = dataSpans[0].GetStringFromUtf8();
+		string spaceName = dataSpans[1].GetStringFromUtf8();
+		string keyId = dataSpans[2].GetStringFromUtf8();
+		string ownerId = dataSpans[3].GetStringFromUtf8();
+		PeerService.Peer owner = peerService.peers[ownerId];
+
+		List<PeerService.Peer> authorities = new List<PeerService.Peer>();
+		for (int i = 4; i < dataSpans.Length; i++){
+			string authorityId = dataSpans[i].GetStringFromUtf8();
+			authorities.Add(peerService.peers[authorityId]);
+		}
+
+		spaceService.AddSpace(spaceId, spaceName, keyId, owner, authorities);
 	}
 
 	private void ProcessFilePacket(byte[] packet){
@@ -357,21 +380,18 @@ public partial class Bugcord : Node
 		}
 	}
 
-	private void ProcessSpaceInvite(byte[] packet){
+	private void ProcessKeyPackage(byte[] packet){
 		GD.Print("Processing space invite");
 
 		byte[][] dataSpans = ReadDataSpans(packet, 1);
 
-		string uuid = dataSpans[0].GetStringFromUtf8();
-		string spaceName = dataSpans[1].GetStringFromUtf8();
-		string keyId = dataSpans[2].GetStringFromUtf8();
-		byte[] encryptedSpaceKey = dataSpans[3];
+		string keyId = dataSpans[0].GetStringFromUtf8();
+		byte[] encryptedSpaceKey = dataSpans[1];
 
 		byte[] spaceKey = new byte[32]; // Size of AES key in bytes. 256 bits = 32 bytes
 		bool couldDecrypt = keyService.userAuthentication.TryDecrypt(encryptedSpaceKey, spaceKey, RSAEncryptionPadding.Pkcs1, out int bytesWritten);
 
 		if (couldDecrypt){
-			spaceService.AddSpace(uuid, spaceName, keyId);
 			keyService.AddKey(keyId, spaceKey);
 		}
 	}
@@ -449,6 +469,24 @@ public partial class Bugcord : Node
 	#endregion
 
 	#region packet builders
+
+	private byte[] BuildSpaceUpdatePacket(SpaceService.Space space){
+		List<byte> packetBytes = new List<byte>{
+			9
+		};
+
+		packetBytes.AddRange(MakeDataSpan(space.id.ToUtf8Buffer()));
+		packetBytes.AddRange(MakeDataSpan(space.name.ToUtf8Buffer()));
+		packetBytes.AddRange(MakeDataSpan(space.keyId.ToUtf8Buffer()));
+
+		packetBytes.AddRange(MakeDataSpan(space.owner.id.ToUtf8Buffer()));
+
+		foreach (PeerService.Peer peer in space.authorities){
+			packetBytes.AddRange(MakeDataSpan(peer.id.ToUtf8Buffer()));
+		}
+
+		return packetBytes.ToArray();
+	}
 
 	private byte[] BuildFilePacket(string fileGuid, int filePart, int totalFileParts, byte[] data){
 		List<byte> packetBytes = new List<byte>{
@@ -544,19 +582,14 @@ public partial class Bugcord : Node
 		return packetBytes.ToArray();
 	}
 
-	private byte[] BuildSpaceInvite(string recipientId, string spaceGuid){
+	private byte[] BuildKeyPackage(string recipientId, string keyId){
 		List<byte> packetBytes = new List<byte>{
 			4
 		};
-		GD.Print("Creating space invite for space: " + spaceGuid);
 
-		string spaceName = spaceService.spaces[spaceGuid].name;
+		byte[] spaceKeyEncrypted = keyService.EncryptKeyForPeer(keyId, recipientId);
 
-		byte[] spaceKeyEncrypted = keyService.EncryptKeyForPeer(spaceService.spaces[spaceGuid].keyId, recipientId);
-
-		packetBytes.AddRange(MakeDataSpan(spaceGuid.ToUtf8Buffer()));
-		packetBytes.AddRange(MakeDataSpan(spaceName.ToUtf8Buffer()));
-		packetBytes.AddRange(MakeDataSpan(spaceService.spaces[spaceGuid].keyId.ToUtf8Buffer()));
+		packetBytes.AddRange(MakeDataSpan(keyId.ToUtf8Buffer()));
 		packetBytes.AddRange(MakeDataSpan(spaceKeyEncrypted));
 
 		return packetBytes.ToArray();
@@ -724,7 +757,7 @@ public partial class Bugcord : Node
 
 	// Debuggers
 	public void DEBUGB64SpaceInvite(string invite){
-		ProcessSpaceInvite(FromBase64(invite));
+		ProcessKeyPackage(FromBase64(invite));
 	}
 
 	public string ToHexString(byte[] data){

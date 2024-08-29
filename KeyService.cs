@@ -78,6 +78,7 @@ public partial class KeyService : Node
 			keyList.Close();
 		}
 
+		FileAccess.SetHiddenAttribute(knownKeysPath, false); // File cannot be written to if hidden (godot bug?)
 		FileAccess keyFile = FileAccess.Open(knownKeysPath, FileAccess.ModeFlags.Write);
 
 		Godot.Collections.Dictionary keysB64 = new Godot.Collections.Dictionary();
@@ -88,6 +89,7 @@ public partial class KeyService : Node
 		keyFile.Seek(0);
 		keyFile.StoreLine(Json.Stringify(keysB64));
 		keyFile.Close();
+		FileAccess.SetHiddenAttribute(knownKeysPath, true);
 	}
 
 	public void KeysLoadFromFile(){

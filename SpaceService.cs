@@ -14,13 +14,19 @@ public partial class SpaceService : Node
 
 	public const string clientSpacesPath = "user://spaces.json";
 
+	private UserService userService;
+	private PeerService peerService;
 	private KeyService keyService;
 	private DatabaseService databaseService;
+
+	// Key id, space id
 	private Dictionary<string, string> keyUsage = new();
 
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
 	{
+		userService = GetParent().GetNode<UserService>("UserService");
+		peerService = GetParent().GetNode<PeerService>("PeerService");
 		keyService = GetParent().GetNode<KeyService>("KeyService");
 		databaseService = GetParent().GetNode<DatabaseService>("DatabaseService");
 	}
@@ -37,9 +43,22 @@ public partial class SpaceService : Node
 		return keyUsage[keyId];
 	}
 
-	public void AddSpace(string spaceId, string spaceName, string spaceKeyId){
+	public void AddSpace(string spaceId, string spaceName, string spaceKeyId, PeerService.Peer owner, List<PeerService.Peer> authorities){
 		if (spaces.ContainsKey(spaceId)){
-			GD.Print("client already in space");
+			GD.Print("Updating space");
+
+			// Remove old key if changed
+			if (spaces[spaceId].keyId != spaceKeyId){
+				keyUsage.Remove(spaces[spaceId].keyId);
+			}
+
+			spaces[spaceId].name = spaceName;
+			spaces[spaceId].keyId = spaceKeyId;
+			spaces[spaceId].owner = owner;
+			spaces[spaceId].authorities = authorities;
+
+			keyUsage.Add(spaceKeyId, spaceId);
+
 			return;
 		}
 
@@ -47,6 +66,8 @@ public partial class SpaceService : Node
 			id = spaceId,
 			name = spaceName,
 			keyId = spaceKeyId,
+			owner = owner,
+			authorities = authorities,
 		};
 
 		spaces.Add(spaceId, spaceData);
@@ -62,6 +83,8 @@ public partial class SpaceService : Node
 			id = spaceId,
 			name = name,
 			keyId = keyGuid,
+			owner = peerService.peers[userService.userId],
+			authorities = new List<PeerService.Peer>(),
 		};
 
 		spaces.Add(spaceId, spaceData);
@@ -125,5 +148,8 @@ public partial class SpaceService : Node
 		public string id;
 		public string name;
 		public string keyId;
+
+		public PeerService.Peer owner;
+		public List<PeerService.Peer> authorities = new List<PeerService.Peer>();
 	}
 }
