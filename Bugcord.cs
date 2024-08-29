@@ -267,7 +267,7 @@ public partial class Bugcord : Node
 	}
 
 	public void SendSpaceInvite(string spaceGuid, string peerGuid){
-		byte[] spaceInvitePacket = BuildKeyPackage(spaceService.spaces[spaceGuid].keyId, spaceGuid);
+		byte[] spaceInvitePacket = BuildKeyPackage(peerGuid, spaceService.spaces[spaceGuid].keyId);
 
 		Send(spaceInvitePacket);
 
