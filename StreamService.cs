@@ -15,7 +15,7 @@ public partial class StreamService : Node
 	[Export] public bool recieveVoice;
 	[Export] public bool sendVoice;
 
-	private PacketPeerUdp udpClient;
+	private PacketPeerUdp udpClient = new PacketPeerUdp();
 
 	public static Dictionary<string, List<byte>> incomingVoiceBuffer = new();
 	private AudioEffectCapture recordBusCapture;
@@ -79,7 +79,6 @@ public partial class StreamService : Node
 	}
 
 	public void Connect(string host, int port){
-		udpClient = new PacketPeerUdp();
 		udpClient.ConnectToHost(host, port);
 	}
 
