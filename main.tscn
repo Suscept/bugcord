@@ -361,70 +361,6 @@ alignment = 2
 anchors_preset = 0
 mouse_filter = 2
 
-[node name="GenericPopup" type="MarginContainer" parent="Popups" node_paths=PackedStringArray("titleLabel", "extraTitleLabel", "subtextLabel", "subtextSeperator", "confirmButton")]
-visible = false
-custom_minimum_size = Vector2(174.07, 0)
-layout_mode = 0
-offset_left = 532.0
-offset_top = 273.0
-offset_right = 706.07
-offset_bottom = 273.0
-script = ExtResource("18_axqsm")
-titleLabel = NodePath("VBoxContainer/HBoxContainer/Title")
-extraTitleLabel = NodePath("VBoxContainer/HBoxContainer/Extra")
-subtextLabel = NodePath("VBoxContainer/Subtext")
-subtextSeperator = NodePath("VBoxContainer/HSeparator2")
-confirmButton = NodePath("VBoxContainer/Button")
-
-[node name="Panel" type="Panel" parent="Popups/GenericPopup"]
-layout_mode = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_fyr0g")
-
-[node name="VBoxContainer" type="VBoxContainer" parent="Popups/GenericPopup"]
-layout_mode = 2
-
-[node name="HBoxContainer" type="HBoxContainer" parent="Popups/GenericPopup/VBoxContainer"]
-layout_mode = 2
-
-[node name="Title" type="Label" parent="Popups/GenericPopup/VBoxContainer/HBoxContainer"]
-layout_mode = 2
-size_flags_horizontal = 3
-text = "Alert"
-horizontal_alignment = 1
-vertical_alignment = 1
-
-[node name="Extra" type="Label" parent="Popups/GenericPopup/VBoxContainer/HBoxContainer"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.601223, 0.601223, 0.601223, 1)
-theme_override_font_sizes/font_size = 12
-text = "+50"
-horizontal_alignment = 1
-vertical_alignment = 1
-
-[node name="HSeparator" type="HSeparator" parent="Popups/GenericPopup/VBoxContainer"]
-layout_mode = 2
-
-[node name="Subtext" type="RichTextLabel" parent="Popups/GenericPopup/VBoxContainer"]
-visible = false
-layout_mode = 2
-focus_mode = 2
-theme_override_font_sizes/normal_font_size = 12
-theme_override_font_sizes/bold_font_size = 12
-theme_override_font_sizes/italics_font_size = 12
-theme_override_font_sizes/bold_italics_font_size = 12
-theme_override_font_sizes/mono_font_size = 12
-text = "Subtext"
-fit_content = true
-selection_enabled = true
-
-[node name="HSeparator2" type="HSeparator" parent="Popups/GenericPopup/VBoxContainer"]
-layout_mode = 2
-
-[node name="Button" type="Button" parent="Popups/GenericPopup/VBoxContainer"]
-layout_mode = 2
-mouse_default_cursor_shape = 2
-text = "Okay"
-
 [node name="SettingsPanel" type="Panel" parent="Popups"]
 visible = false
 custom_minimum_size = Vector2(200, 500)
@@ -780,6 +716,70 @@ horizontal_scroll_mode = 0
 layout_mode = 2
 size_flags_horizontal = 3
 
+[node name="GenericPopup" type="MarginContainer" parent="Popups" node_paths=PackedStringArray("titleLabel", "extraTitleLabel", "subtextLabel", "subtextSeperator", "confirmButton")]
+visible = false
+custom_minimum_size = Vector2(174.07, 0)
+layout_mode = 0
+offset_left = 532.0
+offset_top = 273.0
+offset_right = 706.07
+offset_bottom = 347.0
+script = ExtResource("18_axqsm")
+titleLabel = NodePath("VBoxContainer/HBoxContainer/Title")
+extraTitleLabel = NodePath("VBoxContainer/HBoxContainer/Extra")
+subtextLabel = NodePath("VBoxContainer/Subtext")
+subtextSeperator = NodePath("VBoxContainer/HSeparator2")
+confirmButton = NodePath("VBoxContainer/Button")
+
+[node name="Panel" type="Panel" parent="Popups/GenericPopup"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_fyr0g")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Popups/GenericPopup"]
+layout_mode = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="Popups/GenericPopup/VBoxContainer"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Popups/GenericPopup/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Alert"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Extra" type="Label" parent="Popups/GenericPopup/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.601223, 0.601223, 0.601223, 1)
+theme_override_font_sizes/font_size = 12
+text = "+50"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="HSeparator" type="HSeparator" parent="Popups/GenericPopup/VBoxContainer"]
+layout_mode = 2
+
+[node name="Subtext" type="RichTextLabel" parent="Popups/GenericPopup/VBoxContainer"]
+visible = false
+layout_mode = 2
+focus_mode = 2
+theme_override_font_sizes/normal_font_size = 12
+theme_override_font_sizes/bold_font_size = 12
+theme_override_font_sizes/italics_font_size = 12
+theme_override_font_sizes/bold_italics_font_size = 12
+theme_override_font_sizes/mono_font_size = 12
+text = "Subtext"
+fit_content = true
+selection_enabled = true
+
+[node name="HSeparator2" type="HSeparator" parent="Popups/GenericPopup/VBoxContainer"]
+layout_mode = 2
+
+[node name="Button" type="Button" parent="Popups/GenericPopup/VBoxContainer"]
+layout_mode = 2
+mouse_default_cursor_shape = 2
+text = "Okay"
+
 [connection signal="OnConnectedToSpace" from="Bugcord" to="HBoxContainer/ChatMain/VBoxContainer/HBoxContainer2/SpaceView" method="UpdateSpaceInfo"]
 [connection signal="OnConnectedToSpace" from="Bugcord" to="HBoxContainer/ChatMain/VBoxContainer/MessageWindow" method="DisplaySpaceMessages"]
 [connection signal="OnMessageRecieved" from="Bugcord" to="HBoxContainer/ChatMain/VBoxContainer/MessageWindow" method="DisplayNewMessage"]
@@ -799,8 +799,6 @@ size_flags_horizontal = 3
 [connection signal="files_selected" from="HBoxContainer/ChatMain/VBoxContainer/MessageCreator/EmbedDialog" to="HBoxContainer/ChatMain/VBoxContainer/MessageCreator" method="EmbedFile"]
 [connection signal="pressed" from="HBoxContainer/ChatMain/VBoxContainer/MessageCreator/VBoxContainer/ReplyModel/ClearReply" to="HBoxContainer/ChatMain/VBoxContainer/MessageCreator" method="ClearReply"]
 [connection signal="pressed" from="HBoxContainer/ChatMain/VBoxContainer/MessageCreator/VBoxContainer/MessageInput/EmbedButton" to="HBoxContainer/ChatMain/VBoxContainer/MessageCreator" method="OnEmbedButtonPressed"]
-[connection signal="pressed" from="Popups/GenericPopup/VBoxContainer/Button" to="Popups/GenericPopup" method="DisplayNext"]
-[connection signal="pressed" from="Popups/GenericPopup/VBoxContainer/Button" to="Popups/GenericPopup/VBoxContainer/Button" method="SetInvisible"]
 [connection signal="pressed" from="Popups/SettingsPanel/VBoxContainer/ScrollContainer/VBoxContainer/UserSettings/VBoxContainer/ProfilePicture/Button" to="HBoxContainer/ChatMain/VBoxContainer/HBoxContainer2/Extras/SettingsPanel" method="PickProfileImage"]
 [connection signal="pressed" from="Popups/SettingsPanel/VBoxContainer/Save" to="HBoxContainer/ChatMain/VBoxContainer/HBoxContainer2/Extras/SettingsPanel" method="Save"]
 [connection signal="OnRegister" from="Popups/Register" to="Bugcord" method="CreateUserFile"]
@@ -815,3 +813,5 @@ size_flags_horizontal = 3
 [connection signal="text_changed" from="Popups/SpaceInviter/VBoxContainer/HBoxContainer/LineEdit" to="Popups/SpaceInviter" method="Search"]
 [connection signal="pressed" from="Popups/SpaceInviter/VBoxContainer/HBoxContainer/Refresh" to="Popups/SpaceInviter" method="UpdateList"]
 [connection signal="pressed" from="Popups/SpaceInviter/VBoxContainer/HBoxContainer/Close" to="Popups/SpaceInviter/VBoxContainer/HBoxContainer/Close" method="SetInvisible"]
+[connection signal="pressed" from="Popups/GenericPopup/VBoxContainer/Button" to="Popups/GenericPopup" method="DisplayNext"]
+[connection signal="pressed" from="Popups/GenericPopup/VBoxContainer/Button" to="Popups/GenericPopup/VBoxContainer/Button" method="SetInvisible"]

@@ -18,6 +18,10 @@ public partial class MakeSpaceWindow : Panel
 	}
 
 	public void OnCreateSpace(){
+		if (spaceName.Text.Length == 0){
+			GetNode<PopupAlert>("/root/Main/Popups/GenericPopup").NewAlert("Space must have a name");
+			return;
+		}
 		Visible = false;
 		EmitSignal(SignalName.OnCreatingSpace, spaceName.Text);
 	}
