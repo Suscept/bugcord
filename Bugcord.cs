@@ -213,14 +213,13 @@ public partial class Bugcord : Node
 		if (!FileAccess.FileExists(UserService.clientSavePath)){
 			return false;
 		}
-		if (!FileAccess.FileExists(KeyService.clientKeyPath)){
-			return false;
-		}
 
 		userService.LoadFromFile();
 
 		// User RSA key
-		keyService.AuthLoadFromFile();
+		if (!keyService.AuthLoadFromFile()){
+			return false;
+		}
 
 		peerService.LoadFromFile();
 

@@ -13,7 +13,10 @@ public partial class KeyService : Node
 	public RSA userAuthentication;
 
 	public const string clientKeyPath = "user://client.pem";
-	public const string knownKeysPath = "user://keys.auth";
+	public const string oldClientKeyPath = "user://client.auth";
+
+	public const string knownKeysPath = "user://keys.pem";
+	public const string oldKnownKeysPath = "user://keys.auth";
 
 	private SpaceService spaceService;
 
@@ -89,6 +92,16 @@ public partial class KeyService : Node
 
 	public void KeysLoadFromFile(){
 		if (!FileAccess.FileExists(knownKeysPath)){
+			if (FileAccess.FileExists(oldKnownKeysPath)){
+				GD.Print("Migrating known keys file...");
+				DirAccess.RenameAbsolute(oldKnownKeysPath, knownKeysPath);
+				FileAccess.SetHiddenAttribute(knownKeysPath, true);
+			}else{
+				return;
+			}
+		}
+
+		if (!FileAccess.FileExists(knownKeysPath)){
 			return;
 		}
 		
@@ -118,13 +131,25 @@ public partial class KeyService : Node
 		newKey.Close();
 	}
 
-	public void AuthLoadFromFile(){
+	public bool AuthLoadFromFile(){
+		if (!FileAccess.FileExists(clientKeyPath)){
+			if (FileAccess.FileExists(oldClientKeyPath)){
+				GD.Print("Migrating user key file...");
+				DirAccess.RenameAbsolute(oldClientKeyPath, clientKeyPath);
+				FileAccess.SetHiddenAttribute(clientKeyPath, true);
+			}else{
+				return false;
+			}
+		}
+
 		FileAccess userKeyFile = FileAccess.Open(clientKeyPath, FileAccess.ModeFlags.Read);
 		long keyLength = (long)userKeyFile.GetLength();
 
 		userAuthentication = new RSACryptoServiceProvider(2048);
 		userAuthentication.ImportRSAPrivateKey(userKeyFile.GetBuffer(keyLength), out int bytesRead);
 		userKeyFile.Close();
+
+		return true;
 	}
 
 	public byte[] SignData(byte[] data){
