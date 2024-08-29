@@ -108,7 +108,7 @@ public partial class StreamService : Node
 	}
 
 	private void ProcessVoicePacket(byte[] packet){
-		byte[][] dataSpans = Bugcord.ReadDataSpans(packet, 1);
+		byte[][] dataSpans = Bugcord.ReadDataSpans(packet, 0);
 
 		string senderId = dataSpans[0].GetStringFromUtf8();
 		byte[] framesEncoded = dataSpans[1];
