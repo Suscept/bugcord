@@ -74,7 +74,7 @@ public partial class MessageUI : MarginContainer
 	}
 
 	public void SetupMessageContent(string text){
-		string[] lines = text.Split('\n');
+		string[] lines = text.Split('\n', StringSplitOptions.RemoveEmptyEntries);
 		string processedLines = "";
 		for (int i = 0; i < lines.Length; i++){
 			if (lines[i][0] == '>'){ // Greentext
