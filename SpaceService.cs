@@ -59,6 +59,9 @@ public partial class SpaceService : Node
 
 			keyUsage.Add(spaceKeyId, spaceId);
 
+			spaceDisplay.Update(spaces);
+			SaveToFile();
+
 			return;
 		}
 
@@ -73,23 +76,16 @@ public partial class SpaceService : Node
 		spaces.Add(spaceId, spaceData);
 		keyUsage.Add(spaceKeyId, spaceId);
 		databaseService.AddSpaceTable(spaceId);
+
+		spaceDisplay.Update(spaces);
+		SaveToFile();
 	}
 
 	public void GenerateSpace(string name){
 		string keyGuid = keyService.NewKey();
 		string spaceId = Guid.NewGuid().ToString();
 
-		Space spaceData = new(){
-			id = spaceId,
-			name = name,
-			keyId = keyGuid,
-			owner = peerService.peers[userService.userId],
-			authorities = new List<PeerService.Peer>(),
-		};
-
-		spaces.Add(spaceId, spaceData);
-		databaseService.AddSpaceTable(spaceId);
-		SaveToFile();
+		AddSpace(spaceId, name, keyGuid, peerService.peers[userService.userId], new List<PeerService.Peer>());
 	}
 
 	public void SaveToFile(){
