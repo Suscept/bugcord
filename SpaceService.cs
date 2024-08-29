@@ -132,7 +132,12 @@ public partial class SpaceService : Node
 
 		// Convert godot dictionary to system dictionary
 		foreach (KeyValuePair<Variant, Variant> entry in (Godot.Collections.Dictionary)Json.ParseString(spaceFileRaw)){
-			Godot.Collections.Array authoritiesJson = (Godot.Collections.Array)((Godot.Collections.Dictionary)entry.Value)["authorities"];
+			Godot.Collections.Dictionary spaceInfo = (Godot.Collections.Dictionary)entry.Value;
+			if (!spaceInfo.ContainsKey("owner") || !spaceInfo.ContainsKey("authorities")){ // Old space
+				continue;
+			}
+
+			Godot.Collections.Array authoritiesJson = (Godot.Collections.Array)spaceInfo["authorities"];
 			List<PeerService.Peer> authorities = new List<PeerService.Peer>();
 			foreach (string authorityId in authoritiesJson){
 				authorities.Add(peerService.peers[authorityId]);
@@ -141,9 +146,9 @@ public partial class SpaceService : Node
             Space entryData = new()
             {
                 id = (string)entry.Key,
-                keyId = (string)((Godot.Collections.Dictionary)entry.Value)["keyId"],
-                name = (string)((Godot.Collections.Dictionary)entry.Value)["name"],
-				owner = peerService.peers[(string)((Godot.Collections.Dictionary)entry.Value)["owner"]],
+                keyId = (string)spaceInfo["keyId"],
+                name = (string)spaceInfo["name"],
+				owner = peerService.peers[(string)spaceInfo["owner"]],
 				authorities = authorities,
             };
 			spaces.Add((string)entry.Key, entryData);
