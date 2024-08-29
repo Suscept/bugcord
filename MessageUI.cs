@@ -39,6 +39,9 @@ public partial class MessageUI : MarginContainer
 			case 2: // Delete
 				GetNode<PopupAlert>("/root/Main/Popups/GenericPopup").NewAlert("Not implemented lol");
 				break;
+			case 3: // Download embed
+				GetNode<PopupAlert>("/root/Main/Popups/GenericPopup").NewAlert("Not implemented lol");
+				break;
 			default:
 				break;
 		}
@@ -93,6 +96,8 @@ public partial class MessageUI : MarginContainer
 		FileService fileService = GetNode<FileService>("/root/Main/Bugcord/FileService");
 		string cachePath = fileService.cacheIndex[guid];
 		SetupMediaUi(cachePath);
+
+		popupMenu.AddItem("Download", 3);
 
 		mediaLoadingProgressLabel.Visible = false;
 		fileService.OnCacheChanged -= CacheUpdated;
