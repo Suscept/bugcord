@@ -86,8 +86,6 @@ public partial class SpaceInviter : Panel
 
 			inviteEntries.Add(entry);
 		}
-
-		Visible = true;
 	}
 
 	public void InvitePeer(string peer){

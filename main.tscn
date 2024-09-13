@@ -1,4 +1,4 @@
-[gd_scene load_steps=32 format=3 uid="uid://b4h65lw1u6cii"]
+[gd_scene load_steps=34 format=3 uid="uid://b4h65lw1u6cii"]
 
 [ext_resource type="Script" path="res://Bugcord.cs" id="1_jyk1e"]
 [ext_resource type="PackedScene" uid="uid://c0hr25wlgd0kt" path="res://message.tscn" id="1_ki7uw"]
@@ -29,6 +29,8 @@
 [ext_resource type="Script" path="res://UiToggler.cs" id="15_kgtp7"]
 [ext_resource type="Texture2D" uid="uid://6j35bsdb4w8r" path="res://icon.svg" id="16_h3cnx"]
 [ext_resource type="Script" path="res://PopupAlert.cs" id="18_axqsm"]
+[ext_resource type="Script" path="res://SpaceSettingsUI.cs" id="26_sel21"]
+[ext_resource type="PackedScene" uid="uid://dd0t1hkoxj4fi" path="res://user_display.tscn" id="27_t0wxr"]
 
 [sub_resource type="AudioStreamGenerator" id="AudioStreamGenerator_2jvjo"]
 buffer_length = 0.1
@@ -655,23 +657,157 @@ placeholder_text = "full invite packet b64"
 layout_mode = 2
 text = "go"
 
-[node name="SpaceInviter" type="Panel" parent="Popups" node_paths=PackedStringArray("inviteEntryContainer")]
-visible = false
+[node name="Space Settings" type="Panel" parent="Popups" node_paths=PackedStringArray("spaceTitle", "ownerLabel", "adminListContainer", "memberListContainer")]
+clip_contents = true
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = 444.0
-offset_top = 248.0
-offset_right = 832.655
-offset_bottom = 407.896
+offset_left = 363.0
+offset_top = 93.0
+offset_right = 928.0
+offset_bottom = 341.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("26_sel21")
+userDisplayUi = ExtResource("27_t0wxr")
+spaceTitle = NodePath("VBoxContainer/HBoxContainer/Settings/TitleLine/Title")
+ownerLabel = NodePath("VBoxContainer/HBoxContainer/Settings/Owner/OwnerName")
+adminListContainer = NodePath("VBoxContainer/HBoxContainer/Admins/ScrollContainer/VBoxContainer")
+memberListContainer = NodePath("VBoxContainer/HBoxContainer/Members/ScrollContainer/VBoxContainer")
+metadata/_edit_group_ = true
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Popups/Space Settings"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="Popups/Space Settings/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Settings" type="VBoxContainer" parent="Popups/Space Settings/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.7
+
+[node name="TitleLine" type="HBoxContainer" parent="Popups/Space Settings/VBoxContainer/HBoxContainer/Settings"]
+layout_mode = 2
+
+[node name="Button" type="Button" parent="Popups/Space Settings/VBoxContainer/HBoxContainer/Settings/TitleLine" node_paths=PackedStringArray("target")]
+layout_mode = 2
+mouse_default_cursor_shape = 2
+text = "X"
+script = ExtResource("15_kgtp7")
+target = NodePath("../../../../..")
+
+[node name="Title" type="Label" parent="Popups/Space Settings/VBoxContainer/HBoxContainer/Settings/TitleLine"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Gaming Space"
+horizontal_alignment = 1
+text_overrun_behavior = 3
+
+[node name="HSeparator" type="HSeparator" parent="Popups/Space Settings/VBoxContainer/HBoxContainer/Settings"]
+layout_mode = 2
+
+[node name="LineEdit" type="LineEdit" parent="Popups/Space Settings/VBoxContainer/HBoxContainer/Settings"]
+layout_mode = 2
+placeholder_text = "Rename.."
+
+[node name="Owner" type="HBoxContainer" parent="Popups/Space Settings/VBoxContainer/HBoxContainer/Settings"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="Popups/Space Settings/VBoxContainer/HBoxContainer/Settings/Owner"]
+layout_mode = 2
+text = "Owner:"
+
+[node name="OwnerName" type="Label" parent="Popups/Space Settings/VBoxContainer/HBoxContainer/Settings/Owner"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "You!"
+text_overrun_behavior = 3
+
+[node name="VSeparator" type="VSeparator" parent="Popups/Space Settings/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+
+[node name="Admins" type="VBoxContainer" parent="Popups/Space Settings/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.5
+
+[node name="Label" type="Label" parent="Popups/Space Settings/VBoxContainer/HBoxContainer/Admins"]
+layout_mode = 2
+text = "Admins"
+horizontal_alignment = 1
+
+[node name="ScrollContainer" type="ScrollContainer" parent="Popups/Space Settings/VBoxContainer/HBoxContainer/Admins"]
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Popups/Space Settings/VBoxContainer/HBoxContainer/Admins/ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="VSeparator2" type="VSeparator" parent="Popups/Space Settings/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+
+[node name="Members" type="VBoxContainer" parent="Popups/Space Settings/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.5
+
+[node name="HBoxContainer" type="HBoxContainer" parent="Popups/Space Settings/VBoxContainer/HBoxContainer/Members"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="Popups/Space Settings/VBoxContainer/HBoxContainer/Members/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Members"
+horizontal_alignment = 1
+
+[node name="Button" type="Button" parent="Popups/Space Settings/VBoxContainer/HBoxContainer/Members/HBoxContainer" node_paths=PackedStringArray("target")]
+layout_mode = 2
+text = "Invite"
+script = ExtResource("15_kgtp7")
+target = NodePath("../../../../../../SpaceInviter")
+
+[node name="ScrollContainer" type="ScrollContainer" parent="Popups/Space Settings/VBoxContainer/HBoxContainer/Members"]
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Popups/Space Settings/VBoxContainer/HBoxContainer/Members/ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Save" type="Button" parent="Popups/Space Settings/VBoxContainer"]
+layout_mode = 2
+text = "Save"
+
+[node name="SpaceInviter" type="Panel" parent="Popups" node_paths=PackedStringArray("inviteEntryContainer")]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = 445.0
+offset_top = 360.0
+offset_right = 833.655
+offset_bottom = 519.896
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("11_cskni")
 inviteEntry = ExtResource("12_qp5d4")
 inviteEntryContainer = NodePath("VBoxContainer/ScrollContainer/VBoxContainer")
+metadata/_edit_group_ = true
 
 [node name="VBoxContainer" type="VBoxContainer" parent="Popups/SpaceInviter"]
 layout_mode = 1
@@ -789,6 +925,7 @@ text = "Okay"
 [connection signal="OnServerSelected" from="HBoxContainer/LeftBar/Panel/VBoxContainer/ServerInput" to="Bugcord" method="Connect"]
 [connection signal="pressed" from="HBoxContainer/LeftBar/Panel/VBoxContainer/ServerInput/VBoxContainer/ServerInput/Button" to="HBoxContainer/LeftBar/Panel/VBoxContainer/ServerInput" method="SelectServer"]
 [connection signal="toggled" from="HBoxContainer/LeftBar/Panel/VBoxContainer/ServerInput/VBoxContainer/CheckBox" to="HBoxContainer/LeftBar/Panel/VBoxContainer/ServerInput" method="AutoConnectCheckChanged"]
+[connection signal="OnSpaceInvite" from="HBoxContainer/LeftBar/Panel/VBoxContainer/Spaces" to="Popups/Space Settings" method="DisplaySpace"]
 [connection signal="OnSpaceInvite" from="HBoxContainer/LeftBar/Panel/VBoxContainer/Spaces" to="Popups/SpaceInviter" method="UpdateList"]
 [connection signal="OnSpacePicked" from="HBoxContainer/LeftBar/Panel/VBoxContainer/Spaces" to="Bugcord" method="ConnectSpace"]
 [connection signal="pressed" from="HBoxContainer/LeftBar/Panel/VBoxContainer/Spaces/VBoxContainer/NewSpace" to="Popups/MakeSpace" method="ToggleVisibility"]
@@ -809,7 +946,13 @@ text = "Okay"
 [connection signal="pressed" from="Popups/dataspan tester/VBoxContainer/Button" to="Popups/dataspan tester" method="OnInput"]
 [connection signal="pressed" from="Popups/rsa tester/VBoxContainer/Button" to="Popups/rsa tester" method="OnInput"]
 [connection signal="pressed" from="Popups/space invite tester/VBoxContainer/Button" to="Popups/space invite tester" method="OnInput"]
+[connection signal="OnVisibilityDisabled" from="Popups/Space Settings/VBoxContainer/HBoxContainer/Settings/TitleLine/Button" to="Popups/Space Settings" method="CancelChanges"]
+[connection signal="pressed" from="Popups/Space Settings/VBoxContainer/HBoxContainer/Settings/TitleLine/Button" to="Popups/Space Settings/VBoxContainer/HBoxContainer/Settings/TitleLine/Button" method="SetInvisible"]
+[connection signal="text_submitted" from="Popups/Space Settings/VBoxContainer/HBoxContainer/Settings/LineEdit" to="Popups/Space Settings" method="SpaceNameChangeSubmitted"]
+[connection signal="pressed" from="Popups/Space Settings/VBoxContainer/HBoxContainer/Members/HBoxContainer/Button" to="Popups/Space Settings/VBoxContainer/HBoxContainer/Members/HBoxContainer/Button" method="SetVisible"]
+[connection signal="pressed" from="Popups/Space Settings/VBoxContainer/Save" to="Popups/Space Settings" method="SaveUpdate"]
 [connection signal="OnInvitePeer" from="Popups/SpaceInviter" to="Bugcord" method="SendSpaceInvite"]
+[connection signal="OnInvitePeer" from="Popups/SpaceInviter" to="Popups/Space Settings" method="InviteUser"]
 [connection signal="text_changed" from="Popups/SpaceInviter/VBoxContainer/HBoxContainer/LineEdit" to="Popups/SpaceInviter" method="Search"]
 [connection signal="pressed" from="Popups/SpaceInviter/VBoxContainer/HBoxContainer/Refresh" to="Popups/SpaceInviter" method="UpdateList"]
 [connection signal="pressed" from="Popups/SpaceInviter/VBoxContainer/HBoxContainer/Close" to="Popups/SpaceInviter/VBoxContainer/HBoxContainer/Close" method="SetInvisible"]

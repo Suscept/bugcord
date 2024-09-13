@@ -10,16 +10,26 @@ public partial class PeerService : Node
 	public const string clientPeerPath = "user://peers.json";
 
 	private KeyService keyService;
+	private UserService userService;
 
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
 	{
 		keyService = GetParent().GetNode<KeyService>("KeyService");
+		userService = GetParent().GetNode<UserService>("UserService");
 	}
 
 	// Called every frame. 'delta' is the elapsed time since the previous frame.
 	public override void _Process(double delta)
 	{
+	}
+
+	public Peer GetLocalPeer(){
+		return peers[userService.userId];
+	}
+
+	public Peer GetPeer(string peerId){
+		return peers[peerId];
 	}
 
 	public bool AddPeer(string id, string username, byte[] rsaKey){

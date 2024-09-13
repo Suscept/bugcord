@@ -266,6 +266,14 @@ public partial class Bugcord : Node
 		EmitSignal(SignalName.OnConnectedToSpace, guid, spaceService.spaces[guid].name);
 	}
 
+	public void UpdateSpace(string spaceId){
+		List<PeerService.Peer> members = spaceService.spaces[spaceId].members;
+		foreach (PeerService.Peer member in members)
+		{
+			SendSpaceInvite(spaceId, member.id);
+		}
+	}
+
 	public void SendSpaceInvite(string spaceGuid, string peerGuid){
 		byte[] spaceInvitePacket = BuildKeyPackage(peerGuid, spaceService.spaces[spaceGuid].keyId);
 
@@ -313,13 +321,21 @@ public partial class Bugcord : Node
 		string ownerId = dataSpans[3].GetStringFromUtf8();
 		PeerService.Peer owner = peerService.peers[ownerId];
 
+		int memberOffset = 4;
 		List<PeerService.Peer> authorities = new List<PeerService.Peer>();
 		for (int i = 4; i < dataSpans.Length; i++){
 			string authorityId = dataSpans[i].GetStringFromUtf8();
 			authorities.Add(peerService.peers[authorityId]);
+			memberOffset++;
 		}
 
-		spaceService.AddSpace(spaceId, spaceName, keyId, owner, authorities);
+		List<PeerService.Peer> members = new List<PeerService.Peer>();
+		for (int i = memberOffset; i < dataSpans.Length; i++){
+			string memberId = dataSpans[i].GetStringFromUtf8();
+			authorities.Add(peerService.peers[memberId]);
+		}
+
+		spaceService.AddSpace(spaceId, spaceName, keyId, owner, authorities, members);
 	}
 
 	private void ProcessFilePacket(byte[] packet){
@@ -482,6 +498,10 @@ public partial class Bugcord : Node
 		packetBytes.AddRange(MakeDataSpan(space.owner.id.ToUtf8Buffer()));
 
 		foreach (PeerService.Peer peer in space.authorities){
+			packetBytes.AddRange(MakeDataSpan(peer.id.ToUtf8Buffer()));
+		}
+
+		foreach (PeerService.Peer peer in space.members){
 			packetBytes.AddRange(MakeDataSpan(peer.id.ToUtf8Buffer()));
 		}
 

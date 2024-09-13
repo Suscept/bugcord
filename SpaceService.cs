@@ -18,6 +18,7 @@ public partial class SpaceService : Node
 	private PeerService peerService;
 	private KeyService keyService;
 	private DatabaseService databaseService;
+	private Bugcord bugcord;
 
 	// Key id, space id
 	private Dictionary<string, string> keyUsage = new();
@@ -29,6 +30,7 @@ public partial class SpaceService : Node
 		peerService = GetParent().GetNode<PeerService>("PeerService");
 		keyService = GetParent().GetNode<KeyService>("KeyService");
 		databaseService = GetParent().GetNode<DatabaseService>("DatabaseService");
+		bugcord = GetParent<Bugcord>();
 	}
 
 	// Called every frame. 'delta' is the elapsed time since the previous frame.
@@ -43,21 +45,47 @@ public partial class SpaceService : Node
 		return keyUsage[keyId];
 	}
 
-	public void AddSpace(string spaceId, string spaceName, string spaceKeyId, PeerService.Peer owner, List<PeerService.Peer> authorities){
-		if (spaces.ContainsKey(spaceId)){
+	public void OnUpdateSpace(Space space, string prevKey){
+		GD.Print("Space updated. Changing key..");
+		if (space.keyId != prevKey){ // Update key
+			keyUsage.Remove(prevKey);
+			keyUsage.Add(space.keyId, space.id);
+		}
+
+		spaceDisplay.Update(spaces);
+		SaveToFile();
+
+		bugcord.UpdateSpace(space.id);
+	}
+
+	public void AddSpace(string spaceId, string spaceName, string spaceKeyId, PeerService.Peer owner, List<PeerService.Peer> authorities, List<PeerService.Peer> members){
+		Space spaceData = new(){
+			id = spaceId,
+			name = spaceName,
+			keyId = spaceKeyId,
+			owner = owner,
+			authorities = authorities,
+			members = members,
+		};
+
+		AddSpace(spaceData);
+	}
+
+	public void AddSpace(Space space){
+		if (spaces.ContainsKey(space.id)){
 			GD.Print("Updating space");
 
 			// Remove old key if changed
-			if (spaces[spaceId].keyId != spaceKeyId){
-				keyUsage.Remove(spaces[spaceId].keyId);
+			if (spaces[space.id].keyId != space.keyId){
+				keyUsage.Remove(spaces[space.id].keyId);
+				keyUsage.Add(space.keyId, space.id);
 			}
 
-			spaces[spaceId].name = spaceName;
-			spaces[spaceId].keyId = spaceKeyId;
-			spaces[spaceId].owner = owner;
-			spaces[spaceId].authorities = authorities;
-
-			keyUsage.Add(spaceKeyId, spaceId);
+			spaces[space.id].name = space.name;
+			spaces[space.id].keyId = space.keyId;
+			spaces[space.id].owner = space.owner;
+			spaces[space.id].authorities = space.authorities;
+			spaces[space.id].members = space.members;
 
 			spaceDisplay.Update(spaces);
 			SaveToFile();
@@ -65,17 +93,9 @@ public partial class SpaceService : Node
 			return;
 		}
 
-		Space spaceData = new(){
-			id = spaceId,
-			name = spaceName,
-			keyId = spaceKeyId,
-			owner = owner,
-			authorities = authorities,
-		};
-
-		spaces.Add(spaceId, spaceData);
-		keyUsage.Add(spaceKeyId, spaceId);
-		databaseService.AddSpaceTable(spaceId);
+		spaces.Add(space.id, space);
+		keyUsage.Add(space.keyId, space.id);
+		databaseService.AddSpaceTable(space.id);
 
 		spaceDisplay.Update(spaces);
 		SaveToFile();
@@ -85,7 +105,25 @@ public partial class SpaceService : Node
 		string keyGuid = keyService.NewKey();
 		string spaceId = Guid.NewGuid().ToString();
 
-		AddSpace(spaceId, name, keyGuid, peerService.peers[userService.userId], new List<PeerService.Peer>());
+		List<PeerService.Peer> spaceAuthorites = new List<PeerService.Peer>
+        {
+            peerService.GetLocalPeer()
+        };
+		List<PeerService.Peer> spaceMembers = new List<PeerService.Peer>
+        {
+            peerService.GetLocalPeer()
+        };
+
+		Space newSpace = new Space(){
+			name = name,
+			keyId = keyGuid,
+			id = spaceId,
+			owner = peerService.GetLocalPeer(),
+			authorities = spaceAuthorites,
+			members = spaceMembers
+		};
+
+		AddSpace(newSpace);
 	}
 
 	public void SaveToFile(){
@@ -103,6 +141,11 @@ public partial class SpaceService : Node
 			foreach (PeerService.Peer authority in entry.Value.authorities){
 				authorities.Add(authority.id);
 			}
+
+			Godot.Collections.Array members = new Godot.Collections.Array();
+			foreach (PeerService.Peer member in entry.Value.members){
+				members.Add(member.id);
+			}
 			
 			Godot.Collections.Dictionary entryData = new()
             {
@@ -110,6 +153,7 @@ public partial class SpaceService : Node
                 { "keyId", entry.Value.keyId },
                 { "owner", entry.Value.owner.id },
                 { "authorities", authorities },
+                { "members", members },
             };
 			spacesToSave.Add(entry.Key, entryData);
 		}
@@ -137,10 +181,33 @@ public partial class SpaceService : Node
 				continue;
 			}
 
+			List<PeerService.Peer> members = new List<PeerService.Peer>();
+			if (spaceInfo.ContainsKey("members")){
+				Godot.Collections.Array membersJson = (Godot.Collections.Array)spaceInfo["members"];
+				foreach (string memberId in membersJson){
+					members.Add(peerService.peers[memberId]);
+				}
+			}else{
+				members.Add(peerService.GetLocalPeer());
+			}
+
 			Godot.Collections.Array authoritiesJson = (Godot.Collections.Array)spaceInfo["authorities"];
 			List<PeerService.Peer> authorities = new List<PeerService.Peer>();
 			foreach (string authorityId in authoritiesJson){
 				authorities.Add(peerService.peers[authorityId]);
+			}
+
+			PeerService.Peer spaceOwner = peerService.GetPeer((string)spaceInfo["owner"]);
+
+			// Broken space fixes
+			if (!members.Contains(spaceOwner)){ // Owner is not a member??
+				GD.Print("Fixed space where owner was not a member");
+				members.Add(spaceOwner);
+			}
+
+			if (!authorities.Contains(spaceOwner)){ // Owner is not an authority??
+				GD.Print("Fixed space where owner was not an admin");
+				authorities.Add(spaceOwner);
 			}
 
             Space entryData = new()
@@ -150,6 +217,7 @@ public partial class SpaceService : Node
                 name = (string)spaceInfo["name"],
 				owner = peerService.peers[(string)spaceInfo["owner"]],
 				authorities = authorities,
+				members = members
             };
 			spaces.Add((string)entry.Key, entryData);
 			keyUsage.Add(entryData.keyId, (string)entry.Key);
@@ -167,5 +235,6 @@ public partial class SpaceService : Node
 
 		public PeerService.Peer owner;
 		public List<PeerService.Peer> authorities = new List<PeerService.Peer>();
+		public List<PeerService.Peer> members = new List<PeerService.Peer>();
 	}
 }

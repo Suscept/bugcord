@@ -19,6 +19,10 @@ config/icon="res://icon.svg"
 
 driver/enable_input=true
 
+[autoload]
+
+Buglib="*res://Buglib.cs"
+
 [dotnet]
 
 project/assembly_name="bugcord"
