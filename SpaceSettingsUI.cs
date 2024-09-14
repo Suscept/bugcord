@@ -7,6 +7,7 @@ public partial class SpaceSettingsUI : Panel
 	[Export] public PackedScene userDisplayUi;
 	[Export] public Label spaceTitle;
 	[Export] public Label ownerLabel;
+	[Export] public RichTextLabel keyIdLabel;
 
 	[Export] public Control adminListContainer;
 	[Export] public Control memberListContainer;
@@ -65,6 +66,8 @@ public partial class SpaceSettingsUI : Panel
 		spaceTitle.Text = displayingSpace.name;
 
 		ownerLabel.Text = displayingSpace.owner.username;
+
+		keyIdLabel.Text = "Key ID: " + displayingSpace.keyId;
 
 		// User lists
 		UpdateUserLists();

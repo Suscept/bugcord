@@ -657,7 +657,7 @@ placeholder_text = "full invite packet b64"
 layout_mode = 2
 text = "go"
 
-[node name="Space Settings" type="Panel" parent="Popups" node_paths=PackedStringArray("spaceTitle", "ownerLabel", "adminListContainer", "memberListContainer")]
+[node name="Space Settings" type="Panel" parent="Popups" node_paths=PackedStringArray("spaceTitle", "ownerLabel", "keyIdLabel", "adminListContainer", "memberListContainer")]
 clip_contents = true
 layout_mode = 1
 anchors_preset = 8
@@ -675,6 +675,7 @@ script = ExtResource("26_sel21")
 userDisplayUi = ExtResource("27_t0wxr")
 spaceTitle = NodePath("VBoxContainer/HBoxContainer/Settings/TitleLine/Title")
 ownerLabel = NodePath("VBoxContainer/HBoxContainer/Settings/Owner/OwnerName")
+keyIdLabel = NodePath("VBoxContainer/HBoxContainer/Settings/KeyIdLabel")
 adminListContainer = NodePath("VBoxContainer/HBoxContainer/Admins/ScrollContainer/VBoxContainer")
 memberListContainer = NodePath("VBoxContainer/HBoxContainer/Members/ScrollContainer/VBoxContainer")
 metadata/_edit_group_ = true
@@ -732,6 +733,17 @@ layout_mode = 2
 size_flags_horizontal = 3
 text = "You!"
 text_overrun_behavior = 3
+
+[node name="KeyIdLabel" type="RichTextLabel" parent="Popups/Space Settings/VBoxContainer/HBoxContainer/Settings"]
+layout_mode = 2
+focus_mode = 2
+mouse_default_cursor_shape = 1
+theme_override_font_sizes/normal_font_size = 12
+text = "Key ID: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+fit_content = true
+scroll_active = false
+autowrap_mode = 1
+selection_enabled = true
 
 [node name="VSeparator" type="VSeparator" parent="Popups/Space Settings/VBoxContainer/HBoxContainer"]
 layout_mode = 2
