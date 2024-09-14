@@ -11,8 +11,6 @@ public partial class Bugcord : Node
 
 	[Export] public ServerSelector serverSelector;
 
-	[Export] public CheckBox voiceChatToggle;
-
 	[Signal] public delegate void OnMessageRecievedEventHandler(Dictionary message);
 	[Signal] public delegate void OnConnectedToSpaceEventHandler(string spaceId, string spaceName);
 

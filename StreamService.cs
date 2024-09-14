@@ -7,8 +7,6 @@ public partial class StreamService : Node
 {
 	public const int audioPacketDataSize = 4096;
 
-	[Export] public CheckBox voiceChatToggle;
-
 	[Export] public AudioStreamPlayer audioRecorder;
 	[Export] public AudioStreamPlayer audioPlayer;
 
@@ -35,8 +33,6 @@ public partial class StreamService : Node
 	{
 		if (!udpClient.IsSocketConnected())
 			return;
-
-		sendVoice = recieveVoice = voiceChatToggle.ButtonPressed; // Temporary until dedicated mute/deafen buttons are added
 
 		if (sendVoice && recieveVoice){ // You should only be able to send voice packets if you may also recieve them
 			Vector2[] vBuffer = GetVoiceBuffer(audioPacketDataSize);

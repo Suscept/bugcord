@@ -1,4 +1,4 @@
-[gd_scene load_steps=34 format=3 uid="uid://b4h65lw1u6cii"]
+[gd_scene load_steps=35 format=3 uid="uid://b4h65lw1u6cii"]
 
 [ext_resource type="Script" path="res://Bugcord.cs" id="1_jyk1e"]
 [ext_resource type="PackedScene" uid="uid://c0hr25wlgd0kt" path="res://message.tscn" id="1_ki7uw"]
@@ -23,6 +23,7 @@
 [ext_resource type="Script" path="res://MakeVisible.cs" id="11_7p3cn"]
 [ext_resource type="Script" path="res://SpaceInviter.cs" id="11_cskni"]
 [ext_resource type="PackedScene" uid="uid://bl2sn6odt10ns" path="res://invite_option.tscn" id="12_qp5d4"]
+[ext_resource type="Script" path="res://VoiceChatUi.cs" id="13_2dfxp"]
 [ext_resource type="Script" path="res://AlertPanel.cs" id="14_gf605"]
 [ext_resource type="Script" path="res://SettingsPanel.cs" id="15_3b65x"]
 [ext_resource type="PackedScene" uid="uid://xbjljk2f0tqf" path="res://alert_message.tscn" id="15_jvka1"]
@@ -54,11 +55,10 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="Bugcord" type="Node" parent="." node_paths=PackedStringArray("messageInput", "registerWindow", "voiceChatToggle")]
+[node name="Bugcord" type="Node" parent="." node_paths=PackedStringArray("messageInput", "registerWindow")]
 script = ExtResource("1_jyk1e")
 messageInput = NodePath("../HBoxContainer/ChatMain/VBoxContainer/MessageCreator/VBoxContainer/MessageInput/MessageText")
 registerWindow = NodePath("../Popups/Register")
-voiceChatToggle = NodePath("../HBoxContainer/LeftBar/Panel/VBoxContainer/ServerInput/VBoxContainer/VoiceToggle")
 
 [node name="UserService" type="Node" parent="Bugcord"]
 script = ExtResource("4_fd14y")
@@ -82,9 +82,8 @@ script = ExtResource("7_8sfsb")
 [node name="PacketService" type="Node" parent="Bugcord"]
 script = ExtResource("8_e1jjy")
 
-[node name="StreamService" type="Node" parent="Bugcord" node_paths=PackedStringArray("voiceChatToggle", "audioRecorder", "audioPlayer")]
+[node name="StreamService" type="Node" parent="Bugcord" node_paths=PackedStringArray("audioRecorder", "audioPlayer")]
 script = ExtResource("9_igf1r")
-voiceChatToggle = NodePath("../../HBoxContainer/LeftBar/Panel/VBoxContainer/ServerInput/VBoxContainer/VoiceToggle")
 audioRecorder = NodePath("VoiceInputStream")
 audioPlayer = NodePath("VoiceOutputStream")
 
@@ -151,12 +150,6 @@ size_flags_horizontal = 3
 placeholder_text = "Server:"
 virtual_keyboard_type = 7
 
-[node name="VoiceToggle" type="CheckBox" parent="HBoxContainer/LeftBar/Panel/VBoxContainer/ServerInput/VBoxContainer"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 15
-text = "Voice Chat"
-clip_text = true
-
 [node name="CheckBox" type="CheckBox" parent="HBoxContainer/LeftBar/Panel/VBoxContainer/ServerInput/VBoxContainer"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 15
@@ -182,6 +175,40 @@ size_flags_horizontal = 3
 layout_mode = 2
 mouse_default_cursor_shape = 2
 text = "Create Space"
+
+[node name="HSeparator2" type="HSeparator" parent="HBoxContainer/LeftBar/Panel/VBoxContainer"]
+layout_mode = 2
+
+[node name="VoiceChatUi" type="MarginContainer" parent="HBoxContainer/LeftBar/Panel/VBoxContainer" node_paths=PackedStringArray("connectButton", "muteButton", "deafenButton")]
+layout_mode = 2
+script = ExtResource("13_2dfxp")
+connectButton = NodePath("HBoxContainer/Connect")
+muteButton = NodePath("HBoxContainer/Mute")
+deafenButton = NodePath("HBoxContainer/Deafen")
+
+[node name="HBoxContainer" type="HBoxContainer" parent="HBoxContainer/LeftBar/Panel/VBoxContainer/VoiceChatUi"]
+layout_mode = 2
+
+[node name="Connect" type="Button" parent="HBoxContainer/LeftBar/Panel/VBoxContainer/VoiceChatUi/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_default_cursor_shape = 2
+theme_override_font_sizes/font_size = 12
+text = "Connect"
+
+[node name="Mute" type="Button" parent="HBoxContainer/LeftBar/Panel/VBoxContainer/VoiceChatUi/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_default_cursor_shape = 2
+theme_override_font_sizes/font_size = 12
+text = "Mute"
+
+[node name="Deafen" type="Button" parent="HBoxContainer/LeftBar/Panel/VBoxContainer/VoiceChatUi/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_default_cursor_shape = 2
+theme_override_font_sizes/font_size = 12
+text = "Deafen"
 
 [node name="ChatMain" type="Control" parent="HBoxContainer"]
 layout_mode = 2
@@ -430,11 +457,11 @@ text = "Save"
 [node name="AlertPanelPanel" type="Panel" parent="Popups"]
 visible = false
 custom_minimum_size = Vector2(200, 500)
-layout_mode = 2
-offset_left = 938.0
-offset_top = 39.0
-offset_right = 1138.0
-offset_bottom = 539.0
+layout_mode = 0
+offset_left = 937.0
+offset_top = 45.0
+offset_right = 1137.0
+offset_bottom = 545.0
 size_flags_vertical = 3
 
 [node name="ScrollContainer" type="ScrollContainer" parent="Popups/AlertPanelPanel"]
@@ -941,6 +968,9 @@ text = "Okay"
 [connection signal="OnSpaceInvite" from="HBoxContainer/LeftBar/Panel/VBoxContainer/Spaces" to="Popups/SpaceInviter" method="UpdateList"]
 [connection signal="OnSpacePicked" from="HBoxContainer/LeftBar/Panel/VBoxContainer/Spaces" to="Bugcord" method="ConnectSpace"]
 [connection signal="pressed" from="HBoxContainer/LeftBar/Panel/VBoxContainer/Spaces/VBoxContainer/NewSpace" to="Popups/MakeSpace" method="ToggleVisibility"]
+[connection signal="pressed" from="HBoxContainer/LeftBar/Panel/VBoxContainer/VoiceChatUi/HBoxContainer/Connect" to="HBoxContainer/LeftBar/Panel/VBoxContainer/VoiceChatUi" method="OnConnectButtonPressed"]
+[connection signal="pressed" from="HBoxContainer/LeftBar/Panel/VBoxContainer/VoiceChatUi/HBoxContainer/Mute" to="HBoxContainer/LeftBar/Panel/VBoxContainer/VoiceChatUi" method="OnMuteButtonPressed"]
+[connection signal="pressed" from="HBoxContainer/LeftBar/Panel/VBoxContainer/VoiceChatUi/HBoxContainer/Deafen" to="HBoxContainer/LeftBar/Panel/VBoxContainer/VoiceChatUi" method="OnDeafenButtonPressed"]
 [connection signal="file_selected" from="HBoxContainer/ChatMain/VBoxContainer/HBoxContainer2/Extras/SettingsPanel/FileDialog" to="HBoxContainer/ChatMain/VBoxContainer/HBoxContainer2/Extras/SettingsPanel" method="OnProfileImagePicked"]
 [connection signal="pressed" from="HBoxContainer/ChatMain/VBoxContainer/HBoxContainer2/Extras/SettingsPanel/VBoxContainer/Button" to="HBoxContainer/ChatMain/VBoxContainer/HBoxContainer2/Extras/SettingsPanel/VBoxContainer/Button" method="Toggle"]
 [connection signal="pressed" from="HBoxContainer/ChatMain/VBoxContainer/HBoxContainer2/Extras/AlertPanel/VBoxContainer/Button" to="HBoxContainer/ChatMain/VBoxContainer/HBoxContainer2/Extras/AlertPanel" method="ToggleVisible"]
