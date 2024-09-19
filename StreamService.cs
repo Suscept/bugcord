@@ -1,11 +1,13 @@
 using Godot;
 using System;
 using System.Collections.Generic;
+using Concentus;
 
 // Handle everything that goes over UDP
 public partial class StreamService : Node
 {
 	public const int audioPacketDataSize = 4096;
+	public const int opusFrameCount = 2880;
 
 	[Export] public AudioStreamPlayer audioRecorder;
 	[Export] public AudioStreamPlayer audioPlayer;
@@ -15,11 +17,14 @@ public partial class StreamService : Node
 
 	private PacketPeerUdp udpClient = new PacketPeerUdp();
 
-	public static Dictionary<string, List<byte>> incomingVoiceBuffer = new();
+	public static Dictionary<string, List<float>> incomingVoiceBuffer = new();
 	private AudioEffectCapture recordBusCapture;
 	private AudioStreamGeneratorPlayback voicePlaybackBus;
 
 	private UserService userService;
+
+	private IOpusEncoder opusEncoder;
+	private IOpusDecoder opusDecoder;
 
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
@@ -35,9 +40,24 @@ public partial class StreamService : Node
 			return;
 
 		if (sendVoice && recieveVoice){ // You should only be able to send voice packets if you may also recieve them
-			Vector2[] vBuffer = GetVoiceBuffer(audioPacketDataSize);
-			if (vBuffer != null)
-				udpClient.PutPacket(BuildVoicePacket(vBuffer));
+			// Vector2[] vBuffer = GetVoiceBuffer(audioPacketDataSize);
+			Vector2[] vBuffer = GetVoiceBuffer(opusFrameCount);
+
+			if (vBuffer != null){
+				Span<float> frames = stackalloc float[opusFrameCount];
+				for (int i = 0; i < vBuffer.Length; i++){
+					frames[i] = vBuffer[i][0];
+				}
+				byte[] encodedFrames = new byte[audioPacketDataSize];
+				int encodedBytes = opusEncoder.Encode(frames, opusFrameCount, encodedFrames, audioPacketDataSize);
+
+				List<byte> framesCut = new List<byte>();
+				for (int i = 0; i < encodedBytes; i++){
+					framesCut.Add(encodedFrames[i]);
+				}
+
+				udpClient.PutPacket(BuildVoicePacket(framesCut.ToArray()));
+			}
 		}
 
 		if (recieveVoice){
@@ -52,22 +72,22 @@ public partial class StreamService : Node
 	// Mix all audio streams into a single stream for playback
 	public void MixAndPlay(){
 		int vFrames = 0;
-		Vector2[] currentFrameAudio = new Vector2[audioPacketDataSize];
+		Vector2[] currentFrameAudio = new Vector2[opusFrameCount];
 
 		// Loop over each voice stream from each peer
-		foreach (KeyValuePair<string, List<byte>> entry in incomingVoiceBuffer){
+		foreach (KeyValuePair<string, List<float>> entry in incomingVoiceBuffer){
 			if (entry.Key == userService.userId) // If this is our own voice stream
 				continue;
-			if (entry.Value.Count < audioPacketDataSize) // Stream too small
+			if (entry.Value.Count < opusFrameCount) // Stream too small
 				continue;
 
-			// Streams are mixed by simply adding the voice frames recieved at the same time together
+			// // Streams are mixed by simply adding the voice frames recieved at the same time together
 			for (int i = 0; i < currentFrameAudio.Length; i++){
-				float f = ByteToFloat(entry.Value[i]);
+				float f = entry.Value[i];
 				vFrames++;
 				currentFrameAudio[i] += new Vector2(f, f);
 			}
-			entry.Value.RemoveRange(0, audioPacketDataSize);
+			entry.Value.RemoveRange(0, opusFrameCount);
 		}
 		
 		if (vFrames > 0)
@@ -89,6 +109,9 @@ public partial class StreamService : Node
 		
 		recordBusCapture = (AudioEffectCapture)AudioServer.GetBusEffect(recordBusIndex, 0);
 		voicePlaybackBus = (AudioStreamGeneratorPlayback)audioPlayer.GetStreamPlayback();
+
+		opusEncoder = OpusCodecFactory.CreateEncoder(48000, 1);
+		opusDecoder = OpusCodecFactory.CreateDecoder(48000, 1);
 	}
 
 	public Vector2[] GetVoiceBuffer(int bufferSize){
@@ -108,26 +131,22 @@ public partial class StreamService : Node
 		string senderId = dataSpans[0].GetStringFromUtf8();
 		byte[] framesEncoded = dataSpans[1];
 
-		incomingVoiceBuffer.TryAdd(senderId, new List<byte>());
-		incomingVoiceBuffer[senderId].AddRange(framesEncoded);
-	}
-
-	private byte[] BuildVoicePacket(Vector2[] audioFrames){
-		if (audioFrames.Length == 0)
-			return new byte[0];
-
-		List<byte> packetBytes = new List<byte>();
-
-		byte[] codedFrames = new byte[audioFrames.Length];
-
-		for (int i = 0; i < audioFrames.Length; i++){
-			byte f = FloatToByte(audioFrames[i].X);
-
-			codedFrames[i] = f;
+		float[] decodedFrames = new float[opusFrameCount];
+		int decodedFrameCount = opusDecoder.Decode(framesEncoded, decodedFrames, opusFrameCount);
+		List<float> framesCut = new List<float>();
+		for (int i = 0; i < decodedFrameCount; i++){
+			framesCut.Add(decodedFrames[i]);
 		}
 
+		incomingVoiceBuffer.TryAdd(senderId, new List<float>());
+		incomingVoiceBuffer[senderId].AddRange(framesCut);
+	}
+
+	private byte[] BuildVoicePacket(byte[] audioFrames){
+		List<byte> packetBytes = new List<byte>();
+
 		packetBytes.AddRange(Bugcord.MakeDataSpan(userService.userId.ToUtf8Buffer()));
-		packetBytes.AddRange(Bugcord.MakeDataSpan(codedFrames, 0));
+		packetBytes.AddRange(Bugcord.MakeDataSpan(audioFrames, 0));
 
 		return packetBytes.ToArray();
 	}

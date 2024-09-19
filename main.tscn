@@ -34,6 +34,7 @@
 [ext_resource type="PackedScene" uid="uid://dd0t1hkoxj4fi" path="res://user_display.tscn" id="27_t0wxr"]
 
 [sub_resource type="AudioStreamGenerator" id="AudioStreamGenerator_2jvjo"]
+mix_rate = 48000.0
 buffer_length = 0.1
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_fyr0g"]
