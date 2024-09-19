@@ -684,6 +684,7 @@ layout_mode = 2
 text = "go"
 
 [node name="Space Settings" type="Panel" parent="Popups" node_paths=PackedStringArray("spaceTitle", "ownerLabel", "keyIdLabel", "adminListContainer", "memberListContainer")]
+visible = false
 clip_contents = true
 layout_mode = 1
 anchors_preset = 8
@@ -830,6 +831,7 @@ layout_mode = 2
 text = "Save"
 
 [node name="SpaceInviter" type="Panel" parent="Popups" node_paths=PackedStringArray("inviteEntryContainer")]
+visible = false
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
