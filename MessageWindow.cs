@@ -66,7 +66,7 @@ public partial class MessageWindow : Control
 		}
 
 		MessageUI newMessage = messageScene.Instantiate<MessageUI>();
-		newMessage.Initiate(message, peerService, replyPreview);
+		newMessage.Initiate(message, replyPreview, fileService, peerService);
 		messageContainer.AddChild(newMessage);
 
 		if (message.embedId != null){

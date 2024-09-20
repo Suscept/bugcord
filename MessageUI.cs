@@ -7,6 +7,7 @@ public partial class MessageUI : MarginContainer
 	[Export] public float maxHeightFromImage;
 
 	[Export] public TextureRect imageContent;
+	[Export] public TextureRect profilePicture;
 	[Export] public RichTextLabel textContent;
 	[Export] public Label usernameLabel;
 	[Export] public Label mediaLoadingProgressLabel;
@@ -18,6 +19,9 @@ public partial class MessageUI : MarginContainer
 
 	private PopupMenu popupMenu;
 	private DatabaseService.Message myMessage;
+
+	private FileService fileService;
+	private PeerService peerService;
 
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
@@ -47,10 +51,23 @@ public partial class MessageUI : MarginContainer
 		}
 	}
 
-	public void Initiate(DatabaseService.Message message, PeerService peerService, string replyPreview){
+	public void Initiate(DatabaseService.Message message, string replyPreview, FileService setFileService, PeerService setPeerService){
+		fileService = setFileService;
+		peerService = setPeerService;
+
 		usernameLabel.Text = peerService.peers[message.senderId].username;
 		timestampLabel.Text = GetTimestampString(message.unixTimestamp);
 		myMessage = message;
+
+		string profilePictureId = peerService.GetPeer(message.senderId).profilePictureId;
+		if (profilePictureId != null){
+			bool cachedNow = fileService.GetFile(profilePictureId, out byte[] data);
+			if (cachedNow){
+				SetProfilePicture();
+			}else{
+				fileService.OnCacheChanged += SetProfilePicture;
+			}
+		}
 
 		jumpToReplyButton.Visible = replyPreview != null;
 		if (replyPreview != null){
@@ -106,6 +123,22 @@ public partial class MessageUI : MarginContainer
 
 	public void FileBufferUpdated(string guid, int fileParts, int filePartsTotal){
 		mediaLoadingProgressLabel.Text = "Loading... " + fileParts + "/" + filePartsTotal;
+	}
+
+	public void SetProfilePicture(){
+		string profilePictureId = peerService.GetPeer(myMessage.senderId).profilePictureId;
+		string profilePath = fileService.GetCachePath(profilePictureId);
+		ImageTexture profileTexture = ImageTexture.CreateFromImage(Image.LoadFromFile(profilePath));
+		profilePicture.Texture = profileTexture;
+	}
+
+	public void SetProfilePicture(string fileId){
+		if (peerService.GetPeer(myMessage.senderId).profilePictureId != fileId){
+			return;
+		}
+		
+		SetProfilePicture();
+		fileService.OnCacheChanged -= SetProfilePicture;
 	}
 
 	private string GetTimestampString(double timestamp){
