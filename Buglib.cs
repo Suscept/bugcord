@@ -1,6 +1,7 @@
 using Godot;
 using System;
 using System.Reflection;
+using System.Text;
 
 public partial class Buglib : Node
 {
@@ -12,5 +13,16 @@ public partial class Buglib : Node
 	// Called every frame. 'delta' is the elapsed time since the previous frame.
 	public override void _Process(double delta)
 	{
+	}
+
+	// String conversion from https://stackoverflow.com/a/17001289
+	public static string BytesToHex(byte[] bytes){
+		StringBuilder builder = new StringBuilder();
+
+		foreach (byte b in bytes){
+			builder.Append(b.ToString("x2"));
+		}
+
+		return builder.ToString();
 	}
 }

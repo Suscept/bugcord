@@ -32,7 +32,7 @@ public partial class FileService : Node
 	{
 	}
 
-	// Gets a file from serve folder or cache or peer (returns true). If it cannot be found, a request to peers is made (returns false).
+	// Gets a file from serve folder or cache or peer (returns true). If it cannot be found, a request to peers is made and the file can be brought from cache later (returns false).
 	public bool GetFile(string id, out byte[] data){
 		GD.Print("getting file " + id);
 		if (IsFileInCache(id)){
@@ -41,9 +41,9 @@ public partial class FileService : Node
 		}
 
 		if (HasServableFile(id)){
-			bool success = TransformServefile(GetServableData(id), out byte[] fileData, out string fileId, out string filename);
+			bool success = UnpackageFile(GetServableData(id), out byte[] fileData, out string filename);
 			if (success)
-				WriteToCache(fileData, filename, fileId);
+				WriteToCache(fileData, filename, id);
 			data = fileData;
 			return success;
 		}
@@ -52,6 +52,24 @@ public partial class FileService : Node
 
 		data = null;
 		return false;
+	}
+
+	// Cache and make a serve package for a file at the given path. Returns the file's id
+	public string PrepareFile(string path, bool encrypt, string keyId){
+		string filename = System.IO.Path.GetFileName(path);
+
+		GD.Print("preparing embedded file " + filename);
+		
+		FileAccess embedFile = FileAccess.Open(path, FileAccess.ModeFlags.Read);
+		byte[] embedData = embedFile.GetBuffer((long)embedFile.GetLength());
+		byte[] servableData = PackageFile(embedData, filename, encrypt, keyId, out byte[] fileHash);
+
+		string guidString = Buglib.BytesToHex(fileHash);
+
+		WriteToCache(embedData, filename, guidString);
+		WriteToServable(servableData, guidString);
+
+		return guidString;
 	}
 
 	public void UpdateFileBuffer(ushort filePart, ushort filePartMax, string fileId, string senderId, byte[] file){
@@ -100,71 +118,82 @@ public partial class FileService : Node
 		}
 		incomingFileBuffer[fileId].Remove(senderId);
 
+		string computedFileId = KeyService.GetSHA256HashString(fullFile.ToArray());
+		if (fileId != computedFileId){
+			GD.PrintErr("File hash mismatch! Packet: " + fileId + " Actual: " + computedFileId);
+			return;
+		}
+
 		WriteToServable(fullFile.ToArray(), fileId);
-		bool canCache = TransformServefile(fullFile.ToArray(), out byte[] rawFile, out string trueFileId, out string filename);
-		if (canCache)
-			WriteToCache(rawFile, filename, trueFileId);
+		bool success = UnpackageFile(fullFile.ToArray(), out byte[] rawFile, out string filename);
+		if (success)
+			WriteToCache(rawFile, filename, fileId);
 	}
 
-	public byte[] TransformRealFile(byte[] file, string filename, string guid, bool encrypted){
-		byte[] fileGuid = guid.ToUtf8Buffer();
-		List<byte> serveCopyData = new List<byte>();
+	public byte[] PackageFile(byte[] file, string filename, bool encrypted, string encryptKeyId, out byte[] fileHash){
+		List<byte> packagedFileData = new List<byte>
+        {
+            1, // Version (Little endian)
+            0,
+            encrypted ? (byte)1 : (byte)0 // Encryption flag
+        };
 
 		if (encrypted){
 			byte[] iv = KeyService.GetRandomBytes(16);
-			byte[] encryptedData = keyService.EncryptWithSpace(file, Bugcord.selectedSpaceId, iv);
 
-			serveCopyData.Add(0);
+			packagedFileData.AddRange(iv);
+			packagedFileData.AddRange(Bugcord.MakeDataSpan(Bugcord.selectedKeyId.ToUtf8Buffer()));
 
-			serveCopyData.AddRange(Bugcord.MakeDataSpan(fileGuid));
-			serveCopyData.AddRange(Bugcord.MakeDataSpan(iv));
-			serveCopyData.AddRange(Bugcord.MakeDataSpan(Bugcord.selectedKeyId.ToUtf8Buffer()));
-			serveCopyData.AddRange(Bugcord.MakeDataSpan(filename.ToUtf8Buffer()));
-			serveCopyData.AddRange(Bugcord.MakeDataSpan(encryptedData, 0)); // cant use dataspans for this since the files length in bytes may be more than 2^16
+			// Begin encrypted section
+			List<byte> encryptSection = new List<byte>();
+
+			encryptSection.AddRange(Bugcord.MakeDataSpan(filename.ToUtf8Buffer()));
+			encryptSection.AddRange(Bugcord.MakeDataSpan(file, 0)); // Override length header to signify infinite length
+
+			byte[] encryptedData = keyService.EncryptWithKey(encryptSection.ToArray(), encryptKeyId, iv);
+			packagedFileData.AddRange(Bugcord.MakeDataSpan(encryptedData, 0));
 		}else{
-			serveCopyData.Add(1); // indicate no encryption
-
-			serveCopyData.AddRange(Bugcord.MakeDataSpan(fileGuid));
-			serveCopyData.AddRange(Bugcord.MakeDataSpan(filename.ToUtf8Buffer()));
-			serveCopyData.AddRange(Bugcord.MakeDataSpan(file, 0));
+			packagedFileData.AddRange(Bugcord.MakeDataSpan(filename.ToUtf8Buffer()));
+			packagedFileData.AddRange(Bugcord.MakeDataSpan(file, 0));
 		}
 
-		return serveCopyData.ToArray();
+		fileHash = KeyService.GetSHA256Hash(packagedFileData.ToArray());
+		return packagedFileData.ToArray();
 	}
 
-	public bool TransformServefile(byte[] servefile, out byte[] file, out string fileId, out string filename){
-		byte[][] dataSpans = Bugcord.ReadDataSpans(servefile, 1);
-		byte flags = servefile[0];
+	public bool UnpackageFile(byte[] package, out byte[] file, out string filename){
+		ushort version = BitConverter.ToUInt16(package, 0);
+		if (version != 1){
+			file = null;
+			filename = null;
+			return false;
+		}
 
-		switch (flags)
-		{
-			case 0: // Encrypted
-				fileId = dataSpans[0].GetStringFromUtf8();
-				string keyId = dataSpans[2].GetStringFromUtf8();
-				filename = dataSpans[3].GetStringFromUtf8();
+		bool encrypted = package[2] == 1;
 
-				if (!keyService.myKeys.ContainsKey(keyId)){
-					file = null;
-					return false;
-				}
+		if (encrypted){
+			byte[] iv = Bugcord.ReadLength(package, 3, 16);
+			byte[][] dataSpans = Bugcord.ReadDataSpans(package, 19);
+			string keyId = dataSpans[0].GetStringFromUtf8();
 
-				byte[] key = keyService.myKeys[keyId];
-				byte[] iv = dataSpans[1];
-
-				byte[] decryptedData = KeyService.AESDecrypt(dataSpans[4], key, iv);
-
-				file = decryptedData;
-				return true;
-			case 1: // Not encrypted file
-				fileId = dataSpans[0].GetStringFromUtf8();
-				filename = dataSpans[1].GetStringFromUtf8();
-				file = dataSpans[2];
-				return true;
-			default:
+			if (!keyService.myKeys.ContainsKey(keyId)){
 				file = null;
 				filename = null;
-				fileId = null;
 				return false;
+			}
+
+			byte[] encryptedSection = dataSpans[1];
+			byte[][] decryptedDataspans = Bugcord.ReadDataSpans(keyService.DecryptWithKey(encryptedSection, keyId, iv), 0);
+			filename = decryptedDataspans[0].GetStringFromUtf8();
+
+			file = decryptedDataspans[1];
+			return true;
+		}else{
+			byte[][] dataSpans = Bugcord.ReadDataSpans(package, 3);
+
+			filename = dataSpans[0].GetStringFromUtf8();
+			file = dataSpans[1];
+			return true;
 		}
 	}
 

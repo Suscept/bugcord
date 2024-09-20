@@ -73,26 +73,6 @@ public partial class Bugcord : Node
 		}
     }
 
-    #region server client
-
-    // prepares a file to be served and sends an embed linked message
-    public string SubmitEmbed(string directory){
-		string guidString = Guid.NewGuid().ToString();
-		string filename = System.IO.Path.GetFileName(directory);
-
-		GD.Print("preparing embedded file " + filename);
-		
-		FileAccess embedFile = FileAccess.Open(directory, FileAccess.ModeFlags.Read);
-		byte[] embedData = embedFile.GetBuffer((long)embedFile.GetLength());
-		byte[] servableData = fileService.TransformRealFile(embedData, filename, guidString, true);
-		fileService.WriteToCache(embedData, filename, guidString);
-		fileService.WriteToServable(servableData, guidString);
-
-		return guidString;
-	}
-
-	#endregion
-
 	#region message functions
 
 	public void DisplayMessage(DatabaseService.Message message){
@@ -130,7 +110,7 @@ public partial class Bugcord : Node
 
 		for (int i = 0; i < embedPaths.Length; i++){ // Create a message for every embed
 			string embedPath = embedPaths[i];
-			string embedId = SubmitEmbed(embedPath);
+			string embedId = fileService.PrepareFile(embedPath, true, selectedKeyId);
 			if (i == 0){ // However, only the first message should contain the text content and be a reply
 				Send(BuildMsgPacket(message, replyingTo, embedId));
 				continue;

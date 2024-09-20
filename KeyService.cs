@@ -43,6 +43,14 @@ public partial class KeyService : Node
 		return spaceKeyEncrypted;
 	}
 
+	public byte[] EncryptWithKey(byte[] data, string keyId, byte[] initVector){
+		return AESEncrypt(data, myKeys[keyId], initVector);
+	}
+
+	public byte[] DecryptWithKey(byte[] data, string keyId, byte[] initVector){
+		return AESDecrypt(data, myKeys[keyId], initVector);
+	}
+
 	public byte[] EncryptWithSpace(byte[] data, string spaceId, byte[] initVector){
 		return AESEncrypt(data, myKeys[spaceService.spaces[spaceId].keyId], initVector);
 	}
@@ -172,14 +180,8 @@ public partial class KeyService : Node
 		}
 	}
 
-	public static string GetSHA256HashString(byte[] data){ // String conversion from https://stackoverflow.com/a/17001289
-		StringBuilder builder = new StringBuilder();
-
-		foreach (byte b in GetSHA256Hash(data)){
-			builder.Append(b.ToString("x2"));
-		}
-
-		return builder.ToString();
+	public static string GetSHA256HashString(byte[] data){
+		return Buglib.BytesToHex(GetSHA256Hash(data));
 	}
 
 	public static byte[] AESEncrypt(byte[] plaintext, byte[] key, byte[] iv){
