@@ -10,6 +10,7 @@ public partial class UserService : Node
 	public string userId;
 	public string userName;
 	public string savedServerIp;
+	public string profilePictureFileId;
 	public bool autoConnectToServer;
 
 	public const string clientSavePath = "user://client.data";
@@ -37,7 +38,8 @@ public partial class UserService : Node
 			{"id", userId},
 			{"username", userName },
 			{"defaultConnectServer", savedServerIp},
-			{"autoConnectToServer", autoConnectToServer}
+			{"autoConnectToServer", autoConnectToServer},
+			{"profilePictureFileId", profilePictureFileId},
 		};
 
 		FileAccess userFile = FileAccess.Open(clientSavePath, FileAccess.ModeFlags.Write);
@@ -56,6 +58,10 @@ public partial class UserService : Node
 		userId = (string)userDict["id"];
 		userName = (string)userDict["username"];
 		savedServerIp = (string)userDict["defaultConnectServer"];
+
+		if (userDict.ContainsKey("profilePictureFileId"))
+			profilePictureFileId = (string)userDict["profilePictureFileId"];
+		
 		autoConnectToServer = (bool)userDict["autoConnectToServer"];
 	}
 }

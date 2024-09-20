@@ -32,15 +32,21 @@ public partial class PeerService : Node
 		return peers[peerId];
 	}
 
-	public bool AddPeer(string id, string username, byte[] rsaKey){
-		if (peers.ContainsKey(id))
+	public bool AddPeer(string id, string username, byte[] rsaKey, string profilePictureId){
+		if (peers.ContainsKey(id)){
+			GD.Print("Peer already known. Updating info");
+			peers[id].username = username;
+			peers[id].profilePictureId = profilePictureId;
+			SaveToFile();
 			return false;
+		}
 
 		GD.Print("Adding new peer");
 		
 		peers.Add(id, new Peer(){
 			id = id,
 			username = username,
+			profilePictureId = profilePictureId,
 		});
 
 		keyService.peerKeys.Add(id, rsaKey);
@@ -65,6 +71,10 @@ public partial class PeerService : Node
                 {"rsapublickey", Bugcord.ToBase64(keyService.peerKeys[entry.Key])}
             };
 
+			if (entry.Value.profilePictureId != null){
+				savePeer.Add("profilePictureId", entry.Value.profilePictureId);
+			}
+
 			savePeers.Add(entry.Key, savePeer);
 		}
 
@@ -85,13 +95,19 @@ public partial class PeerService : Node
 		// Convert to system dictionary
 		Godot.Collections.Dictionary loadPeers = (Godot.Collections.Dictionary)Json.ParseString(peerFileRaw);
 		foreach (KeyValuePair<Variant, Variant> peer in loadPeers){
+			Godot.Collections.Dictionary peerDict = (Godot.Collections.Dictionary)peer.Value;
 			Peer loadPeer = new(){
 				id = (string)peer.Key,
-				username = (string)((Godot.Collections.Dictionary)peer.Value)["username"],
+				username = (string)peerDict["username"],
 			};
+
+			if (peerDict.ContainsKey("profilePictureId")){
+				loadPeer.profilePictureId = (string)peerDict["profilePictureId"];
+			}
+
 			peers.Add((string)peer.Key, loadPeer);
 
-			keyService.peerKeys.Add((string)peer.Key, Bugcord.FromBase64((string)((Godot.Collections.Dictionary)peer.Value)["rsapublickey"]));
+			keyService.peerKeys.Add((string)peer.Key, Bugcord.FromBase64((string)peerDict["rsapublickey"]));
 		}
 		userPeers.Close();
 	}
@@ -99,5 +115,6 @@ public partial class PeerService : Node
 	public class Peer{
 		public string id;
 		public string username;
+		public string profilePictureId;
 	}
 }

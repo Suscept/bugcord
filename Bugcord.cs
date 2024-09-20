@@ -396,8 +396,12 @@ public partial class Bugcord : Node
 		string guid = packetDataSpans[0].GetStringFromUtf8();
 		string username = packetDataSpans[1].GetStringFromUtf8();
 		byte[] key = packetDataSpans[2];
+		string profilePictureId = null;
+		if (packetDataSpans[3].GetStringFromUtf8() != "null"){
+			profilePictureId = packetDataSpans[3].GetStringFromUtf8();
+		}
 
-		if (peerService.AddPeer(guid, username, key)){
+		if (peerService.AddPeer(guid, username, key, profilePictureId)){
 			Send(BuildIdentifyingPacket());
 		}
 	}
@@ -572,10 +576,15 @@ public partial class Bugcord : Node
 		byte[] publicKey = keyService.userAuthentication.ExportRSAPublicKey();
 		byte[] username = userService.userName.ToUtf8Buffer();
 		byte[] guid = userService.userId.ToUtf8Buffer();
+		byte[] profilePicture = "null".ToUtf8Buffer();
+		if (userService.profilePictureFileId != null){
+			profilePicture = userService.profilePictureFileId.ToUtf8Buffer();
+		}
 		
 		packetBytes.AddRange(MakeDataSpan(guid));
 		packetBytes.AddRange(MakeDataSpan(username));
 		packetBytes.AddRange(MakeDataSpan(publicKey));
+		packetBytes.AddRange(MakeDataSpan(profilePicture));
 
 		return packetBytes.ToArray();
 	}

@@ -222,6 +222,13 @@ public partial class FileService : Node
 		serveCopy.Close();
 	}
 
+	public string GetCachePath(string fileId){
+		if(cacheIndex.TryGetValue(fileId, out string path)){
+			return path;
+		}
+		return null;
+	}
+
 	public bool IsFileInCache(string fileId){
 		return cacheIndex.ContainsKey(fileId);
 	}

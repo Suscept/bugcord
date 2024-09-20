@@ -7,7 +7,7 @@ public partial class SettingsPanel : MarginContainer
 	[Export] public TextureRect profilePictureDisplay;
 	[Export] public FileDialog profilePictureDialog;
 
-	private string pickedProfileImageDir;
+	private string pickedProfileImageId;
 	private FileService fileService;
 	private UserService userService;
 
@@ -17,9 +17,12 @@ public partial class SettingsPanel : MarginContainer
 		fileService = GetNode<FileService>("/root/Main/Bugcord/FileService");
 		userService = GetNode<UserService>("/root/Main/Bugcord/UserService");
 
-		string selfPfpId = userService.userId + "-pfp";
-		if (fileService.IsFileInCache(selfPfpId)){
-			DisplayProfileImage(fileService.cacheIndex[selfPfpId]);
+		if (userService.profilePictureFileId != null){
+			if (fileService.GetFile(userService.profilePictureFileId, out byte[] data)){
+				TryLoadProfilePicture();
+			}else{
+				fileService.OnCacheChanged += TryLoadProfilePicture;
+			}
 		}
 
 		usernameSetting.Text = userService.userName;
@@ -31,11 +34,8 @@ public partial class SettingsPanel : MarginContainer
 	}
 
 	public void Save(){
-		// if (pickedProfileImageDir != null && pickedProfileImageDir.Length > 0){
-		// 	Bugcord.PrepareEmbed(pickedProfileImageDir, (string)Bugcord.clientUser["id"] + "-pfp", false);
-		// }
-
 		userService.userName = usernameSetting.Text;
+		userService.profilePictureFileId = pickedProfileImageId;
 		userService.SaveToFile();
 	}
 
@@ -44,8 +44,21 @@ public partial class SettingsPanel : MarginContainer
 	}
 
 	public void OnProfileImagePicked(string dir){
-		pickedProfileImageDir = dir;
-		DisplayProfileImage(dir);
+		string profilePictureId = fileService.PrepareFile(dir, false, null);
+		pickedProfileImageId = profilePictureId;
+		DisplayProfileImage(fileService.GetCachePath(profilePictureId));
+	}
+
+	public void TryLoadProfilePicture(){
+		DisplayProfileImage(fileService.GetCachePath(userService.profilePictureFileId));
+	}
+
+	public void TryLoadProfilePicture(string fileId){ // Called from cache update
+		if (fileId != userService.profilePictureFileId)
+			return;
+
+		TryLoadProfilePicture();
+		fileService.OnCacheChanged -= TryLoadProfilePicture;
 	}
 
 	private void DisplayProfileImage(string path){
