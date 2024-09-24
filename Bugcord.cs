@@ -270,7 +270,7 @@ public partial class Bugcord : Node
 
 		switch (type){
 			case 0:
-				ProcessMessagePacket(packet.data, packet.timestamp);
+				ProcessMessagePacket(packet);
 				break;
 			case 1:
 				ProcessIdentify(packet.data);
@@ -406,11 +406,11 @@ public partial class Bugcord : Node
 		}
 	}
 
-	private void ProcessMessagePacket(byte[] packet, double timestamp){
-		byte[][] spans = ReadDataSpans(packet, 19);
+	private void ProcessMessagePacket(PacketService.Packet packet){
+		byte[][] spans = ReadDataSpans(packet.data, 19);
 
-		ushort hashNonce =  BitConverter.ToUInt16(ReadLength(packet, 1, 2));
-		byte[] initVector = ReadLength(packet, 3, 16);
+		ushort hashNonce =  BitConverter.ToUInt16(ReadLength(packet.data, 1, 2));
+		byte[] initVector = ReadLength(packet.data, 3, 16);
 
 		string keyUsed = spans[0].GetStringFromUtf8();
 		byte[] encryptedSection = spans[1];
@@ -442,11 +442,11 @@ public partial class Bugcord : Node
 		}
 
 		DatabaseService.Message message = new DatabaseService.Message(){
-			id = KeyService.GetSHA256HashString(packet),
+			id = KeyService.GetSHA256HashString(packet.data),
 			senderId = senderGuid,
 			content = messageText,
 			embedId = embedId,
-			unixTimestamp = timestamp,
+			unixTimestamp = packet.timestamp,
 			nonce = hashNonce,
 			replyingTo = replyingTo,
 		};
