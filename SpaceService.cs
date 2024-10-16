@@ -103,7 +103,7 @@ public partial class SpaceService : Node
 
 	public void GenerateSpace(string name){
 		string keyGuid = keyService.NewKey();
-		string spaceId = Guid.NewGuid().ToString();
+		string spaceId = keyGuid;
 
 		List<PeerService.Peer> spaceAuthorites = new List<PeerService.Peer>
         {
