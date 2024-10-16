@@ -30,6 +30,8 @@ public partial class Bugcord : Node
 		IsReply = 1 << 2,
 	}
 
+	private bool retrievingChain;
+
 	private FileService fileService;
 	private KeyService keyService;
 	private UserService userService;
@@ -39,6 +41,8 @@ public partial class Bugcord : Node
 	private DatabaseService databaseService;
 	private PacketService packetService;
 	private StreamService streamService;
+	private EventChainService eventChainService;
+	private RequestService requestService;
 
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
@@ -53,6 +57,8 @@ public partial class Bugcord : Node
 		databaseService = GetNode<DatabaseService>("DatabaseService");
 		packetService = GetNode<PacketService>("PacketService");
 		streamService = GetNode<StreamService>("StreamService");
+		eventChainService = GetNode<EventChainService>("EventChainService");
+		requestService = GetNode<RequestService>("RequestService");
 		alertService = GetNode<PopupAlert>("/root/Main/Popups/GenericPopup");
 
 		if (!LogIn()){
@@ -282,7 +288,8 @@ public partial class Bugcord : Node
 				ProcessFileRequest(packet.data);
 				break;
 			case 7:
-				ProcessFilePacket(packet.data);
+				requestService.ProcessRequestResponse(packet.data);
+				// ProcessFilePacket(packet.data);
 				break;
 			case 9:
 				ProcessSpaceUpdatePacket(packet);
@@ -322,10 +329,10 @@ public partial class Bugcord : Node
 	private void ProcessFilePacket(byte[] packet){
 		GD.Print("recieved file packet");
 
-		byte[][] dataSpans = ReadDataSpans(packet, 5);
+		byte[][] dataSpans = ReadDataSpans(packet, 6);
 
-		ushort filePart = BitConverter.ToUInt16(packet, 1);
-		ushort filePartMax = BitConverter.ToUInt16(packet, 3);
+		ushort filePart = BitConverter.ToUInt16(packet, 2);
+		ushort filePartMax = BitConverter.ToUInt16(packet, 4);
 
 		string fileGuid = dataSpans[0].GetStringFromUtf8();
 		string senderGuid = dataSpans[1].GetStringFromUtf8();
@@ -343,38 +350,47 @@ public partial class Bugcord : Node
 		
 		byte subtype = packet[1];
 
-		switch (subtype){
-			case 0:
-				string fileGuid = ReadDataSpan(packet, 2).GetStringFromUtf8();
-				if (!fileService.HasServableFile(fileGuid)) // stop if we dont have this file
-					return;
+		string fileGuid = ReadDataSpan(packet, 2).GetStringFromUtf8();
+		if (!fileService.HasServableFile(fileGuid)) // stop if we dont have this file
+			return;
 
-				byte[][] servePartitions = MakePartitions(fileService.GetServableData(fileGuid), filePacketSize);
-				for(int i = 0; i < servePartitions.Length; i++){
-					packetService.SendPacket(BuildFilePacket(fileGuid, i, servePartitions.Length, servePartitions[i]));
-				}
-				break;
-			case 1: // Eventfile request
-				long timestamp = BitConverter.ToInt64(packet, 3);
-				string requestedGuid = ReadDataSpan(packet, 10).GetStringFromUtf8();
-				List<PacketService.Packet> packets = databaseService.GetPackets(timestamp);
-				
-				// Turn packets into single span of bytes
-				List<byte> mergedPackets = new List<byte>();
-				for (int i = 0; i < packets.Count; i++){
-					List<byte> packetBytes = new List<byte>();
-					packetBytes.AddRange(MakeDataSpan(BitConverter.GetBytes(packets[i].timestamp)));
-					packetBytes.AddRange(MakeDataSpan(packets[i].data));
-					mergedPackets.AddRange(MakeDataSpan(packetBytes.ToArray()));
-				}
-
-				byte[][] packetPartitions = MakePartitions(mergedPackets.ToArray(), filePacketSize);
-				for(int i = 0; i < packetPartitions.Length; i++){
-					packetService.SendPacket(BuildFilePacket(requestedGuid, i, packetPartitions.Length, packetPartitions[i]));
-				}
-				
-				break;
+		byte[][] servePartitions = MakePartitions(fileService.GetServableData(fileGuid), filePacketSize);
+		for(int i = 0; i < servePartitions.Length; i++){
+			packetService.SendPacket(BuildFilePacket(fileGuid, i, servePartitions.Length, servePartitions[i], subtype));
 		}
+
+		// switch (subtype){
+		// 	case 0:
+		// 		string fileGuid = ReadDataSpan(packet, 2).GetStringFromUtf8();
+		// 		if (!fileService.HasServableFile(fileGuid)) // stop if we dont have this file
+		// 			return;
+
+		// 		byte[][] servePartitions = MakePartitions(fileService.GetServableData(fileGuid), filePacketSize);
+		// 		for(int i = 0; i < servePartitions.Length; i++){
+		// 			packetService.SendPacket(BuildFilePacket(fileGuid, i, servePartitions.Length, servePartitions[i], subtype));
+		// 		}
+		// 		break;
+		// 	case 1: // Eventfile request
+		// 		long timestamp = BitConverter.ToInt64(packet, 3);
+		// 		string requestedGuid = ReadDataSpan(packet, 10).GetStringFromUtf8();
+		// 		List<PacketService.Packet> packets = databaseService.GetPackets(timestamp);
+				
+		// 		// Turn packets into single span of bytes
+		// 		List<byte> mergedPackets = new List<byte>();
+		// 		for (int i = 0; i < packets.Count; i++){
+		// 			List<byte> packetBytes = new List<byte>();
+		// 			packetBytes.AddRange(MakeDataSpan(BitConverter.GetBytes(packets[i].timestamp)));
+		// 			packetBytes.AddRange(MakeDataSpan(packets[i].data));
+		// 			mergedPackets.AddRange(MakeDataSpan(packetBytes.ToArray()));
+		// 		}
+
+		// 		byte[][] packetPartitions = MakePartitions(mergedPackets.ToArray(), filePacketSize);
+		// 		for(int i = 0; i < packetPartitions.Length; i++){
+		// 			packetService.SendPacket(BuildFilePacket(requestedGuid, i, packetPartitions.Length, packetPartitions[i]));
+		// 		}
+				
+		// 		break;
+		// }
 	}
 
 	private void ProcessKeyPackage(byte[] packet){
@@ -416,6 +432,9 @@ public partial class Bugcord : Node
 		byte[] initVector = ReadLength(packet.data, 3, 16);
 
 		string keyUsed = spans[0].GetStringFromUtf8();
+		if (!retrievingChain)
+			eventChainService.SaveEvent(packet.data, keyUsed);
+
 		byte[] encryptedSection = spans[1];
 
 		byte[] decryptedSection = KeyService.AESDecrypt(encryptedSection, keyService.myKeys[keyUsed], initVector);
@@ -463,8 +482,11 @@ public partial class Bugcord : Node
 				return;
 			}
 
-			Send(BuildFileRequest(embedId));
+			requestService.Request(embedId, RequestService.FileExtension.MediaFile, RequestService.VerifyMethod.HashCheck);
+			// Send(BuildFileRequest(embedId));
 		}
+
+		databaseService.SavePacket(packet);
 	}
 
 	#endregion
@@ -496,9 +518,10 @@ public partial class Bugcord : Node
 		return packetBytes.ToArray();
 	}
 
-	private byte[] BuildFilePacket(string fileGuid, int filePart, int totalFileParts, byte[] data){
+	private byte[] BuildFilePacket(string fileGuid, int filePart, int totalFileParts, byte[] data, byte subtype){
 		List<byte> packetBytes = new List<byte>{
-			7
+			7,
+			subtype,
 		};
 
 		packetBytes.AddRange(BitConverter.GetBytes((ushort)filePart));
@@ -523,9 +546,13 @@ public partial class Bugcord : Node
 	}
 
 	public byte[] BuildFileRequest(string fileGuid){
+		return BuildFileRequest(fileGuid, 0);
+	}
+
+	public byte[] BuildFileRequest(string fileGuid, byte subtype){
 		List<byte> packetBytes = new List<byte>{
 			6,
-			0 // request subtype
+			subtype,
 		};
 
 		packetBytes.AddRange(MakeDataSpan(fileGuid.ToUtf8Buffer()));

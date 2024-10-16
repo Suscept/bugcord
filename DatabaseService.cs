@@ -9,6 +9,7 @@ public partial class DatabaseService : Node
 {
 	public const string packetStorePath = "user://serve/messages";
 	public const string databasePath = "user://serve/messages/messageDatabase.db";
+	public const string eventDatabasePath = "user://serve/messages/eventDatabase.db";
 
 	public SqliteConnection sqlite;
 
@@ -24,6 +25,8 @@ public partial class DatabaseService : Node
 
 		sqlite = new SqliteConnection("Data Source="+ProjectSettings.GlobalizePath(databasePath));
 		sqlite.Open();
+
+		AddPacketTable();
 	}
 
 	// Called every frame. 'delta' is the elapsed time since the previous frame.
@@ -100,6 +103,10 @@ public partial class DatabaseService : Node
 	}
 
 	public void SaveMessage(string spaceId, Message message){
+		if (spaceId == "packet_store"){ // Prevent injection
+			return;
+		}
+
 		ExecuteSql(@$"
 			INSERT INTO '{spaceId}'(messageId, userId, content, embedId, unixTimestamp, nonce, replyingTo)
 			VALUES ($0, $1, $2, $3, $4, $5, $6)

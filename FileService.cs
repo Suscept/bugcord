@@ -19,12 +19,14 @@ public partial class FileService : Node
 
 	private Bugcord bugcord;
 	private KeyService keyService;
+	private RequestService requestService;
 
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
 	{
 		bugcord = GetParent<Bugcord>();
 		keyService = GetParent().GetNode<KeyService>("KeyService");
+		requestService = GetParent().GetNode<RequestService>("RequestService");
 	}
 
 	// Called every frame. 'delta' is the elapsed time since the previous frame.
@@ -48,7 +50,8 @@ public partial class FileService : Node
 			return success;
 		}
 
-		bugcord.Send(bugcord.BuildFileRequest(id)); // Request file from peers
+		requestService.Request(id, RequestService.FileExtension.MediaFile, RequestService.VerifyMethod.HashCheck);
+		// bugcord.Send(bugcord.BuildFileRequest(id)); // Request file from peers
 
 		data = null;
 		return false;
@@ -214,9 +217,19 @@ public partial class FileService : Node
 	}
 
 	public void WriteToServable(byte[] data, string guid){
+		WriteToServableAbsolute(data, guid + ".file");
+		// MakeServePath();
+
+		// FileAccess serveCopy = FileAccess.Open(dataServePath + guid + ".file", FileAccess.ModeFlags.Write);
+		// serveCopy.StoreBuffer(data);
+
+		// serveCopy.Close();
+	}
+
+	public void WriteToServableAbsolute(byte[] data, string filename){
 		MakeServePath();
 
-		FileAccess serveCopy = FileAccess.Open(dataServePath + guid + ".file", FileAccess.ModeFlags.Write);
+		FileAccess serveCopy = FileAccess.Open(dataServePath + filename, FileAccess.ModeFlags.Write);
 		serveCopy.StoreBuffer(data);
 
 		serveCopy.Close();

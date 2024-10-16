@@ -1,4 +1,4 @@
-[gd_scene load_steps=35 format=3 uid="uid://b4h65lw1u6cii"]
+[gd_scene load_steps=37 format=3 uid="uid://b4h65lw1u6cii"]
 
 [ext_resource type="Script" path="res://Bugcord.cs" id="1_jyk1e"]
 [ext_resource type="PackedScene" uid="uid://c0hr25wlgd0kt" path="res://message.tscn" id="1_ki7uw"]
@@ -20,6 +20,8 @@
 [ext_resource type="PackedScene" uid="uid://br4rq6oo0fvp" path="res://embed_input_display.tscn" id="8_ihghl"]
 [ext_resource type="Script" path="res://FunctionTester.cs" id="9_d1uvj"]
 [ext_resource type="Script" path="res://StreamService.cs" id="9_igf1r"]
+[ext_resource type="Script" path="res://EventChainService.cs" id="10_j452y"]
+[ext_resource type="Script" path="res://RequestService.cs" id="11_3nbsk"]
 [ext_resource type="Script" path="res://MakeVisible.cs" id="11_7p3cn"]
 [ext_resource type="Script" path="res://SpaceInviter.cs" id="11_cskni"]
 [ext_resource type="PackedScene" uid="uid://bl2sn6odt10ns" path="res://invite_option.tscn" id="12_qp5d4"]
@@ -95,6 +97,12 @@ bus = &"Record"
 [node name="VoiceOutputStream" type="AudioStreamPlayer" parent="Bugcord/StreamService"]
 stream = SubResource("AudioStreamGenerator_2jvjo")
 autoplay = true
+
+[node name="EventChainService" type="Node" parent="Bugcord"]
+script = ExtResource("10_j452y")
+
+[node name="RequestService" type="Node" parent="Bugcord"]
+script = ExtResource("11_3nbsk")
 
 [node name="HBoxContainer" type="HBoxContainer" parent="."]
 layout_mode = 1

@@ -59,9 +59,10 @@ public partial class KeyService : Node
 		return AESDecrypt(data, myKeys[spaceService.spaces[spaceId].keyId], initVector);
 	}
 
+	// Generates and adds a new key. Returns the keys id as its hash
 	public string NewKey(){
 		Aes key = Aes.Create();
-		string keyGuid = Guid.NewGuid().ToString();
+		string keyGuid = GetSHA256HashString(key.Key);
 
 		AddKey(keyGuid, key.Key);
 
