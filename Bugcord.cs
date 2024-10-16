@@ -311,16 +311,17 @@ public partial class Bugcord : Node
 
 		int memberOffset = 4;
 		List<PeerService.Peer> authorities = new List<PeerService.Peer>();
-		for (int i = 4; i < authorityCount + memberOffset; i++){
-			string authorityId = dataSpans[i].GetStringFromUtf8();
+		for (int i = 0; i < authorityCount; i++){
+			string authorityId = dataSpans[memberOffset].GetStringFromUtf8();
 			authorities.Add(peerService.peers[authorityId]);
 			memberOffset++;
 		}
 
 		List<PeerService.Peer> members = new List<PeerService.Peer>();
-		for (int i = memberOffset; i < memberCount + memberOffset; i++){
-			string memberId = dataSpans[i].GetStringFromUtf8();
+		for (int i = 0; i < memberCount; i++){
+			string memberId = dataSpans[memberOffset].GetStringFromUtf8();
 			authorities.Add(peerService.peers[memberId]);
+			memberOffset++;
 		}
 
 		spaceService.AddSpace(spaceId, spaceName, keyId, owner, authorities, members);
