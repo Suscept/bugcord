@@ -62,6 +62,7 @@ public partial class RequestService : Node
 			extension = extension,
 			verifyMethod = verifyMethod,
 			timeLeft = requestTimeoutTime,
+			cacheDesired = true,
 		};
 
 		activeRequests.Add(id, newRequest);
@@ -97,6 +98,7 @@ public partial class RequestService : Node
 				extension = extension,
 				verifyMethod = VerifyMethod.None,
 				timeLeft = requestTimeoutTime * 2,
+				cacheDesired = false,
 			};
 
 			activeRequests.Add(fileId, newRequest);
@@ -155,6 +157,12 @@ public partial class RequestService : Node
 		}
 
 		fileService.WriteToServableAbsolute(fullFile.ToArray(), fileId + GetFileExtensionString(request.extension));
+		if (request.cacheDesired){
+			bool success = fileService.UnpackageFile(fullFile.ToArray(), out byte[] fileData, out string filename);
+			if (success)
+				fileService.WriteToCache(fileData, filename, fileId);
+		}
+		
 		activeRequests.Remove(request.id);
 		EmitSignal(SignalName.OnRequestSuccess, request.id);
 	}
@@ -175,6 +183,8 @@ public partial class RequestService : Node
 		public string id;
 		public FileExtension extension;
 		public VerifyMethod verifyMethod;
+
+		public bool cacheDesired;
 
 		public float timeLeft;
 
