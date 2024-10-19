@@ -16,11 +16,13 @@ public partial class MessageUI : MarginContainer
 	[Export] public Button jumpToReplyButton;
 
 	public string waitingForEmbedGuid;
+	private int embedPartsRecieved;
 
 	private PopupMenu popupMenu;
 	private DatabaseService.Message myMessage;
 
 	private FileService fileService;
+	private RequestService requestService;
 	private PeerService peerService;
 
 	// Called when the node enters the scene tree for the first time.
@@ -110,7 +112,8 @@ public partial class MessageUI : MarginContainer
 		if (guid != waitingForEmbedGuid)
 			return;
 
-		FileService fileService = GetNode<FileService>("/root/Main/Bugcord/FileService");
+		fileService = GetNode<FileService>("/root/Main/Bugcord/FileService");
+		requestService = GetNode<RequestService>("/root/Main/Bugcord/RequestService");
 		string cachePath = fileService.cacheIndex[guid];
 		SetupMediaUi(cachePath);
 
@@ -118,11 +121,15 @@ public partial class MessageUI : MarginContainer
 
 		mediaLoadingProgressLabel.Visible = false;
 		fileService.OnCacheChanged -= CacheUpdated;
-		fileService.OnFileBufferUpdated -= FileBufferUpdated;
+		requestService.OnRequestProgress -= FileBufferUpdated;
 	}
 
-	public void FileBufferUpdated(string guid, int fileParts, int filePartsTotal){
-		mediaLoadingProgressLabel.Text = "Loading... " + fileParts + "/" + filePartsTotal;
+	public void FileBufferUpdated(string guid){
+		if (guid != waitingForEmbedGuid)
+			return;
+
+		embedPartsRecieved++;
+		mediaLoadingProgressLabel.Text = "Loading... " + embedPartsRecieved;
 	}
 
 	public void SetProfilePicture(){

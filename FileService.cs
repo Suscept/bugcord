@@ -1,21 +1,16 @@
 using Godot;
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 
 public partial class FileService : Node
 {
 	[Signal] public delegate void OnCacheChangedEventHandler(string fileId);
-	[Signal] public delegate void OnFileBufferUpdatedEventHandler(string id, int partsHad, int partsTotal);
 
 	public const string cachePath = "user://cache/";
 	public const string dataServePath = "user://serve/";
 
 	// File ID, File path
 	public Dictionary<string, string> cacheIndex = new();
-
-	// File ID, {Sender ID, File Parts}
-	public static Dictionary<string, Dictionary<string, List<byte[]>>> incomingFileBuffer = new();
 
 	private Bugcord bugcord;
 	private KeyService keyService;
@@ -73,64 +68,6 @@ public partial class FileService : Node
 		WriteToServable(servableData, guidString);
 
 		return guidString;
-	}
-
-	public void UpdateFileBuffer(ushort filePart, ushort filePartMax, string fileId, string senderId, byte[] file){
-		if (IsFileInCache(fileId)){ // File already in cache
-			return;
-		}
-
-		if (HasServableFile(fileId)){ // File already recieved
-			return;
-		}
-
-		// Is the file known?
-		if (!incomingFileBuffer.ContainsKey(fileId)){
-            Dictionary<string, List<byte[]>> recievingFile = new();
-            incomingFileBuffer.Add(fileId, recievingFile);
-		}
-
-		// Has this user sent parts before?
-		if (!incomingFileBuffer[fileId].ContainsKey(senderId)){
-			List<byte[]> bytesList = new List<byte[]>();
-			byte[][] bytes = new byte[filePartMax][];
-			bytesList.AddRange(bytes);
-			incomingFileBuffer[fileId].Add(senderId, bytesList); 
-		}
-	
-		incomingFileBuffer[fileId][senderId][filePart] = file;
-
-		int filePartsRecieved = 0;
-		int filePartsTotal = incomingFileBuffer[fileId][senderId].Count;
-		for (int i = 0; i < filePartsTotal; i++){
-			if (incomingFileBuffer[fileId][senderId][i] != null){
-				filePartsRecieved++;
-			}
-		}
-
-		EmitSignal(SignalName.OnFileBufferUpdated, fileId, filePartsRecieved, filePartsTotal);
-
-		if (filePartsRecieved < filePartsTotal){
-			return;
-		}
-
-		// No parts are missing so concatinate everything and save and cache
-		List<byte> fullFile = new();
-		for (int i = 0; i < incomingFileBuffer[fileId][senderId].Count; i++){
-			fullFile.AddRange(incomingFileBuffer[fileId][senderId][i]);
-		}
-		incomingFileBuffer[fileId].Remove(senderId);
-
-		string computedFileId = KeyService.GetSHA256HashString(fullFile.ToArray());
-		if (fileId != computedFileId){
-			GD.PrintErr("File hash mismatch! Packet: " + fileId + " Actual: " + computedFileId);
-			return;
-		}
-
-		WriteToServable(fullFile.ToArray(), fileId);
-		bool success = UnpackageFile(fullFile.ToArray(), out byte[] rawFile, out string filename);
-		if (success)
-			WriteToCache(rawFile, filename, fileId);
 	}
 
 	public byte[] PackageFile(byte[] file, string filename, bool encrypted, string encryptKeyId, out byte[] fileHash){

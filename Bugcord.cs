@@ -327,25 +327,6 @@ public partial class Bugcord : Node
 		spaceService.AddSpace(spaceId, spaceName, keyId, owner, authorities, members);
 	}
 
-	private void ProcessFilePacket(byte[] packet){
-		GD.Print("recieved file packet");
-
-		byte[][] dataSpans = ReadDataSpans(packet, 6);
-
-		ushort filePart = BitConverter.ToUInt16(packet, 2);
-		ushort filePartMax = BitConverter.ToUInt16(packet, 4);
-
-		string fileGuid = dataSpans[0].GetStringFromUtf8();
-		string senderGuid = dataSpans[1].GetStringFromUtf8();
-		byte[] fileData = dataSpans[2];
-
-		if (fileService.IsFileInCache(fileGuid)){ // File already in cache
-			return;
-		}
-
-		fileService.UpdateFileBuffer(filePart, filePartMax, fileGuid, senderGuid, fileData);
-	}
-
 	private void ProcessFileRequest(byte[] packet){
 		GD.Print("Recieved file request");
 		

@@ -12,6 +12,7 @@ public partial class MessageWindow : Control
 	private bool atBottom;
 	private double maxScroll;
 
+	private RequestService requestService;
 	private FileService fileService;
 	private DatabaseService databaseService;
 	private PeerService peerService;
@@ -22,6 +23,7 @@ public partial class MessageWindow : Control
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
 	{
+		requestService = GetNode<RequestService>("/root/Main/Bugcord/RequestService");
 		fileService = GetNode<FileService>("/root/Main/Bugcord/FileService");
 		databaseService = GetNode<DatabaseService>("/root/Main/Bugcord/DatabaseService");
 		peerService = GetNode<PeerService>("/root/Main/Bugcord/PeerService");
@@ -76,7 +78,7 @@ public partial class MessageWindow : Control
 				newMessage.CacheUpdated(message.embedId);
 			}else{
 				fileService.OnCacheChanged += newMessage.CacheUpdated;
-				fileService.OnFileBufferUpdated += newMessage.FileBufferUpdated;
+				requestService.OnRequestProgress += newMessage.FileBufferUpdated;
 			}
 		}
 
