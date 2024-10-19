@@ -7,10 +7,10 @@ using System.Text;
 public partial class KeyService : Node
 {
 	// PeerId, RSAKey
-	public System.Collections.Generic.Dictionary<string, byte[]> peerKeys = new();
+	public Dictionary<string, byte[]> peerKeys = new();
 	// KeyId, AESKey
-	public System.Collections.Generic.Dictionary<string, byte[]> myKeys = new();
-	public RSA userAuthentication;
+	public Dictionary<string, byte[]> myKeys = new();
+	private RSA userAuthentication;
 
 	public const string clientKeyPath = "user://client.pem";
 	public const string oldClientKeyPath = "user://client.auth";
@@ -31,33 +31,7 @@ public partial class KeyService : Node
 	{
 	}
 
-	public byte[] EncryptKeyForPeer(string keyId, string peerId){
-		return EncryptForPeer(myKeys[keyId], peerId);
-	}
-
-	public byte[] EncryptForPeer(byte[] data, string peerId){
-		RSA inviteAuth = RSACryptoServiceProvider.Create(2048);
-		inviteAuth.ImportRSAPublicKey(peerKeys[peerId], out int bytesRead);
-		byte[] spaceKeyEncrypted = inviteAuth.Encrypt(data, RSAEncryptionPadding.Pkcs1);
-
-		return spaceKeyEncrypted;
-	}
-
-	public byte[] EncryptWithKey(byte[] data, string keyId, byte[] initVector){
-		return AESEncrypt(data, myKeys[keyId], initVector);
-	}
-
-	public byte[] DecryptWithKey(byte[] data, string keyId, byte[] initVector){
-		return AESDecrypt(data, myKeys[keyId], initVector);
-	}
-
-	public byte[] EncryptWithSpace(byte[] data, string spaceId, byte[] initVector){
-		return AESEncrypt(data, myKeys[spaceService.spaces[spaceId].keyId], initVector);
-	}
-
-	public byte[] DecryptWithSpace(byte[] data, string spaceId, byte[] initVector){
-		return AESDecrypt(data, myKeys[spaceService.spaces[spaceId].keyId], initVector);
-	}
+	#region User Auth
 
 	// Generates and adds a new key. Returns the keys id as its hash
 	public string NewKey(){
@@ -132,6 +106,14 @@ public partial class KeyService : Node
 		userAuthentication = new RSACryptoServiceProvider(2048);
 	}
 
+	public bool HasUserAuth(){
+		return userAuthentication != null;
+	}
+
+	public byte[] GetPublicKey(){
+		return userAuthentication.ExportRSAPublicKey();
+	}
+
 	public void AuthSaveToFile(){
 		FileAccess newKey = FileAccess.Open(clientKeyPath, FileAccess.ModeFlags.Write);
 		FileAccess.SetHiddenAttribute(clientKeyPath, true); // Make file hidden
@@ -163,6 +145,36 @@ public partial class KeyService : Node
 		return true;
 	}
 
+	#endregion
+
+	#region RSA
+
+	public byte[] EncryptKeyForPeer(string keyId, string peerId){
+		return EncryptForPeer(myKeys[keyId], peerId);
+	}
+
+	// Encrypt using a peer's public key
+	public byte[] EncryptForPeer(byte[] data, string peerId){
+		RSA inviteAuth = RSACryptoServiceProvider.Create(2048);
+		inviteAuth.ImportRSAPublicKey(peerKeys[peerId], out int bytesRead);
+		byte[] spaceKeyEncrypted = inviteAuth.Encrypt(data, RSAEncryptionPadding.Pkcs1);
+
+		return spaceKeyEncrypted;
+	}
+
+	public bool RSADecrypt(byte[] ciphertext, out byte[] plaintext){
+		try{
+			plaintext = userAuthentication.Decrypt(ciphertext, RSAEncryptionPadding.Pkcs1);
+		}catch(CryptographicException e){
+			GD.Print("Failed to decrypt " + e.Message);
+			// GD.PrintErr(e.ToString());
+			plaintext = null;
+			return false;
+		}
+
+		return true;
+	}
+
 	public byte[] SignData(byte[] data){
 		byte[] signature = userAuthentication.SignData(data, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
 		return signature;
@@ -175,14 +187,24 @@ public partial class KeyService : Node
 		return signetureVerifier.VerifyData(data, signature, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
 	}
 
-	public static byte[] GetSHA256Hash(byte[] data){
-		using (SHA256 sha = SHA256.Create()){
-			return sha.ComputeHash(data);
-		}
+	#endregion
+
+	#region AES
+
+	public byte[] EncryptWithKey(byte[] data, string keyId, byte[] initVector){
+		return AESEncrypt(data, myKeys[keyId], initVector);
 	}
 
-	public static string GetSHA256HashString(byte[] data){
-		return Buglib.BytesToHex(GetSHA256Hash(data));
+	public byte[] DecryptWithKey(byte[] data, string keyId, byte[] initVector){
+		return AESDecrypt(data, myKeys[keyId], initVector);
+	}
+
+	public byte[] EncryptWithSpace(byte[] data, string spaceId, byte[] initVector){
+		return AESEncrypt(data, myKeys[spaceService.spaces[spaceId].keyId], initVector);
+	}
+
+	public byte[] DecryptWithSpace(byte[] data, string spaceId, byte[] initVector){
+		return AESDecrypt(data, myKeys[spaceService.spaces[spaceId].keyId], initVector);
 	}
 
 	public static byte[] AESEncrypt(byte[] plaintext, byte[] key, byte[] iv){
@@ -209,6 +231,18 @@ public partial class KeyService : Node
 				return decryptor.TransformFinalBlock(cyphertext, 0, cyphertext.Length);
 			}
 		}
+	}
+
+	#endregion
+
+	public static byte[] GetSHA256Hash(byte[] data){
+		using (SHA256 sha = SHA256.Create()){
+			return sha.ComputeHash(data);
+		}
+	}
+
+	public static string GetSHA256HashString(byte[] data){
+		return Buglib.BytesToHex(GetSHA256Hash(data));
 	}
 
 	public static byte[] GetRandomBytes(int length){

@@ -131,7 +131,7 @@ public partial class Bugcord : Node
 	#region connection & websocket interaction
 
 	public bool CheckSendReady(){
-		if (keyService.userAuthentication == null){
+		if (!keyService.HasUserAuth()){
 			alertService.NewAlert("You must register an account");
 			return false;
 		}
@@ -156,7 +156,7 @@ public partial class Bugcord : Node
 	}
 
 	public void Connect(string url){
-		if (keyService.userAuthentication == null){
+		if (!keyService.HasUserAuth()){
 			alertService.NewAlert("You must register an account");
 			return;
 		}
@@ -402,8 +402,10 @@ public partial class Bugcord : Node
 		string keyId = dataSpans[0].GetStringFromUtf8();
 		byte[] encryptedSpaceKey = dataSpans[1];
 
-		byte[] spaceKey = new byte[32]; // Size of AES key in bytes. 256 bits = 32 bytes
-		bool couldDecrypt = keyService.userAuthentication.TryDecrypt(encryptedSpaceKey, spaceKey, RSAEncryptionPadding.Pkcs1, out int bytesWritten);
+		// byte[] spaceKey = new byte[32]; // Size of RSA key in bytes. 256 bits = 32 bytes
+		// bool couldDecrypt = keyService.userAuthentication.TryDecrypt(encryptedSpaceKey, spaceKey, RSAEncryptionPadding.Pkcs1, out int bytesWritten);
+
+		bool couldDecrypt = keyService.RSADecrypt(encryptedSpaceKey, out byte[] spaceKey);
 
 		if (couldDecrypt){
 			keyService.AddKey(keyId, spaceKey);
@@ -607,7 +609,7 @@ public partial class Bugcord : Node
 			1
 		};
 
-		byte[] publicKey = keyService.userAuthentication.ExportRSAPublicKey();
+		byte[] publicKey = keyService.GetPublicKey();
 		byte[] username = userService.userName.ToUtf8Buffer();
 		byte[] guid = userService.userId.ToUtf8Buffer();
 		byte[] profilePicture = "null".ToUtf8Buffer();
