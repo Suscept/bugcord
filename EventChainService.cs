@@ -80,14 +80,19 @@ public partial class EventChainService : Node
 	}
 
 	public void AppendEventToFile(EventPacket packet, string keyChain){
-		GD.Print("saving: " + chainStorePath + "/" + keyChain + ".chain");
+		GD.Print("saving: " + chainStorePath + keyChain + ".chain");
+
+		if (!FileAccess.FileExists(chainStorePath + keyChain + ".chain")){
+			FileAccess.Open(chainStorePath + keyChain + ".chain", FileAccess.ModeFlags.Write);
+		}
+
 		List<byte> packetSection = new List<byte>();
 
 		packetSection.AddRange(Bugcord.MakeDataSpan(packet.data));
 		packetSection.AddRange(Bugcord.MakeDataSpan(BitConverter.GetBytes(packet.timestamp)));
 		packetSection.AddRange(Bugcord.MakeDataSpan(packet.prevEventHash));
 
-		FileAccess eventFile = FileAccess.Open(chainStorePath + "/" + keyChain + ".chain", FileAccess.ModeFlags.ReadWrite);
+		FileAccess eventFile = FileAccess.Open(chainStorePath + keyChain + ".chain", FileAccess.ModeFlags.ReadWrite);
 
 		eventFile.SeekEnd();
 		eventFile.StoreBuffer(packetSection.ToArray());
