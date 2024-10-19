@@ -45,6 +45,7 @@ public partial class RequestService : Node
 			if (pendingRequest.timeLeft <= 0){
 				// Request timeout
 				EmitSignal(SignalName.OnRequestTimeout, pendingRequest.id + pendingRequest.extension);
+				activeRequests.Remove(pendingRequest.id);
 			}
 		}
 	}
@@ -150,6 +151,8 @@ public partial class RequestService : Node
 		}
 
 		fileService.WriteToServableAbsolute(fullFile.ToArray(), fileId + GetFileExtensionString(request.extension));
+		activeRequests.Remove(request.id);
+		EmitSignal(SignalName.OnRequestSuccess, request.id);
 	}
 
 	private static string GetFileExtensionString(FileExtension fileExtension){
