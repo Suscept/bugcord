@@ -52,6 +52,10 @@ public partial class RequestService : Node
 
 	public void Request(string id, FileExtension extension, VerifyMethod verifyMethod){
 		GD.Print("Requesting file: " + id);
+		if (activeRequests.ContainsKey(id)){
+			GD.Print("Request already exists");
+			return;
+		}
 
 		PendingRequest newRequest = new PendingRequest(){
 			id = id,
