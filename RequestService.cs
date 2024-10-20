@@ -144,6 +144,7 @@ public partial class RequestService : Node
 			fullFile.AddRange(request.responces[senderId][i]);
 		}
 		request.responces.Remove(senderId);
+		activeRequests.Remove(request.id);
 
 		switch (request.verifyMethod)
 		{
@@ -153,6 +154,7 @@ public partial class RequestService : Node
 				string computedFileId = KeyService.GetSHA256HashString(fullFile.ToArray());
 				if (fileId != computedFileId){
 					GD.PrintErr("File hash mismatch! Packet: " + fileId + " Actual: " + computedFileId);
+					EmitSignal(SignalName.OnRequestFailed, request.id);
 					return;
 				}
 				break;
@@ -169,7 +171,6 @@ public partial class RequestService : Node
 				fileService.WriteToCache(fileData, filename, fileId);
 		}
 		
-		activeRequests.Remove(request.id);
 		EmitSignal(SignalName.OnRequestSuccess, request.id);
 	}
 
