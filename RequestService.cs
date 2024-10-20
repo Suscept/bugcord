@@ -13,6 +13,7 @@ public partial class RequestService : Node
 	[Export] public float requestTimeoutTime = 15;
 
 	private FileService fileService;
+	private PacketService packetService;
 	private Bugcord bugcord;
 
 	public enum VerifyMethod
@@ -34,6 +35,7 @@ public partial class RequestService : Node
 	public override void _Ready()
 	{
 		fileService = GetParent().GetNode<FileService>("FileService");
+		packetService = GetParent().GetNode<PacketService>("PacketService");
 		bugcord = GetParent<Bugcord>();
 	}
 
@@ -44,6 +46,7 @@ public partial class RequestService : Node
 			pendingRequest.timeLeft -= (float)delta;
 			if (pendingRequest.timeLeft <= 0){
 				// Request timeout
+				GD.Print("Request " + pendingRequest.id + " timed out");
 				EmitSignal(SignalName.OnRequestTimeout, pendingRequest.id + pendingRequest.extension);
 				activeRequests.Remove(pendingRequest.id);
 			}
@@ -67,7 +70,7 @@ public partial class RequestService : Node
 
 		activeRequests.Add(id, newRequest);
 
-		bugcord.BuildFileRequest(id, (byte)extension);
+		packetService.SendPacket(bugcord.BuildFileRequest(id, (byte)extension));
 	}
 
 	public void ProcessRequestResponse(byte[] packet){
