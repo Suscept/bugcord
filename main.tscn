@@ -967,6 +967,7 @@ mouse_default_cursor_shape = 2
 text = "Okay"
 
 [node name="RequestDebugView" type="Panel" parent="Popups" node_paths=PackedStringArray("listingContainer")]
+visible = false
 layout_mode = 0
 offset_left = 463.0
 offset_top = 267.0
