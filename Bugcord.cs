@@ -328,11 +328,10 @@ public partial class Bugcord : Node
 	}
 
 	private void ProcessFileRequest(byte[] packet){
-		GD.Print("Recieved file request");
-		
 		byte subtype = packet[1];
 
 		string fileGuid = ReadDataSpan(packet, 2).GetStringFromUtf8();
+		GD.Print("Recieved file request " + fileGuid);
 		if (!fileService.HasServableFile(fileGuid)) // stop if we dont have this file
 			return;
 

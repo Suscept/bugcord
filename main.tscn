@@ -1,4 +1,4 @@
-[gd_scene load_steps=37 format=3 uid="uid://b4h65lw1u6cii"]
+[gd_scene load_steps=39 format=3 uid="uid://b4h65lw1u6cii"]
 
 [ext_resource type="Script" path="res://Bugcord.cs" id="1_jyk1e"]
 [ext_resource type="PackedScene" uid="uid://c0hr25wlgd0kt" path="res://message.tscn" id="1_ki7uw"]
@@ -34,6 +34,8 @@
 [ext_resource type="Script" path="res://PopupAlert.cs" id="18_axqsm"]
 [ext_resource type="Script" path="res://SpaceSettingsUI.cs" id="26_sel21"]
 [ext_resource type="PackedScene" uid="uid://dd0t1hkoxj4fi" path="res://user_display.tscn" id="27_t0wxr"]
+[ext_resource type="Script" path="res://RequestDebugView.cs" id="35_k7oys"]
+[ext_resource type="PackedScene" uid="uid://bee1wu35jp3qv" path="res://request_debug.tscn" id="36_vcdlk"]
 
 [sub_resource type="AudioStreamGenerator" id="AudioStreamGenerator_2jvjo"]
 mix_rate = 48000.0
@@ -964,11 +966,44 @@ layout_mode = 2
 mouse_default_cursor_shape = 2
 text = "Okay"
 
+[node name="RequestDebugView" type="Panel" parent="Popups" node_paths=PackedStringArray("listingContainer")]
+layout_mode = 0
+offset_left = 463.0
+offset_top = 267.0
+offset_right = 1129.0
+offset_bottom = 442.0
+script = ExtResource("35_k7oys")
+requestListing = ExtResource("36_vcdlk")
+listingContainer = NodePath("ScrollContainer/VBoxContainer")
+metadata/_edit_group_ = true
+
+[node name="ScrollContainer" type="ScrollContainer" parent="Popups/RequestDebugView"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+horizontal_scroll_mode = 0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Popups/RequestDebugView/ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="RequestDebug" parent="Popups/RequestDebugView/ScrollContainer/VBoxContainer" instance=ExtResource("36_vcdlk")]
+visible = false
+layout_mode = 2
+
 [connection signal="OnConnectedToSpace" from="Bugcord" to="HBoxContainer/ChatMain/VBoxContainer/HBoxContainer2/SpaceView" method="UpdateSpaceInfo"]
 [connection signal="OnConnectedToSpace" from="Bugcord" to="HBoxContainer/ChatMain/VBoxContainer/MessageWindow" method="DisplaySpaceMessages"]
 [connection signal="OnMessageRecieved" from="Bugcord" to="HBoxContainer/ChatMain/VBoxContainer/MessageWindow" method="DisplayNewMessage"]
 [connection signal="OnLoggedIn" from="Bugcord/UserService" to="HBoxContainer/LeftBar/Panel/VBoxContainer/ServerInput" method="OnLoggedIn"]
 [connection signal="OnConnected" from="Bugcord/PacketService" to="Bugcord" method="OnConnected"]
+[connection signal="OnRequestCreated" from="Bugcord/RequestService" to="Popups/RequestDebugView" method="DisplayRequest"]
+[connection signal="OnRequestFailed" from="Bugcord/RequestService" to="Popups/RequestDebugView" method="RemoveRequest"]
+[connection signal="OnRequestProgress" from="Bugcord/RequestService" to="Popups/RequestDebugView" method="UpdateRequest"]
+[connection signal="OnRequestSuccess" from="Bugcord/RequestService" to="Popups/RequestDebugView" method="RemoveRequest"]
+[connection signal="OnRequestTimeout" from="Bugcord/RequestService" to="Popups/RequestDebugView" method="RemoveRequest"]
 [connection signal="OnAutoconnectSettingChanged" from="HBoxContainer/LeftBar/Panel/VBoxContainer/ServerInput" to="Bugcord" method="SetAutoConnect"]
 [connection signal="OnServerSelected" from="HBoxContainer/LeftBar/Panel/VBoxContainer/ServerInput" to="Bugcord" method="Connect"]
 [connection signal="pressed" from="HBoxContainer/LeftBar/Panel/VBoxContainer/ServerInput/VBoxContainer/ServerInput/Button" to="HBoxContainer/LeftBar/Panel/VBoxContainer/ServerInput" method="SelectServer"]

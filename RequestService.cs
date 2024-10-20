@@ -4,6 +4,7 @@ using System.Collections.Generic;
 
 public partial class RequestService : Node
 {
+	[Signal] public delegate void OnRequestCreatedEventHandler(string requestId);
 	[Signal] public delegate void OnRequestSuccessEventHandler(string requestId);
 	[Signal] public delegate void OnRequestTimeoutEventHandler(string requestId);
 	[Signal] public delegate void OnRequestFailedEventHandler(string requestId);
@@ -71,6 +72,8 @@ public partial class RequestService : Node
 		activeRequests.Add(id, newRequest);
 
 		packetService.SendPacket(bugcord.BuildFileRequest(id, (byte)extension));
+
+		EmitSignal(SignalName.OnRequestCreated, id);
 	}
 
 	public void ProcessRequestResponse(byte[] packet){
