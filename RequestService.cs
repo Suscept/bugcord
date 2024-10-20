@@ -87,7 +87,7 @@ public partial class RequestService : Node
 		string senderGuid = dataSpans[1].GetStringFromUtf8();
 		byte[] fileData = dataSpans[2];
 
-		if (activeRequests.ContainsKey(fileGuid)){ // File already in cache
+		if (fileService.IsFileInCache(fileGuid)){ // File already in cache
 			return;
 		}
 
