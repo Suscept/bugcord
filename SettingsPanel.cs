@@ -17,7 +17,7 @@ public partial class SettingsPanel : MarginContainer
 		fileService = GetNode<FileService>("/root/Main/Bugcord/FileService");
 		userService = GetNode<UserService>("/root/Main/Bugcord/UserService");
 
-		if (userService.profilePictureFileId != null){
+		if (userService.profilePictureFileId != ""){
 			if (fileService.GetFile(userService.profilePictureFileId, out byte[] data)){
 				TryLoadProfilePicture();
 			}else{
