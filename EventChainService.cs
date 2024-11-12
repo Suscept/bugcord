@@ -5,20 +5,67 @@ using System.Collections.Generic;
 public partial class EventChainService : Node
 {
 	public const string chainStorePath = "user://serve/";
+	public const ushort eventChainVersion = 0;
+	public const ushort eventVersion = 0;
 
 	public Dictionary<string, EventPacket> currentChainEnd = new();
 
+	// Chain id, previous chain
+	private Dictionary<string, string> activeChainRequest = new();
+
 	private Bugcord bugcord;
+	private RequestService requestService;
 
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
 	{
 		bugcord = GetParent<Bugcord>();
+		requestService = GetParent().GetNode<RequestService>("RequestService");
 	}
 
 	// Called every frame. 'delta' is the elapsed time since the previous frame.
 	public override void _Process(double delta)
 	{
+	}
+
+	public void ChainRequestSuccess(string fileId){
+		if (!activeChainRequest.ContainsKey(fileId))
+			return;
+
+		GD.Print("Chain retrieved from peers");
+
+		activeChainRequest.Remove(fileId);
+
+		LoadEventChainFile(fileId, true, true);
+	}
+
+	public void ChainRequestFailed(string fileId){
+		if (!activeChainRequest.ContainsKey(fileId))
+			return;
+
+		GD.Print("Chain request failed");
+
+		if (!FileAccess.FileExists(chainStorePath + fileId + ".chain"))
+			InitEventChain(fileId, activeChainRequest[fileId]);
+
+		activeChainRequest.Remove(fileId);
+		bugcord.FinishRetrivingChain();
+	}
+
+	public void LoadEventChain(string keyStart){
+		LoadEventChain(keyStart, keyStart);
+	}
+
+	public void LoadEventChain(string keyStart, string prevKey){
+		GD.Print("Loading chain " + keyStart);
+
+		// Get the chain from the network
+		activeChainRequest.Add(keyStart, prevKey);
+
+		requestService.OnRequestSuccess += ChainRequestSuccess;
+		requestService.OnRequestFailed += ChainRequestFailed;
+
+		requestService.Request(keyStart, RequestService.FileExtension.EventChain, RequestService.VerifyMethod.Consensus, 1f);
 	}
 
 	public void SaveEvent(byte[] data, string keyChain){
@@ -31,7 +78,6 @@ public partial class EventChainService : Node
 
 			hashConcat.AddRange(prevEvent.data);
 			hashConcat.AddRange(BitConverter.GetBytes(prevEvent.timestamp));
-			hashConcat.AddRange(prevEvent.prevEventHash);
 
 			hash = KeyService.GetSHA256Hash(hashConcat.ToArray());
 		}
@@ -39,7 +85,6 @@ public partial class EventChainService : Node
 		EventPacket eventPacket = new EventPacket(){
 			data = data,
 			timestamp = timestamp,
-			prevEventHash = hash,
 		};
 
 		currentChainEnd[keyChain] = eventPacket;
@@ -47,80 +92,91 @@ public partial class EventChainService : Node
 		AppendEventToFile(eventPacket, keyChain);
 	}
 
-	public void LoadEventChain(string keyChain){
+	public void LoadEventChainFile(string keyChain, bool tryGetNextChain, bool processEvents){
 		FileAccess eventFile = FileAccess.Open(chainStorePath + "/" + keyChain + ".chain", FileAccess.ModeFlags.Read);
 
 		byte[] eventChainRaw = eventFile.GetBuffer((long)eventFile.GetLength());
-		byte[][] dataspans = Bugcord.ReadDataSpans(eventChainRaw, 0);
+		byte[][] dataspans = Bugcord.ReadDataSpans(eventChainRaw, 3);
 
-		EventPacket eventPacket = new EventPacket();
+		ushort chainVersion = BitConverter.ToUInt16(eventChainRaw, 0);
+		if (chainVersion > eventChainVersion){
+			GD.PrintErr("Chain version not supported. Version: " + chainVersion + " Supported: " + eventChainVersion);
+			return;
+		}
 
-		int section = 0;
-		for (int i = 0; i < dataspans.Length; i++){
-			switch (section)
-			{
-				case 0:
-					eventPacket.data = dataspans[i];
-					break;
-				case 1:
-					eventPacket.timestamp = BitConverter.ToDouble(dataspans[i]);
-					break;
-				case 2:
-					eventPacket.prevEventHash = dataspans[i];
-					break;
-				default:
-					section = 0;
-					bugcord.ProcessIncomingPacket((PacketService.Packet)eventPacket);
-					eventPacket = new EventPacket();
-					break;
+		string prevChain = dataspans[0].GetStringFromUtf8();
+		string nextChain = null;
+
+		bool isFinishedChain = eventChainRaw[2] == 0x01;
+		if (isFinishedChain)
+			nextChain = dataspans[dataspans.Length - 1].GetStringFromUtf8();
+
+		if (tryGetNextChain && nextChain != null){
+			LoadEventChain(nextChain);
+		}
+		
+		if (processEvents){
+			int endOffset = 0;
+			if (isFinishedChain)
+				endOffset = 1;
+			for (int i = 1; i < dataspans.Length - endOffset; i++){
+				byte[][] eventDataspans = Bugcord.ReadDataSpans(dataspans[i], 10);
+
+				ushort eventVersion = BitConverter.ToUInt16(dataspans[i], 0);
+				double eventTimestamp = BitConverter.ToDouble(dataspans[i], 2);
+
+				if (eventVersion > eventChainVersion)
+					continue;
+
+				EventPacket eventPacket = new EventPacket
+				{
+					data = eventDataspans[0],
+					timestamp = eventTimestamp,
+				};
+				
+				bugcord.ProcessIncomingPacket((PacketService.Packet)eventPacket, true);
 			}
-			
-			section++;
 		}
 	}
 
 	public void AppendEventToFile(EventPacket packet, string keyChain){
-		GD.Print("saving: " + chainStorePath + keyChain + ".chain");
+		GD.Print("Appending: " + chainStorePath + keyChain + ".chain");
 
 		if (!FileAccess.FileExists(chainStorePath + keyChain + ".chain")){
-			FileAccess.Open(chainStorePath + keyChain + ".chain", FileAccess.ModeFlags.Write);
+			FileAccess newEventFile = FileAccess.Open(chainStorePath + keyChain + ".chain", FileAccess.ModeFlags.Write);
 		}
 
-		List<byte> packetSection = new List<byte>();
+		List<byte> eventSection = new List<byte>();
 
-		packetSection.AddRange(Bugcord.MakeDataSpan(packet.data));
-		packetSection.AddRange(Bugcord.MakeDataSpan(BitConverter.GetBytes(packet.timestamp)));
-		packetSection.AddRange(Bugcord.MakeDataSpan(packet.prevEventHash));
+		eventSection.AddRange(BitConverter.GetBytes(eventVersion));
+		eventSection.AddRange(BitConverter.GetBytes(packet.timestamp));
+		eventSection.AddRange(Bugcord.MakeDataSpan(packet.data));
 
 		FileAccess eventFile = FileAccess.Open(chainStorePath + keyChain + ".chain", FileAccess.ModeFlags.ReadWrite);
 
 		eventFile.SeekEnd();
-		eventFile.StoreBuffer(packetSection.ToArray());
+		eventFile.StoreBuffer(Bugcord.MakeDataSpan(eventSection.ToArray()));
 		eventFile.Close();
 	}
 
-	// public bool VerifyEvent(EventPacket eventPacket, EventPacket previous){
-	// 	List<byte> hashConcat = new List<byte>();
-	// 	hashConcat.AddRange(previous.data);
-	// 	hashConcat.AddRange(BitConverter.GetBytes(previous.timestamp));
-	// 	hashConcat.AddRange(previous.hash);
+	public void InitEventChain(string chainId, string previousChainId){
+		GD.Print("Initializing chain: " + chainId + " Previous chain: " + previousChainId);
 
-	// 	byte[] prevHash = KeyService.GetSHA256Hash(hashConcat.ToArray());
+		List<byte> eventSection = new List<byte>();
 
-	// 	hashConcat = new List<byte>();
-	// 	hashConcat.AddRange(eventPacket.data);
-	// 	hashConcat.AddRange(BitConverter.GetBytes(eventPacket.timestamp));
-	// 	hashConcat.AddRange(eventPacket.hash);
+		eventSection.AddRange(BitConverter.GetBytes(eventChainVersion));
+		eventSection.Add(0);
+		eventSection.AddRange(Bugcord.MakeDataSpan(previousChainId.ToUtf8Buffer()));
 
-	// 	byte[] hash = KeyService.GetSHA256Hash(hashConcat.ToArray());
-
-	// 	return hash == eventPacket.hash;
-	// }
+		FileAccess newEventFile = FileAccess.Open(chainStorePath + chainId + ".chain", FileAccess.ModeFlags.Write);
+		newEventFile.StoreBuffer(eventSection.ToArray());
+		newEventFile.Close();
+	}
 
 	public class EventPacket{
 		public byte[] data;
 		public double timestamp;
-		public byte[] prevEventHash;
+		// public byte[] prevEventHash;
 
 		public static explicit operator PacketService.Packet(EventPacket eventPacket){
 			PacketService.Packet packet = new PacketService.Packet(){

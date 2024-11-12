@@ -2,6 +2,7 @@ using Godot;
 using System;
 using System.Collections.Generic;
 using System.Security.Cryptography;
+using Newtonsoft.Json;
 
 public partial class SpaceService : Node
 {
@@ -13,6 +14,7 @@ public partial class SpaceService : Node
 	public Dictionary<string, Space> spaces = new();
 
 	public const string clientSpacesPath = "user://spaces.json";
+	public const string spaceServePath = "user://serve/";
 
 	private UserService userService;
 	private PeerService peerService;
@@ -124,6 +126,11 @@ public partial class SpaceService : Node
 		};
 
 		AddSpace(newSpace);
+	}
+
+	public void SaveToFile(Space space){
+		FileAccess spaceFile = FileAccess.Open(spaceServePath + space.id + ".space", FileAccess.ModeFlags.Write);
+		spaceFile.StoreString(JsonConvert.SerializeObject(space));
 	}
 
 	public void SaveToFile(){

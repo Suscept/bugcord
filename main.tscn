@@ -395,6 +395,27 @@ vertical_scroll_mode = 0
 layout_mode = 2
 alignment = 2
 
+[node name="RightBar" type="Control" parent="HBoxContainer"]
+visible = false
+custom_minimum_size = Vector2(200, 0)
+layout_mode = 2
+
+[node name="Panel" type="Panel" parent="HBoxContainer/RightBar"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="HBoxContainer/RightBar/Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
 [node name="Popups" type="Control" parent="."]
 anchors_preset = 0
 mouse_filter = 2
@@ -403,10 +424,10 @@ mouse_filter = 2
 visible = false
 custom_minimum_size = Vector2(200, 500)
 layout_mode = 2
-offset_left = 938.0
-offset_top = 39.0
-offset_right = 1138.0
-offset_bottom = 539.0
+offset_left = 730.0
+offset_top = 44.0
+offset_right = 930.0
+offset_bottom = 544.0
 size_flags_vertical = 3
 
 [node name="VBoxContainer" type="VBoxContainer" parent="Popups/SettingsPanel"]
@@ -467,10 +488,10 @@ text = "Save"
 visible = false
 custom_minimum_size = Vector2(200, 500)
 layout_mode = 0
-offset_left = 937.0
-offset_top = 45.0
-offset_right = 1137.0
-offset_bottom = 545.0
+offset_left = 520.0
+offset_top = 44.0
+offset_right = 720.0
+offset_bottom = 544.0
 size_flags_vertical = 3
 
 [node name="ScrollContainer" type="ScrollContainer" parent="Popups/AlertPanelPanel"]
@@ -1004,7 +1025,6 @@ layout_mode = 2
 [connection signal="OnRequestFailed" from="Bugcord/RequestService" to="Popups/RequestDebugView" method="RemoveRequest"]
 [connection signal="OnRequestProgress" from="Bugcord/RequestService" to="Popups/RequestDebugView" method="UpdateRequest"]
 [connection signal="OnRequestSuccess" from="Bugcord/RequestService" to="Popups/RequestDebugView" method="RemoveRequest"]
-[connection signal="OnRequestTimeout" from="Bugcord/RequestService" to="Popups/RequestDebugView" method="RemoveRequest"]
 [connection signal="OnAutoconnectSettingChanged" from="HBoxContainer/LeftBar/Panel/VBoxContainer/ServerInput" to="Bugcord" method="SetAutoConnect"]
 [connection signal="OnServerSelected" from="HBoxContainer/LeftBar/Panel/VBoxContainer/ServerInput" to="Bugcord" method="Connect"]
 [connection signal="pressed" from="HBoxContainer/LeftBar/Panel/VBoxContainer/ServerInput/VBoxContainer/ServerInput/Button" to="HBoxContainer/LeftBar/Panel/VBoxContainer/ServerInput" method="SelectServer"]

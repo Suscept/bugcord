@@ -27,6 +27,8 @@ public partial class RequestService : Node
 	public enum FileExtension{
 		MediaFile = 0,
 		EventChain = 1,
+		SpaceData = 2,
+		PeerData = 3,
 	}
 
 	// File id, request class
@@ -48,13 +50,18 @@ public partial class RequestService : Node
 			if (pendingRequest.timeLeft <= 0){
 				// Request timeout
 				GD.Print("Request " + pendingRequest.id + " timed out");
-				EmitSignal(SignalName.OnRequestTimeout, pendingRequest.id + pendingRequest.extension);
+				EmitSignal(SignalName.OnRequestTimeout, pendingRequest.id);
+				EmitSignal(SignalName.OnRequestFailed, pendingRequest.id);
 				activeRequests.Remove(pendingRequest.id);
 			}
 		}
 	}
 
 	public void Request(string id, FileExtension extension, VerifyMethod verifyMethod){
+		Request(id, extension, verifyMethod, requestTimeoutTime);
+	}
+
+	public void Request(string id, FileExtension extension, VerifyMethod verifyMethod, float timeout){
 		GD.Print("Requesting file: " + id);
 		if (activeRequests.ContainsKey(id)){
 			GD.Print("Request already exists");
@@ -65,7 +72,7 @@ public partial class RequestService : Node
 			id = id,
 			extension = extension,
 			verifyMethod = verifyMethod,
-			timeLeft = requestTimeoutTime,
+			timeLeft = timeout,
 			cacheDesired = true,
 		};
 
@@ -174,13 +181,17 @@ public partial class RequestService : Node
 		EmitSignal(SignalName.OnRequestSuccess, request.id);
 	}
 
-	private static string GetFileExtensionString(FileExtension fileExtension){
+	public static string GetFileExtensionString(FileExtension fileExtension){
 		switch (fileExtension)
 		{
 			case FileExtension.MediaFile:
 				return ".file";
 			case FileExtension.EventChain:
 				return ".chain";
+			case FileExtension.SpaceData:
+				return ".space";
+			case FileExtension.PeerData:
+				return ".peer";
 			default:
 				return "";
 		}

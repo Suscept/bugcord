@@ -144,8 +144,17 @@ public partial class FileService : Node
 		return FileAccess.FileExists(dataServePath + guid + ".file");
 	}
 
+	public bool HasServableFile(string guid, RequestService.FileExtension extension){
+		return FileAccess.FileExists(dataServePath + guid + RequestService.GetFileExtensionString(extension));
+	}
+
 	public byte[] GetServableData(string guid){
 		FileAccess file = FileAccess.Open(dataServePath + guid + ".file", FileAccess.ModeFlags.Read);
+		return file.GetBuffer((long)file.GetLength());
+	}
+
+	public byte[] GetServableData(string guid, RequestService.FileExtension extension){
+		FileAccess file = FileAccess.Open(dataServePath + guid + RequestService.GetFileExtensionString(extension), FileAccess.ModeFlags.Read);
 		return file.GetBuffer((long)file.GetLength());
 	}
 

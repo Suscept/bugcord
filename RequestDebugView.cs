@@ -23,6 +23,11 @@ public partial class RequestDebugView : Panel
 	}
 
 	public void DisplayRequest(string id){
+		if (!requestService.activeRequests.ContainsKey(id)){
+			GD.PrintErr(id + " is not an active request");
+			return;
+		}
+
 		RequestDebug requestDisplay = requestListing.Instantiate<RequestDebug>();
 		listingContainer.AddChild(requestDisplay);
 

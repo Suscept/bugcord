@@ -238,6 +238,15 @@ public partial class Bugcord : Node
 
 	#endregion
 
+	# region chain loading
+
+	public void FinishRetrivingChain(){
+		GD.Print("Finished retriving chain");
+		retrievingChain = false;
+	}
+	
+	#endregion
+
 	#region space functions
 
 	public void ConnectSpace(string guid){
@@ -248,6 +257,9 @@ public partial class Bugcord : Node
 		AlertPanel.PostAlert("Connected to space", guid);
 
 		EmitSignal(SignalName.OnConnectedToSpace, guid, spaceService.spaces[guid].name);
+
+		// retrievingChain = true;
+		eventChainService.LoadEventChain(guid);
 	}
 
 	public void UpdateSpace(string spaceId){
@@ -270,13 +282,13 @@ public partial class Bugcord : Node
 
 	#region packet processors
 
-	public void ProcessIncomingPacket(PacketService.Packet packet){
+	public void ProcessIncomingPacket(PacketService.Packet packet, bool fromEventChain){
 		byte type = packet.data[0];
 		GD.Print("Recieved packet. Type: " + type);
 
 		switch (type){
 			case 0:
-				ProcessMessagePacket(packet);
+				ProcessMessagePacket(packet, fromEventChain);
 				break;
 			case 1:
 				ProcessIdentify(packet.data);
@@ -298,10 +310,17 @@ public partial class Bugcord : Node
 	}
 
 	private void ProcessSpaceUpdatePacket(PacketService.Packet packet){
-		byte[][] dataSpans = ReadDataSpans(packet.data, 9);
+		byte[] initVector = ReadLength(packet.data, 1, 16);
+		byte[][] packetParts = ReadDataSpans(packet.data, 18);
+		string keyUsed = packetParts[0].GetStringFromUtf8();
 
-		int authorityCount = BitConverter.ToInt32(packet.data, 1);
-		int memberCount = BitConverter.ToInt32(packet.data, 5);
+		byte[] encryptedSection = packetParts[1];
+		byte[] decryptedSection = KeyService.AESDecrypt(encryptedSection, keyService.myKeys[keyUsed], initVector);
+
+		byte[][] dataSpans = ReadDataSpans(decryptedSection, 9);
+
+		int authorityCount = BitConverter.ToInt32(decryptedSection, 1);
+		int memberCount = BitConverter.ToInt32(decryptedSection, 5);
 
 		string spaceId = dataSpans[0].GetStringFromUtf8();
 		string spaceName = dataSpans[1].GetStringFromUtf8();
@@ -325,19 +344,25 @@ public partial class Bugcord : Node
 		}
 
 		spaceService.AddSpace(spaceId, spaceName, keyId, owner, authorities, members);
+
+		if (retrievingChain){
+			eventChainService.LoadEventChain(keyId);
+		}else{
+			eventChainService.SaveEvent(packet.data, keyUsed);
+		}
 	}
 
 	private void ProcessFileRequest(byte[] packet){
-		byte subtype = packet[1];
+		RequestService.FileExtension extension = (RequestService.FileExtension)packet[1];
 
 		string fileGuid = ReadDataSpan(packet, 2).GetStringFromUtf8();
 		GD.Print("Recieved file request " + fileGuid);
-		if (!fileService.HasServableFile(fileGuid)) // stop if we dont have this file
+		if (!fileService.HasServableFile(fileGuid, extension)) // stop if we dont have this file
 			return;
 
-		byte[][] servePartitions = MakePartitions(fileService.GetServableData(fileGuid), filePacketSize);
+		byte[][] servePartitions = MakePartitions(fileService.GetServableData(fileGuid, extension), filePacketSize);
 		for(int i = 0; i < servePartitions.Length; i++){
-			packetService.SendPacket(BuildFilePacket(fileGuid, i, servePartitions.Length, servePartitions[i], subtype));
+			packetService.SendPacket(BuildFilePacket(fileGuid, i, servePartitions.Length, servePartitions[i], packet[1]));
 		}
 
 		// switch (subtype){
@@ -408,14 +433,14 @@ public partial class Bugcord : Node
 		}
 	}
 
-	private void ProcessMessagePacket(PacketService.Packet packet){
+	private void ProcessMessagePacket(PacketService.Packet packet, bool fromEventChain){
 		byte[][] spans = ReadDataSpans(packet.data, 19);
 
 		ushort hashNonce =  BitConverter.ToUInt16(ReadLength(packet.data, 1, 2));
 		byte[] initVector = ReadLength(packet.data, 3, 16);
 
 		string keyUsed = spans[0].GetStringFromUtf8();
-		if (!retrievingChain)
+		if (!fromEventChain)
 			eventChainService.SaveEvent(packet.data, keyUsed);
 
 		byte[] encryptedSection = spans[1];
@@ -457,7 +482,8 @@ public partial class Bugcord : Node
 		};
 
 		DisplayMessage(message);
-		databaseService.SaveMessage(spaceService.GetSpaceUsingKey(keyUsed), message);
+		if (!fromEventChain)
+			databaseService.SaveMessage(spaceService.GetSpaceUsingKey(keyUsed), message);
 
 		if (messageFlags.HasFlag(MessageComponentFlags.FileEmbed)){
 			if (fileService.IsFileInCache(embedId)){
@@ -469,7 +495,8 @@ public partial class Bugcord : Node
 			// Send(BuildFileRequest(embedId));
 		}
 
-		databaseService.SavePacket(packet);
+		if (!fromEventChain)
+			databaseService.SavePacket(packet);
 	}
 
 	#endregion
@@ -481,22 +508,29 @@ public partial class Bugcord : Node
 			9
 		};
 
-		packetBytes.AddRange(BitConverter.GetBytes(space.authorities.Count));
-		packetBytes.AddRange(BitConverter.GetBytes(space.members.Count));
+		List<byte> sectionToEncrypt = new List<byte>();
 
-		packetBytes.AddRange(MakeDataSpan(space.id.ToUtf8Buffer()));
-		packetBytes.AddRange(MakeDataSpan(space.name.ToUtf8Buffer()));
-		packetBytes.AddRange(MakeDataSpan(space.keyId.ToUtf8Buffer()));
+		sectionToEncrypt.AddRange(BitConverter.GetBytes(space.authorities.Count));
+		sectionToEncrypt.AddRange(BitConverter.GetBytes(space.members.Count));
 
-		packetBytes.AddRange(MakeDataSpan(space.owner.id.ToUtf8Buffer()));
+		sectionToEncrypt.AddRange(MakeDataSpan(space.id.ToUtf8Buffer()));
+		sectionToEncrypt.AddRange(MakeDataSpan(space.name.ToUtf8Buffer()));
+		sectionToEncrypt.AddRange(MakeDataSpan(space.keyId.ToUtf8Buffer()));
+
+		sectionToEncrypt.AddRange(MakeDataSpan(space.owner.id.ToUtf8Buffer()));
 
 		foreach (PeerService.Peer peer in space.authorities){
-			packetBytes.AddRange(MakeDataSpan(peer.id.ToUtf8Buffer()));
+			sectionToEncrypt.AddRange(MakeDataSpan(peer.id.ToUtf8Buffer()));
 		}
 
 		foreach (PeerService.Peer peer in space.members){
-			packetBytes.AddRange(MakeDataSpan(peer.id.ToUtf8Buffer()));
+			sectionToEncrypt.AddRange(MakeDataSpan(peer.id.ToUtf8Buffer()));
 		}
+
+		byte[] initVector = KeyService.GetRandomBytes(16);
+		packetBytes.AddRange(initVector);
+		packetBytes.AddRange(MakeDataSpan(space.keyId.ToUtf8Buffer()));
+		packetBytes.AddRange(MakeDataSpan(keyService.EncryptWithSpace(sectionToEncrypt.ToArray(), space.id, initVector)));
 
 		return packetBytes.ToArray();
 	}
@@ -671,6 +705,11 @@ public partial class Bugcord : Node
 	}
 
 	public static byte[] ReadLength(byte[] data, int startIndex, int length){
+		if (data.Length < (startIndex + length)){
+			GD.PrintErr("Dataspan reading failed. Index out of range. Length: " + length);
+			throw new IndexOutOfRangeException();
+		}
+
 		byte[] read = new byte[length];
 		
 		for (int i = 0; i < length; i++){

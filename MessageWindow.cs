@@ -46,11 +46,11 @@ public partial class MessageWindow : Control
 		displayedMessageUIs.Clear();
 		displayingMessages.Clear();
 
-		List<DatabaseService.Message> messages = databaseService.GetMessages(spaceId);
+		// List<DatabaseService.Message> messages = databaseService.GetMessages(spaceId);
 
-		for (int i = 0; i < messages.Count; i++){
-			DisplayNewMessage(messages[i]);
-		}
+		// for (int i = 0; i < messages.Count; i++){
+		// 	DisplayNewMessage(messages[i]);
+		// }
 	}
 
 	public void DisplayNewMessage(Godot.Collections.Dictionary messageDict){

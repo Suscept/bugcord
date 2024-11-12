@@ -154,7 +154,7 @@ public partial class PacketService : Node
 		};
 
 		try{
-			bugcord.ProcessIncomingPacket(packet);
+			bugcord.ProcessIncomingPacket(packet, false);
 		}catch(Exception ex){
 			GD.PrintErr(ex.Message);
 			AlertPanel.PostAlert("Error", ex.Message, ex.StackTrace);
