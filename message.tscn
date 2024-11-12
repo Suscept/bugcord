@@ -97,7 +97,6 @@ fit_content = true
 scroll_active = false
 
 [node name="ImageMedia" type="TextureRect" parent="VBoxContainer/MarginContainer/HBoxContainer/VBoxContainer"]
-texture_filter = 3
 layout_mode = 2
 texture = ExtResource("1_7dhvk")
 expand_mode = 1
