@@ -377,13 +377,12 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/side_margin = 0
 theme_override_font_sizes/font_size = 14
-current_tab = 1
 
 [node name="Space" type="MarginContainer" parent="HBoxContainer/RightBar/TabContainer"]
-visible = false
 layout_mode = 2
 
 [node name="Settings" type="MarginContainer" parent="HBoxContainer/RightBar/TabContainer" node_paths=PackedStringArray("usernameSetting", "profilePictureDisplay", "profilePictureDialog")]
+visible = false
 layout_mode = 2
 script = ExtResource("15_3b65x")
 usernameSetting = NodePath("VBoxContainer/ScrollContainer/VBoxContainer/UserSettings/VBoxContainer/LineEdit")
