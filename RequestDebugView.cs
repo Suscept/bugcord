@@ -32,6 +32,7 @@ public partial class RequestDebugView : Panel
 		listingContainer.AddChild(requestDisplay);
 
 		requestDisplay.Initiate(id, requestService.activeRequests[id].timeLeft);
+		displayedRequests.Add(id, requestDisplay);
 	}
 
 	public void UpdateRequest(string id){

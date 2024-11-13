@@ -984,10 +984,6 @@ horizontal_scroll_mode = 0
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="RequestDebug" parent="Popups/RequestDebugView/ScrollContainer/VBoxContainer" instance=ExtResource("36_vcdlk")]
-visible = false
-layout_mode = 2
-
 [connection signal="OnConnectedToSpace" from="Bugcord" to="HBoxContainer/ChatMain/VBoxContainer/HBoxContainer2/SpaceView" method="UpdateSpaceInfo"]
 [connection signal="OnConnectedToSpace" from="Bugcord" to="HBoxContainer/ChatMain/VBoxContainer/MessageWindow" method="DisplaySpaceMessages"]
 [connection signal="OnMessageRecieved" from="Bugcord" to="HBoxContainer/ChatMain/VBoxContainer/MessageWindow" method="DisplayNewMessage"]
