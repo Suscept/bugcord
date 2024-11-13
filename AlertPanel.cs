@@ -3,7 +3,6 @@ using System;
 
 public partial class AlertPanel : MarginContainer
 {
-	[Export] public Control popupWindow;
 	[Export] public Control alertContainer;
 
 	[Export] public PackedScene alertMessageScene;
@@ -30,9 +29,5 @@ public partial class AlertPanel : MarginContainer
 
 	public static void PostAlert(string content){
 		PostAlert("Message", "", content);
-	}
-
-	public void ToggleVisible(){
-		popupWindow.Visible = !popupWindow.Visible;
 	}
 }
