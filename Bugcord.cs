@@ -141,12 +141,6 @@ public partial class Bugcord : Node
 			return false;
 		}
 		
-		// packetService.UpdateConnectionState();
-		// if (packetService.currentState != StreamPeerTcp.Status.Connected){
-		// 	alertService.NewAlert("Not connected to relay", "Connection may have been lost. Press the # button on the top left to reconnect.");
-		// 	return false;
-		// }
-
 		if (selectedSpaceId == null){
 			alertService.NewAlert("Not connected to a space", "Either create your own space using the \"Create Space\" button on the left, or have a friend invite you to one and it will automatically appear in the list.");
 			return false;
@@ -364,39 +358,6 @@ public partial class Bugcord : Node
 		for(int i = 0; i < servePartitions.Length; i++){
 			packetService.SendPacket(BuildFilePacket(fileGuid, i, servePartitions.Length, servePartitions[i], packet[1]));
 		}
-
-		// switch (subtype){
-		// 	case 0:
-		// 		string fileGuid = ReadDataSpan(packet, 2).GetStringFromUtf8();
-		// 		if (!fileService.HasServableFile(fileGuid)) // stop if we dont have this file
-		// 			return;
-
-		// 		byte[][] servePartitions = MakePartitions(fileService.GetServableData(fileGuid), filePacketSize);
-		// 		for(int i = 0; i < servePartitions.Length; i++){
-		// 			packetService.SendPacket(BuildFilePacket(fileGuid, i, servePartitions.Length, servePartitions[i], subtype));
-		// 		}
-		// 		break;
-		// 	case 1: // Eventfile request
-		// 		long timestamp = BitConverter.ToInt64(packet, 3);
-		// 		string requestedGuid = ReadDataSpan(packet, 10).GetStringFromUtf8();
-		// 		List<PacketService.Packet> packets = databaseService.GetPackets(timestamp);
-				
-		// 		// Turn packets into single span of bytes
-		// 		List<byte> mergedPackets = new List<byte>();
-		// 		for (int i = 0; i < packets.Count; i++){
-		// 			List<byte> packetBytes = new List<byte>();
-		// 			packetBytes.AddRange(MakeDataSpan(BitConverter.GetBytes(packets[i].timestamp)));
-		// 			packetBytes.AddRange(MakeDataSpan(packets[i].data));
-		// 			mergedPackets.AddRange(MakeDataSpan(packetBytes.ToArray()));
-		// 		}
-
-		// 		byte[][] packetPartitions = MakePartitions(mergedPackets.ToArray(), filePacketSize);
-		// 		for(int i = 0; i < packetPartitions.Length; i++){
-		// 			packetService.SendPacket(BuildFilePacket(requestedGuid, i, packetPartitions.Length, packetPartitions[i]));
-		// 		}
-				
-		// 		break;
-		// }
 	}
 
 	private void ProcessKeyPackage(byte[] packet){
@@ -406,9 +367,6 @@ public partial class Bugcord : Node
 
 		string keyId = dataSpans[0].GetStringFromUtf8();
 		byte[] encryptedSpaceKey = dataSpans[1];
-
-		// byte[] spaceKey = new byte[32]; // Size of RSA key in bytes. 256 bits = 32 bytes
-		// bool couldDecrypt = keyService.userAuthentication.TryDecrypt(encryptedSpaceKey, spaceKey, RSAEncryptionPadding.Pkcs1, out int bytesWritten);
 
 		bool couldDecrypt = keyService.RSADecrypt(encryptedSpaceKey, out byte[] spaceKey);
 
@@ -482,8 +440,6 @@ public partial class Bugcord : Node
 		};
 
 		DisplayMessage(message);
-		if (!fromEventChain)
-			databaseService.SaveMessage(spaceService.GetSpaceUsingKey(keyUsed), message);
 
 		if (messageFlags.HasFlag(MessageComponentFlags.FileEmbed)){
 			if (fileService.IsFileInCache(embedId)){
@@ -492,11 +448,7 @@ public partial class Bugcord : Node
 			}
 
 			requestService.Request(embedId, RequestService.FileExtension.MediaFile, RequestService.VerifyMethod.HashCheck);
-			// Send(BuildFileRequest(embedId));
 		}
-
-		if (!fromEventChain)
-			databaseService.SavePacket(packet);
 	}
 
 	#endregion

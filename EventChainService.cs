@@ -176,7 +176,6 @@ public partial class EventChainService : Node
 	public class EventPacket{
 		public byte[] data;
 		public double timestamp;
-		// public byte[] prevEventHash;
 
 		public static explicit operator PacketService.Packet(EventPacket eventPacket){
 			PacketService.Packet packet = new PacketService.Packet(){
