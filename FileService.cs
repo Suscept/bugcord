@@ -128,6 +128,11 @@ public partial class FileService : Node
 			byte[] encryptedSection = dataSpans[1];
 			byte[][] decryptedDataspans = Bugcord.ReadDataSpans(keyService.DecryptWithKey(encryptedSection, keyId, iv), 0);
 			filename = decryptedDataspans[0].GetStringFromUtf8();
+			if (!filename.IsValidFileName()){
+				file = null;
+				filename = null;
+				return false;
+			}
 
 			file = decryptedDataspans[1];
 			return true;
