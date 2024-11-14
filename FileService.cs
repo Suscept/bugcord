@@ -9,6 +9,8 @@ public partial class FileService : Node
 	public const string cachePath = "user://cache/";
 	public const string dataServePath = "user://serve/";
 
+	public const ushort packageVersion = 1;
+
 	// File ID, File path
 	public Dictionary<string, string> cacheIndex = new();
 
@@ -106,7 +108,7 @@ public partial class FileService : Node
 
 	public bool UnpackageFile(byte[] package, out byte[] file, out string filename){
 		ushort version = BitConverter.ToUInt16(package, 0);
-		if (version != 1){
+		if (version != packageVersion){
 			file = null;
 			filename = null;
 			return false;
