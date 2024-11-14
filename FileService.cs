@@ -1,6 +1,7 @@
 using Godot;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 public partial class FileService : Node
 {
@@ -11,8 +12,8 @@ public partial class FileService : Node
 
 	public const ushort packageVersion = 1;
 
-	// File ID, File path
-	public Dictionary<string, string> cacheIndex = new();
+	// File ID, CacheFile
+	public Dictionary<string, CacheFile> cacheIndex = new();
 
 	private Bugcord bugcord;
 	private KeyService keyService;
@@ -24,6 +25,8 @@ public partial class FileService : Node
 		bugcord = GetParent<Bugcord>();
 		keyService = GetParent().GetNode<KeyService>("KeyService");
 		requestService = GetParent().GetNode<RequestService>("RequestService");
+
+		LoadCache();
 	}
 
 	// Called every frame. 'delta' is the elapsed time since the previous frame.
@@ -36,11 +39,11 @@ public partial class FileService : Node
 		GD.Print("getting file " + id);
 		if (IsFileInCache(id)){
 			GD.Print("Getting from cache");
-			data = GetFromCache(id);
+			data = GetCacheData(id);
 			return true;
 		}
 
-		if (HasServableFile(id)){
+		if (IsFileServable(id)){
 			GD.Print("Getting from package");
 			bool success = UnpackageFile(GetServableData(id), out byte[] fileData, out string filename);
 			if (success)
@@ -147,17 +150,16 @@ public partial class FileService : Node
 		}
 	}
 
-	public bool HasServableFile(string guid){
-		return FileAccess.FileExists(dataServePath + guid + ".file");
+	public bool IsFileServable(string guid){
+		return IsFileServable(guid, RequestService.FileExtension.MediaFile);
 	}
 
-	public bool HasServableFile(string guid, RequestService.FileExtension extension){
+	public bool IsFileServable(string guid, RequestService.FileExtension extension){
 		return FileAccess.FileExists(dataServePath + guid + RequestService.GetFileExtensionString(extension));
 	}
 
 	public byte[] GetServableData(string guid){
-		FileAccess file = FileAccess.Open(dataServePath + guid + ".file", FileAccess.ModeFlags.Read);
-		return file.GetBuffer((long)file.GetLength());
+		return GetServableData(guid, RequestService.FileExtension.MediaFile);
 	}
 
 	public byte[] GetServableData(string guid, RequestService.FileExtension extension){
@@ -165,21 +167,12 @@ public partial class FileService : Node
 		return file.GetBuffer((long)file.GetLength());
 	}
 
-	public void MakeServePath(){
-		if (!DirAccess.DirExistsAbsolute(dataServePath)){
-			DirAccess cacheDir = DirAccess.Open("user://");
-			cacheDir.MakeDir("serve");
-		}
+	public void WriteToServable(byte[] data, string guid, RequestService.FileExtension extension){
+		WriteToServableAbsolute(data, guid + RequestService.GetFileExtensionString(extension));
 	}
 
 	public void WriteToServable(byte[] data, string guid){
-		WriteToServableAbsolute(data, guid + ".file");
-		// MakeServePath();
-
-		// FileAccess serveCopy = FileAccess.Open(dataServePath + guid + ".file", FileAccess.ModeFlags.Write);
-		// serveCopy.StoreBuffer(data);
-
-		// serveCopy.Close();
+		WriteToServable(data, guid, RequestService.FileExtension.MediaFile);
 	}
 
 	public void WriteToServableAbsolute(byte[] data, string filename){
@@ -191,9 +184,21 @@ public partial class FileService : Node
 		serveCopy.Close();
 	}
 
+	public void MakeServePath(){
+		if (!DirAccess.DirExistsAbsolute(dataServePath)){
+			DirAccess cacheDir = DirAccess.Open("user://");
+			cacheDir.MakeDir("serve");
+		}
+	}
+
+	/// <summary>
+	/// Returns the path to the file with the provided id. Returns null if the file does not exist.
+	/// </summary>
+	/// <param name="fileId"></param>
+	/// <returns></returns>
 	public string GetCachePath(string fileId){
-		if(cacheIndex.TryGetValue(fileId, out string path)){
-			return path;
+		if(cacheIndex.TryGetValue(fileId, out CacheFile file)){
+			return file.path;
 		}
 		return null;
 	}
@@ -202,8 +207,8 @@ public partial class FileService : Node
 		return cacheIndex.ContainsKey(fileId);
 	}
 
-	public byte[] GetFromCache(string guid){
-		FileAccess file = FileAccess.Open(cacheIndex[guid], FileAccess.ModeFlags.Read);
+	public byte[] GetCacheData(string guid){
+		FileAccess file = FileAccess.Open(cacheIndex[guid].path, FileAccess.ModeFlags.Read);
 		return file.GetBuffer((long)file.GetLength());
 	}
 
@@ -213,7 +218,7 @@ public partial class FileService : Node
 			cacheDir.MakeDir("cache");
 		}
 
-		string path = cachePath + filename;
+		string path = cachePath + guid + "." + filename.Split('.')[1];
 
 		GD.Print("Writing to cache " + path);
 
@@ -222,21 +227,67 @@ public partial class FileService : Node
 
 		cacheCopy.Close();
 
-		cacheIndex.Add(guid, path);
+		CacheFile cacheFile = new CacheFile{
+			id = guid,
+			path = path,
+			filename = filename,
+		};
+		cacheIndex.Add(guid, cacheFile);
 
 		EmitSignal(SignalName.OnCacheChanged, guid);
 	}
 
 	public void ClearCache(){
 		GD.Print("Clearing cache..");
-		foreach (string path in cacheIndex.Values){
-			DirAccess.RemoveAbsolute(path);
+		foreach (CacheFile file in cacheIndex.Values){
+			DirAccess.RemoveAbsolute(file.path);
 		}
 		cacheIndex.Clear();
+	}
+
+	// Indexes the cache. Since the cache is cleared on shutdown this is mainly to handle unexpected shutdowns
+	public void LoadCache(){
+		GD.Print("FileService: Loading cache...");
+
+		string[] filesInCache = DirAccess.GetFilesAt(cachePath);
+		foreach (string file in filesInCache){
+			CacheFile cacheFile = new CacheFile{
+			id = file.Split('.')[0],
+			path = cachePath + file,
+			filename = "unknown." + file.Split('.')[1],
+		};
+
+			cacheIndex.Add(file.Split('.')[0], cacheFile);
+		}
+	}
+
+	// Copies the file with its original filename to the user's downloads folder
+	// File must be in the cache already
+	public void DownloadFile(string id){
+		if (!cacheIndex.ContainsKey(id))
+			return;
+
+		GD.Print("FileService: Downloading: " + id);
+
+		string downloadsFolder = System.Environment.ExpandEnvironmentVariables("%userprofile%/downloads/");
+		CacheFile file = cacheIndex[id];
+
+		FileAccess downloadFile = FileAccess.Open(downloadsFolder + file.filename, FileAccess.ModeFlags.Write);
+		downloadFile.StoreBuffer(GetCacheData(id));
+		downloadFile.Close();
+
+		// Opens windows file explorer to the downloads folder. The path from the env var needs its "/" replaced with "\" to work
+		Process.Start("explorer.exe", downloadsFolder.Replace('/', '\\')); 
 	}
 
 	public class StoredPacket{
 		public string packet;
 		public double timestamp;
+	}
+
+	public class CacheFile{
+		public string id;
+		public string path;
+		public string filename;
 	}
 }

@@ -114,7 +114,7 @@ public partial class MessageUI : MarginContainer
 
 		fileService = GetNode<FileService>("/root/Main/Bugcord/FileService");
 		requestService = GetNode<RequestService>("/root/Main/Bugcord/RequestService");
-		string cachePath = fileService.cacheIndex[guid];
+		string cachePath = fileService.cacheIndex[guid].path;
 		SetupMediaUi(cachePath);
 
 		popupMenu.AddItem("Download", 3);
@@ -146,6 +146,14 @@ public partial class MessageUI : MarginContainer
 		
 		SetProfilePicture();
 		fileService.OnCacheChanged -= SetProfilePicture;
+	}
+
+	public void OnImageClicked(InputEvent inputEvent){
+		if (inputEvent is InputEventMouseButton mouseEvent){
+			if (mouseEvent.ButtonMask == MouseButtonMask.Left){
+				GetNode<EmbedPreviewer>("/root/Main/Popups/EmbedPreview").PreviewEmbed(waitingForEmbedGuid);
+			}
+		}
 	}
 
 	private string GetTimestampString(double timestamp){

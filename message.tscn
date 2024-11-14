@@ -98,6 +98,7 @@ scroll_active = false
 
 [node name="ImageMedia" type="TextureRect" parent="VBoxContainer/MarginContainer/HBoxContainer/VBoxContainer"]
 layout_mode = 2
+mouse_default_cursor_shape = 2
 texture = ExtResource("1_7dhvk")
 expand_mode = 1
 stretch_mode = 4
@@ -106,3 +107,5 @@ stretch_mode = 4
 layout_mode = 2
 label_settings = SubResource("LabelSettings_r4x21")
 vertical_alignment = 1
+
+[connection signal="gui_input" from="VBoxContainer/MarginContainer/HBoxContainer/VBoxContainer/ImageMedia" to="." method="OnImageClicked"]

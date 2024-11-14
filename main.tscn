@@ -1,4 +1,4 @@
-[gd_scene load_steps=40 format=3 uid="uid://b4h65lw1u6cii"]
+[gd_scene load_steps=41 format=3 uid="uid://b4h65lw1u6cii"]
 
 [ext_resource type="Script" path="res://Bugcord.cs" id="1_jyk1e"]
 [ext_resource type="PackedScene" uid="uid://c0hr25wlgd0kt" path="res://message.tscn" id="1_ki7uw"]
@@ -37,6 +37,7 @@
 [ext_resource type="PackedScene" uid="uid://dd0t1hkoxj4fi" path="res://user_display.tscn" id="27_t0wxr"]
 [ext_resource type="Script" path="res://RequestDebugView.cs" id="35_k7oys"]
 [ext_resource type="PackedScene" uid="uid://bee1wu35jp3qv" path="res://request_debug.tscn" id="36_vcdlk"]
+[ext_resource type="Script" path="res://EmbedPreviewer.cs" id="38_mrfv4"]
 
 [sub_resource type="AudioStreamGenerator" id="AudioStreamGenerator_2jvjo"]
 mix_rate = 48000.0
@@ -464,14 +465,11 @@ layout_mode = 2
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="Popups" type="Control" parent="."]
-anchors_preset = 0
-mouse_filter = 2
+[node name="Popups" type="Node" parent="."]
 
 [node name="AlertPanelPanel" type="Panel" parent="Popups"]
 visible = false
 custom_minimum_size = Vector2(200, 500)
-layout_mode = 0
 offset_left = 520.0
 offset_top = 44.0
 offset_right = 720.0
@@ -480,7 +478,6 @@ size_flags_vertical = 3
 
 [node name="Register" type="Panel" parent="Popups" node_paths=PackedStringArray("usernameInput", "passwordInput", "repeatPasswordInput")]
 visible = false
-layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
@@ -533,7 +530,6 @@ text = "Register"
 
 [node name="MakeSpace" type="Panel" parent="Popups" node_paths=PackedStringArray("spaceName")]
 visible = false
-layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
@@ -585,7 +581,6 @@ text = "X"
 
 [node name="dataspan tester" type="Panel" parent="Popups" node_paths=PackedStringArray("input")]
 visible = false
-layout_mode = 0
 offset_left = 950.0
 offset_top = 428.0
 offset_right = 1126.47
@@ -615,7 +610,6 @@ text = "go"
 
 [node name="rsa tester" type="Panel" parent="Popups" node_paths=PackedStringArray("input", "input2", "input3")]
 visible = false
-layout_mode = 0
 offset_left = 759.0
 offset_top = 411.0
 offset_right = 935.47
@@ -656,7 +650,6 @@ text = "go"
 
 [node name="space invite tester" type="Panel" parent="Popups" node_paths=PackedStringArray("bugcordInstance", "input")]
 visible = false
-layout_mode = 0
 offset_left = 759.0
 offset_top = 233.0
 offset_right = 935.47
@@ -689,7 +682,6 @@ text = "go"
 [node name="Space Settings" type="Panel" parent="Popups" node_paths=PackedStringArray("spaceTitle", "ownerLabel", "keyIdLabel", "adminListContainer", "memberListContainer")]
 visible = false
 clip_contents = true
-layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
@@ -835,7 +827,6 @@ text = "Save"
 
 [node name="SpaceInviter" type="Panel" parent="Popups" node_paths=PackedStringArray("inviteEntryContainer")]
 visible = false
-layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
@@ -898,7 +889,6 @@ size_flags_horizontal = 3
 [node name="GenericPopup" type="MarginContainer" parent="Popups" node_paths=PackedStringArray("titleLabel", "extraTitleLabel", "subtextLabel", "subtextSeperator", "confirmButton")]
 visible = false
 custom_minimum_size = Vector2(174.07, 0)
-layout_mode = 0
 offset_left = 532.0
 offset_top = 273.0
 offset_right = 706.07
@@ -961,7 +951,6 @@ text = "Okay"
 
 [node name="RequestDebugView" type="Panel" parent="Popups" node_paths=PackedStringArray("listingContainer")]
 visible = false
-layout_mode = 0
 offset_left = 463.0
 offset_top = 267.0
 offset_right = 1129.0
@@ -983,6 +972,56 @@ horizontal_scroll_mode = 0
 [node name="VBoxContainer" type="VBoxContainer" parent="Popups/RequestDebugView/ScrollContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
+
+[node name="EmbedPreview" type="Panel" parent="Popups" node_paths=PackedStringArray("filenameLabel", "imagePreview")]
+visible = false
+anchors_preset = -1
+anchor_left = 0.111
+anchor_top = 0.093
+anchor_right = 0.847
+anchor_bottom = 0.893
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("1_xvtxm")
+script = ExtResource("38_mrfv4")
+filenameLabel = NodePath("VBoxContainer/HBoxContainer/FilenameLabel")
+imagePreview = NodePath("VBoxContainer/ImagePreview")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Popups/EmbedPreview"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="Popups/EmbedPreview/VBoxContainer"]
+layout_mode = 2
+
+[node name="FilenameLabel" type="Label" parent="Popups/EmbedPreview/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "bugcord.png"
+
+[node name="DownloadButton" type="Button" parent="Popups/EmbedPreview/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+mouse_default_cursor_shape = 2
+text = "Download"
+
+[node name="Button" type="Button" parent="Popups/EmbedPreview/VBoxContainer/HBoxContainer" node_paths=PackedStringArray("target")]
+custom_minimum_size = Vector2(30, 30)
+layout_mode = 2
+mouse_default_cursor_shape = 2
+text = "X"
+script = ExtResource("15_kgtp7")
+target = NodePath("../../..")
+
+[node name="ImagePreview" type="TextureRect" parent="Popups/EmbedPreview/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+texture = ExtResource("16_h3cnx")
+expand_mode = 1
+stretch_mode = 5
 
 [connection signal="OnConnectedToSpace" from="Bugcord" to="HBoxContainer/ChatMain/VBoxContainer/HBoxContainer2/SpaceView" method="UpdateSpaceInfo"]
 [connection signal="OnConnectedToSpace" from="Bugcord" to="HBoxContainer/ChatMain/VBoxContainer/MessageWindow" method="DisplaySpaceMessages"]
@@ -1031,3 +1070,5 @@ size_flags_horizontal = 3
 [connection signal="pressed" from="Popups/SpaceInviter/VBoxContainer/HBoxContainer/Close" to="Popups/SpaceInviter/VBoxContainer/HBoxContainer/Close" method="SetInvisible"]
 [connection signal="pressed" from="Popups/GenericPopup/VBoxContainer/Button" to="Popups/GenericPopup" method="DisplayNext"]
 [connection signal="pressed" from="Popups/GenericPopup/VBoxContainer/Button" to="Popups/GenericPopup/VBoxContainer/Button" method="SetInvisible"]
+[connection signal="pressed" from="Popups/EmbedPreview/VBoxContainer/HBoxContainer/DownloadButton" to="Popups/EmbedPreview" method="Download"]
+[connection signal="pressed" from="Popups/EmbedPreview/VBoxContainer/HBoxContainer/Button" to="Popups/EmbedPreview/VBoxContainer/HBoxContainer/Button" method="SetInvisible"]
