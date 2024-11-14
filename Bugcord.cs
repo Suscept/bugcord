@@ -75,6 +75,7 @@ public partial class Bugcord : Node
     {
         if (what == NotificationWMCloseRequest){
 			packetService.Disconnect();
+			fileService.ClearCache();
 			GetTree().Quit();
 		}
     }
@@ -351,7 +352,7 @@ public partial class Bugcord : Node
 
 		string fileGuid = ReadDataSpan(packet, 2).GetStringFromUtf8();
 		GD.Print("Recieved file request " + fileGuid);
-		if (!fileService.HasServableFile(fileGuid, extension)) // stop if we dont have this file
+		if (!fileService.IsFileServable(fileGuid, extension)) // stop if we dont have this file
 			return;
 
 		byte[][] servePartitions = MakePartitions(fileService.GetServableData(fileGuid, extension), filePacketSize);
