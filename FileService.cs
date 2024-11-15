@@ -1,4 +1,5 @@
 using Godot;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -7,10 +8,13 @@ public partial class FileService : Node
 {
 	[Signal] public delegate void OnCacheChangedEventHandler(string fileId);
 
+	public const string cacheIndexPath = "user://cache/index.json";
+
 	public const string cachePath = "user://cache/";
 	public const string dataServePath = "user://serve/";
 
 	public const ushort packageVersion = 1;
+	public const int cachefileVersion = 0;
 
 	// File ID, CacheFile
 	public Dictionary<string, CacheFile> cacheIndex = new();
@@ -26,7 +30,8 @@ public partial class FileService : Node
 		keyService = GetParent().GetNode<KeyService>("KeyService");
 		requestService = GetParent().GetNode<RequestService>("RequestService");
 
-		LoadCache();
+		LoadCacheFile();
+		LoadCache(); // Index anything that wasn't in the cache
 	}
 
 	// Called every frame. 'delta' is the elapsed time since the previous frame.
@@ -186,6 +191,9 @@ public partial class FileService : Node
 	public void WriteToServableAbsolute(byte[] data, string filename){
 		MakeServePath();
 
+		if (!Buglib.VerifyFilename(filename))
+			return;
+
 		FileAccess serveCopy = FileAccess.Open(dataServePath + filename, FileAccess.ModeFlags.Write);
 		serveCopy.StoreBuffer(data);
 
@@ -221,12 +229,21 @@ public partial class FileService : Node
 	}
 
 	public void WriteToCache(byte[] data, string filename, string guid){
-		if (!DirAccess.DirExistsAbsolute(cachePath)){
-			DirAccess cacheDir = DirAccess.Open("user://");
-			cacheDir.MakeDir("cache");
+		MakeCachePath();
+
+		if (!Buglib.VerifyHexString(guid)){
+			GD.PrintErr("FileService: Found invalid file id while writing to cache");
+			return;
 		}
 
-		string path = cachePath + guid + "." + filename.Split('.')[1];
+		if (!Buglib.VerifyFilename(filename))
+			return;
+
+		string inCacheFilename = guid + "." + filename.Split('.')[1];
+		if (!Buglib.VerifyFilename(inCacheFilename))
+			return;
+
+		string path = cachePath + inCacheFilename;
 
 		GD.Print("Writing to cache " + path);
 
@@ -241,31 +258,73 @@ public partial class FileService : Node
 			filename = filename,
 		};
 		cacheIndex.Add(guid, cacheFile);
+		SaveCacheFile();
 
 		EmitSignal(SignalName.OnCacheChanged, guid);
 	}
 
 	public void ClearCache(){
-		GD.Print("Clearing cache..");
+		GD.Print("FileService: Clearing cache..");
 		foreach (CacheFile file in cacheIndex.Values){
+			if (!FileAccess.FileExists(file.path))
+				continue;
+			
+			GD.Print("- Clearing: " + file.path);
 			DirAccess.RemoveAbsolute(file.path);
 		}
 		cacheIndex.Clear();
 	}
 
-	// Indexes the cache. Since the cache is cleared on shutdown this is mainly to handle unexpected shutdowns
+	public void SaveCacheFile(){
+		GD.Print("FileService: Saving cache index file...");
+
+		MakeCachePath();
+
+		string cacheIndexJson = JsonConvert.SerializeObject(cacheIndex);
+
+		FileAccess cacheFile = FileAccess.Open(cacheIndexPath, FileAccess.ModeFlags.Write);
+		cacheFile.StoreString(cacheIndexJson);
+		cacheFile.Close();
+	}
+
+	public void LoadCacheFile(){
+		GD.Print("FileService: Loading cache index file...");
+
+		if (!FileAccess.FileExists(cacheIndexPath))
+			return;
+
+		FileAccess cacheFile = FileAccess.Open(cacheIndexPath, FileAccess.ModeFlags.Write);
+		string cacheIndexJson = cacheFile.GetAsText();
+		cacheFile.Close();
+
+		Dictionary<string, CacheFile> gotCacheIndex = JsonConvert.DeserializeObject<Dictionary<string, CacheFile>>(cacheIndexJson);
+		if (gotCacheIndex != null)
+			cacheIndex = gotCacheIndex;
+	}
+
+	// Indexes the cache folder. Since the cache is cleared on shutdown this is mainly to handle unexpected shutdowns
 	public void LoadCache(){
 		GD.Print("FileService: Loading cache...");
 
 		string[] filesInCache = DirAccess.GetFilesAt(cachePath);
 		foreach (string file in filesInCache){
-			CacheFile cacheFile = new CacheFile{
-			id = file.Split('.')[0],
-			path = cachePath + file,
-			filename = "unknown." + file.Split('.')[1],
-		};
+			if (!Buglib.VerifyFilename(file))
+				continue;
 
-			cacheIndex.Add(file.Split('.')[0], cacheFile);
+			CacheFile cacheFile = new CacheFile{
+				id = file.Split('.')[0],
+				path = cachePath + file,
+				filename = "unknown." + file.Split('.')[1],
+			};
+
+			cacheIndex.TryAdd(file.Split('.')[0], cacheFile);
+		}
+	}
+
+	public void MakeCachePath(){
+		if (!DirAccess.DirExistsAbsolute(cachePath)){
+			DirAccess cacheDir = DirAccess.Open("user://");
+			cacheDir.MakeDir("cache");
 		}
 	}
 
@@ -297,5 +356,6 @@ public partial class FileService : Node
 		public string id;
 		public string path;
 		public string filename;
+		public int version = cachefileVersion;
 	}
 }
