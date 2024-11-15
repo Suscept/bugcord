@@ -1,5 +1,6 @@
-[gd_scene load_steps=5 format=3 uid="uid://c0hr25wlgd0kt"]
+[gd_scene load_steps=6 format=3 uid="uid://c0hr25wlgd0kt"]
 
+[ext_resource type="Theme" uid="uid://b44gnqmfnkq01" path="res://bugcord_main_theme.tres" id="1_0joqi"]
 [ext_resource type="Script" path="res://MessageUI.cs" id="1_3f5tq"]
 [ext_resource type="Texture2D" uid="uid://6j35bsdb4w8r" path="res://icon.svg" id="1_7dhvk"]
 
@@ -15,6 +16,7 @@ offset_right = 486.67
 offset_bottom = 182.935
 size_flags_horizontal = 3
 size_flags_vertical = 0
+theme = ExtResource("1_0joqi")
 script = ExtResource("1_3f5tq")
 maxHeightFromImage = 150.0
 imageContent = NodePath("VBoxContainer/MarginContainer/HBoxContainer/VBoxContainer/ImageMedia")
@@ -23,7 +25,7 @@ textContent = NodePath("VBoxContainer/MarginContainer/HBoxContainer/VBoxContaine
 usernameLabel = NodePath("VBoxContainer/MarginContainer/HBoxContainer/VBoxContainer/Metadata/Username")
 mediaLoadingProgressLabel = NodePath("VBoxContainer/MarginContainer/HBoxContainer/VBoxContainer/MediaLoadingProgress")
 timestampLabel = NodePath("VBoxContainer/MarginContainer/HBoxContainer/VBoxContainer/Metadata/Timestamp")
-extraOptionsDropdown = NodePath("VBoxContainer/MarginContainer/HBoxContainer/VBoxContainer/Metadata/MenuButton")
+extraOptionsDropdown = NodePath("VBoxContainer/MarginContainer/HBoxContainer/MenuButton")
 jumpToReplyButton = NodePath("VBoxContainer/Reply")
 
 [node name="VBoxContainer" type="VBoxContainer" parent="."]
@@ -74,19 +76,6 @@ text = "today at 12:00pm"
 label_settings = SubResource("LabelSettings_bknj2")
 vertical_alignment = 1
 
-[node name="MenuButton" type="MenuButton" parent="VBoxContainer/MarginContainer/HBoxContainer/VBoxContainer/Metadata"]
-layout_mode = 2
-mouse_default_cursor_shape = 2
-text = "..."
-flat = false
-item_count = 3
-popup/item_0/text = "Reply"
-popup/item_0/id = 0
-popup/item_1/text = "Copy Text"
-popup/item_1/id = 1
-popup/item_2/text = "Delete"
-popup/item_2/id = 2
-
 [node name="TextContent" type="RichTextLabel" parent="VBoxContainer/MarginContainer/HBoxContainer/VBoxContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
@@ -107,5 +96,19 @@ stretch_mode = 4
 layout_mode = 2
 label_settings = SubResource("LabelSettings_r4x21")
 vertical_alignment = 1
+
+[node name="MenuButton" type="MenuButton" parent="VBoxContainer/MarginContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 0
+mouse_default_cursor_shape = 2
+text = "..."
+flat = false
+item_count = 3
+popup/item_0/text = "Reply"
+popup/item_0/id = 0
+popup/item_1/text = "Copy Text"
+popup/item_1/id = 1
+popup/item_2/text = "Delete"
+popup/item_2/id = 2
 
 [connection signal="gui_input" from="VBoxContainer/MarginContainer/HBoxContainer/VBoxContainer/ImageMedia" to="." method="OnImageClicked"]
