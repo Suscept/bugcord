@@ -61,14 +61,11 @@ public partial class MessageUI : MarginContainer
 		timestampLabel.Text = GetTimestampString(message.unixTimestamp);
 		myMessage = message;
 
-		string profilePictureId = peerService.GetPeer(message.senderId).profilePictureId;
-		if (profilePictureId != null){
-			bool cachedNow = fileService.GetFile(profilePictureId, out byte[] data);
-			if (cachedNow){
-				SetProfilePicture();
-			}else{
-				fileService.OnCacheChanged += SetProfilePicture;
-			}
+		bool profileAvailable = peerService.GetProfilePicture(message.senderId, out ImageTexture profileImage);
+		if (profileAvailable){
+			SetProfilePicture(profileImage, message.senderId);
+		}else{
+			peerService.OnProfileImageAvailable += SetProfilePicture;
 		}
 
 		jumpToReplyButton.Visible = replyPreview != null;
@@ -132,20 +129,12 @@ public partial class MessageUI : MarginContainer
 		mediaLoadingProgressLabel.Text = "Loading... " + embedPartsRecieved;
 	}
 
-	public void SetProfilePicture(){
-		string profilePictureId = peerService.GetPeer(myMessage.senderId).profilePictureId;
-		string profilePath = fileService.GetCachePath(profilePictureId);
-		ImageTexture profileTexture = ImageTexture.CreateFromImage(Image.LoadFromFile(profilePath));
-		profilePicture.Texture = profileTexture;
-	}
-
-	public void SetProfilePicture(string fileId){
-		if (peerService.GetPeer(myMessage.senderId).profilePictureId != fileId){
+	public void SetProfilePicture(ImageTexture pfp, string peerId){
+		if (peerId != myMessage.senderId || pfp == null)
 			return;
-		}
-		
-		SetProfilePicture();
-		fileService.OnCacheChanged -= SetProfilePicture;
+
+		peerService.OnProfileImageAvailable -= SetProfilePicture;
+		profilePicture.Texture = pfp;
 	}
 
 	public void OnImageClicked(InputEvent inputEvent){

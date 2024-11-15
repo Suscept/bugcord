@@ -34,17 +34,25 @@ public partial class FileService : Node
 	{
 	}
 
+	public bool GetFile(string id){
+		return GetFile(id, out byte[] data);
+	}
+
 	// Gets a file from serve folder or cache or peer (returns true). If it cannot be found, a request to peers is made and the file can be brought from cache later (returns false).
 	public bool GetFile(string id, out byte[] data){
-		GD.Print("getting file " + id);
+		if (id == null || id == ""){
+			GD.PushError("Null file request!");
+		}
+
+		GD.Print("Getting file: " + id);
 		if (IsFileInCache(id)){
-			GD.Print("Getting from cache");
+			GD.Print("- Getting from cache");
 			data = GetCacheData(id);
 			return true;
 		}
 
 		if (IsFileServable(id)){
-			GD.Print("Getting from package");
+			GD.Print("- Getting from package");
 			bool success = UnpackageFile(GetServableData(id), out byte[] fileData, out string filename);
 			if (success)
 				WriteToCache(fileData, filename, id);
@@ -52,7 +60,7 @@ public partial class FileService : Node
 			return success;
 		}
 
-		GD.Print("Getting from network");
+		GD.Print("- Getting from network");
 		requestService.Request(id, RequestService.FileExtension.MediaFile, RequestService.VerifyMethod.HashCheck);
 		// bugcord.Send(bugcord.BuildFileRequest(id)); // Request file from peers
 

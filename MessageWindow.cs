@@ -71,7 +71,7 @@ public partial class MessageWindow : Control
 		newMessage.Initiate(message, replyPreview, fileService, peerService);
 		messageContainer.AddChild(newMessage);
 
-		if (message.embedId != null){
+		if (message.embedId != null && message.embedId != ""){
 			bool gotImmedietly = fileService.GetFile(message.embedId, out byte[] data);
 
 			if (gotImmedietly){ // File is in the cache right now. No waiting needed

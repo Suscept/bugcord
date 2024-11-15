@@ -4,19 +4,29 @@ using System.Collections.Generic;
 
 public partial class PeerService : Node
 {
+	[Signal] public delegate void OnProfileImageAvailableEventHandler(ImageTexture profile, string peerId);
+
 	// Peer id, Peer Data
 	public Dictionary<string, Peer> peers = new();
 
 	public const string clientPeerPath = "user://peers.json";
 
+	// FileId, PeerId
+	private Dictionary<string, string> awaitingProfilePictures = new();
+
+	// PeerId, Image
+	private Dictionary<string, ImageTexture> peerProfileImages = new();
+
 	private KeyService keyService;
 	private UserService userService;
+	private FileService fileService;
 
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
 	{
 		keyService = GetParent().GetNode<KeyService>("KeyService");
 		userService = GetParent().GetNode<UserService>("UserService");
+		fileService = GetParent().GetNode<FileService>("FileService");
 	}
 
 	// Called every frame. 'delta' is the elapsed time since the previous frame.
@@ -110,6 +120,45 @@ public partial class PeerService : Node
 			keyService.peerKeys.Add((string)peer.Key, Bugcord.FromBase64((string)peerDict["rsapublickey"]));
 		}
 		userPeers.Close();
+	}
+
+	/// <summary>
+	/// Gets the peer's profile picture.
+	/// </summary>
+	/// <param name="peerId">The peer's id</param>
+	/// <param name="profileImage">OUT: The peer's profile picture</param>
+	/// <param name="fileId">The file id to wait for if the file needs to be pulled from the network. Null if the peer doesnt have a profile picture</param>
+	/// <returns>If the image is available now</returns>
+	public bool GetProfilePicture(string peerId, out ImageTexture profileImage){
+		string imageId = peers[peerId].profilePictureId;
+		if (imageId == null){
+			profileImage = null;
+			return true;
+		}
+
+		if (!peerProfileImages.ContainsKey(peerId)){
+			bool cachedNow = fileService.GetFile(imageId);
+			if (cachedNow){
+				string path = fileService.GetCachePath(imageId);
+				peerProfileImages.Add(peerId, ImageTexture.CreateFromImage(Image.LoadFromFile(path)));
+			}else{
+				awaitingProfilePictures.Add(imageId, peerId);
+
+				profileImage = null;
+				return false; // Image isnt ready yet :(
+			}
+		}
+
+		profileImage = peerProfileImages[peerId];
+		return true;
+	}
+
+	public void OnCacheChanged(string fileId){
+		if (!awaitingProfilePictures.ContainsKey(fileId))
+			return;
+
+		GetProfilePicture(awaitingProfilePictures[fileId], out ImageTexture profileImage);
+		EmitSignal(SignalName.OnProfileImageAvailable, profileImage, awaitingProfilePictures[fileId]);
 	}
 
 	public class Peer{
