@@ -6,6 +6,7 @@ using System.Text;
 public partial class Buglib : Node
 {
 	private static readonly char[] hexChars = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
+	private static readonly string[] disallowedFilenames = {"index.json"};
 
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
@@ -15,6 +16,22 @@ public partial class Buglib : Node
 	// Called every frame. 'delta' is the elapsed time since the previous frame.
 	public override void _Process(double delta)
 	{
+	}
+
+	/// <summary>
+	/// Validates if the provided filename can be safely saved to disk
+	/// </summary>
+	/// <returns>True if the filename is allowed</returns>
+	public static bool VerifyFilename(string filename){
+		if (!filename.IsValidFileName())
+			return false;
+
+		foreach (string notAllowedName in disallowedFilenames){
+			if (filename == notAllowedName)
+				return false;
+		}
+
+		return true;
 	}
 
 	// String conversion from https://stackoverflow.com/a/17001289
