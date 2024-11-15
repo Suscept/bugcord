@@ -31,13 +31,15 @@ public partial class Buglib : Node
 	// Returns true if the provided string is a valid hex string
 	// Can be used to verify all hash-based id's across bugcord. Basically, if this function returns false than it's not a hash based id.
 	public static bool VerifyHexString(string hex){
-		if (hex.Length % 2 != 0)
+		string lowerHex = hex.ToLower();
+
+		if (lowerHex.Length % 2 != 0)
 			return false; // String must be even
 		
-		for (int i = 0; i < hex.Length; i++){
+		for (int i = 0; i < lowerHex.Length; i++){
 			bool found = false;
 			for (int c = 0; c < hexChars.Length; c++){
-				if (hex[i] == hexChars[c]){
+				if (lowerHex[i] == hexChars[c]){
 					found = true;
 					break;
 				}
