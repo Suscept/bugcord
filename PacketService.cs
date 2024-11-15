@@ -16,6 +16,15 @@ public partial class PacketService : Node
 
 	public StreamPeerTcp.Status currentState;
 
+	public enum PacketType{
+		Message = 0,
+		Identify = 1,
+		KeyPackage = 4,
+		FileRequest = 6,
+		FilePacket = 7,
+		SpaceUpdate = 9,
+	}
+
 	private StreamPeerTcp tcpClient = new StreamPeerTcp();
 
 	private StreamPeerTcp.Status previousState;

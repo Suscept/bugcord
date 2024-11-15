@@ -278,27 +278,28 @@ public partial class Bugcord : Node
 	#region packet processors
 
 	public void ProcessIncomingPacket(PacketService.Packet packet, bool fromEventChain){
-		byte type = packet.data[0];
-		GD.Print("Recieved packet. Type: " + type);
+		byte typeNum = packet.data[0];
+		PacketService.PacketType type = (PacketService.PacketType)typeNum;
+		GD.Print("Recieved packet. Type: " + typeNum + ", " + type.ToString());
 
 		switch (type){
-			case 0:
+			case PacketService.PacketType.Message:
 				ProcessMessagePacket(packet, fromEventChain);
 				break;
-			case 1:
+			case PacketService.PacketType.Identify:
 				ProcessIdentify(packet.data);
 				break;
-			case 4:
+			case PacketService.PacketType.KeyPackage:
 				ProcessKeyPackage(packet.data);
 				break;
-			case 6:
+			case PacketService.PacketType.FileRequest:
 				ProcessFileRequest(packet.data);
 				break;
-			case 7:
+			case PacketService.PacketType.FilePacket:
 				requestService.ProcessRequestResponse(packet.data);
 				// ProcessFilePacket(packet.data);
 				break;
-			case 9:
+			case PacketService.PacketType.SpaceUpdate:
 				ProcessSpaceUpdatePacket(packet);
 				break;
 		}
