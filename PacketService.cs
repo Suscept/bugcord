@@ -5,9 +5,11 @@ using System.Collections.Generic;
 // Handles everything going through TCP
 public partial class PacketService : Node
 {
+	public const ushort packetVersion = 0;
+	public const int defaultPort = 25987;
+
 	[Signal] public delegate void OnConnectedEventHandler();
 
-	public const int defaultPort = 25987;
 	[Export] public int packetsSentPerFrame = 1;
 	[Export] public int packetsProcessedPerFrame = 10;
 
@@ -117,10 +119,9 @@ public partial class PacketService : Node
 	}
 
 	public byte[] PackagePacket(byte[] data){
-		List<byte> packetBytes = new List<byte>{
-			0, // Version
-			0, // Version
-		};
+		List<byte> packetBytes = new List<byte>();
+
+		packetBytes.AddRange(BitConverter.GetBytes(packetVersion));
 
 		byte[] checksum = Bugcord.GetChecksum(data);
 		ushort packetLength = (ushort)data.Length;
@@ -138,7 +139,7 @@ public partial class PacketService : Node
 			return false;
 		}
 
-		int version = BitConverter.ToInt16(data, 0);
+		ushort version = BitConverter.ToUInt16(data, 0);
 		short checksum = BitConverter.ToInt16(data, 2);
 		ushort length = BitConverter.ToUInt16(data, 4);
 
