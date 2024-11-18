@@ -48,6 +48,7 @@ public partial class PopupAlert : MarginContainer
 		confirmButton.Text = alert.buttonText;
 
 		subtextSeperator.Visible = alert.subText.Length > 0;
+		subtextLabel.Visible = alert.subText.Length > 0;
 
 		alertQueue.RemoveAt(0);
 		displayingAlert = true;

@@ -889,9 +889,9 @@ size_flags_horizontal = 3
 [node name="GenericPopup" type="MarginContainer" parent="Popups" node_paths=PackedStringArray("titleLabel", "extraTitleLabel", "subtextLabel", "subtextSeperator", "confirmButton")]
 visible = false
 custom_minimum_size = Vector2(174.07, 0)
-offset_left = 532.0
+offset_left = 340.0
 offset_top = 273.0
-offset_right = 706.07
+offset_right = 807.0
 offset_bottom = 347.0
 script = ExtResource("18_axqsm")
 titleLabel = NodePath("VBoxContainer/HBoxContainer/Title")
@@ -945,7 +945,9 @@ selection_enabled = true
 layout_mode = 2
 
 [node name="Button" type="Button" parent="Popups/GenericPopup/VBoxContainer"]
+custom_minimum_size = Vector2(100, 0)
 layout_mode = 2
+size_flags_horizontal = 4
 mouse_default_cursor_shape = 2
 text = "Okay"
 
