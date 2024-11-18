@@ -72,15 +72,15 @@ public partial class Buglib : Node
     {
         Testinger gubehbs = new()
         {
-            gubgub = "queef"
+            gubgub = "bugcordee"
         };
 
 		Godot.Collections.Dictionary keyValuePairs = ToGodotDict(gubehbs);
-        GD.Print(Json.Stringify(keyValuePairs));
+        // GD.Print(Json.Stringify(keyValuePairs));
 
 		Testinger gorbag = new();
 
-		GD.Print(FromGodotDict<Testinger>(keyValuePairs, gorbag).gubgub);
+		// GD.Print(FromGodotDict<Testinger>(keyValuePairs, gorbag).gubgub);
     }
 
 	public class Testinger{
