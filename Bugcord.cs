@@ -280,7 +280,12 @@ public partial class Bugcord : Node
 	public void ProcessIncomingPacket(PacketService.Packet packet, bool fromEventChain){
 		byte typeNum = packet.data[0];
 		PacketService.PacketType type = (PacketService.PacketType)typeNum;
-		GD.Print("Recieved packet. Type: " + typeNum + ", " + type.ToString());
+
+		if (fromEventChain){
+			GD.Print("Loaded packet from event chain. Type: " + typeNum + ", " + type.ToString());
+		}else{
+			GD.Print("Recieved packet. Type: " + typeNum + ", " + type.ToString());
+		}
 
 		switch (type){
 			case PacketService.PacketType.Message:
