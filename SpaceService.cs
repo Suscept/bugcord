@@ -97,7 +97,6 @@ public partial class SpaceService : Node
 
 		spaces.Add(space.id, space);
 		keyUsage.Add(space.keyId, space.id);
-		databaseService.AddSpaceTable(space.id);
 
 		spaceDisplay.Update(spaces);
 		SaveToFile();
@@ -228,7 +227,6 @@ public partial class SpaceService : Node
             };
 			spaces.Add((string)entry.Key, entryData);
 			keyUsage.Add(entryData.keyId, (string)entry.Key);
-			databaseService.AddSpaceTable((string)entry.Key);
 		}
 		userSpaces.Close();
 
