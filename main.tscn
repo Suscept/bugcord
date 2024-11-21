@@ -1,4 +1,4 @@
-[gd_scene load_steps=41 format=3 uid="uid://b4h65lw1u6cii"]
+[gd_scene load_steps=43 format=3 uid="uid://b4h65lw1u6cii"]
 
 [ext_resource type="Script" path="res://Bugcord.cs" id="1_jyk1e"]
 [ext_resource type="PackedScene" uid="uid://c0hr25wlgd0kt" path="res://message.tscn" id="1_ki7uw"]
@@ -27,6 +27,8 @@
 [ext_resource type="Script" path="res://SpaceInviter.cs" id="11_cskni"]
 [ext_resource type="PackedScene" uid="uid://bl2sn6odt10ns" path="res://invite_option.tscn" id="12_qp5d4"]
 [ext_resource type="Script" path="res://VoiceChatUi.cs" id="13_2dfxp"]
+[ext_resource type="Script" path="res://NotificationService.cs" id="13_q72q7"]
+[ext_resource type="AudioStream" uid="uid://pif0jaxgao10" path="res://Audio/select_005.ogg" id="14_aeob5"]
 [ext_resource type="Script" path="res://AlertPanel.cs" id="14_gf605"]
 [ext_resource type="Script" path="res://SettingsPanel.cs" id="15_3b65x"]
 [ext_resource type="PackedScene" uid="uid://xbjljk2f0tqf" path="res://alert_message.tscn" id="15_jvka1"]
@@ -108,6 +110,12 @@ script = ExtResource("10_j452y")
 
 [node name="RequestService" type="Node" parent="Bugcord"]
 script = ExtResource("11_3nbsk")
+
+[node name="NotificationService" type="Node" parent="Bugcord"]
+script = ExtResource("13_q72q7")
+singleNotificationSound = ExtResource("14_aeob5")
+
+[node name="NotificationPlayer" type="AudioStreamPlayer" parent="Bugcord/NotificationService"]
 
 [node name="HBoxContainer" type="HBoxContainer" parent="."]
 layout_mode = 1

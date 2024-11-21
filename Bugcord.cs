@@ -43,6 +43,7 @@ public partial class Bugcord : Node
 	private StreamService streamService;
 	private EventChainService eventChainService;
 	private RequestService requestService;
+	private NotificationService notificationService;
 
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
@@ -59,6 +60,7 @@ public partial class Bugcord : Node
 		streamService = GetNode<StreamService>("StreamService");
 		eventChainService = GetNode<EventChainService>("EventChainService");
 		requestService = GetNode<RequestService>("RequestService");
+		notificationService = GetNode<NotificationService>("NotificationService");
 		alertService = GetNode<PopupAlert>("/root/Main/Popups/GenericPopup");
 
 		if (!LogIn()){
@@ -414,10 +416,14 @@ public partial class Bugcord : Node
 
 		byte[][] decryptedSpans = ReadDataSpans(decryptedSection, 0);
 		string senderGuid = decryptedSpans[0].GetStringFromUtf8();
-		MessageComponentFlags messageFlags = (MessageComponentFlags)BitConverter.ToUInt16(decryptedSpans[1]);
+
+		if (!fromEventChain)
+			notificationService.ProcessNotificationPacket(decryptedSpans[1]);
+
+		MessageComponentFlags messageFlags = (MessageComponentFlags)BitConverter.ToUInt16(decryptedSpans[2]);
 
 		// Read all components of the message based off of present flags
-		int readingSpan = 2;
+		int readingSpan = 3;
 		string messageText = null;
 		string embedId = null;
 		string replyingTo = null;
@@ -558,7 +564,16 @@ public partial class Bugcord : Node
 			messageFlags |= MessageComponentFlags.FileEmbed; // Set embed
 
 		List<byte> sectionToEncrypt = new List<byte>();
+
 		sectionToEncrypt.AddRange(MakeDataSpan(userService.userId.ToUtf8Buffer())); // Sender id
+
+		// Notifications
+		List<string> peersToNotify = new List<string>();
+		foreach (PeerService.Peer peer in spaceService.spaces[selectedSpaceId].members){
+			peersToNotify.Add(peer.id);
+		}
+		sectionToEncrypt.AddRange(MakeDataSpan(notificationService.BuildNotificationPacket(NotificationService.NotificationType.Single, peersToNotify)));
+		
 		sectionToEncrypt.AddRange(MakeDataSpan(BitConverter.GetBytes((ushort)messageFlags))); // Message flags
 		if (text != null)
 			sectionToEncrypt.AddRange(MakeDataSpan(text.ToUtf8Buffer()));
