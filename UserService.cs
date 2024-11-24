@@ -18,7 +18,6 @@ public partial class UserService : Node
 	public string customServicePath;
 
 	public const string clientSavePath = "user://client.data";
-	public const string defaultServerIp = "75.71.255.149:25987";
 
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
@@ -33,8 +32,6 @@ public partial class UserService : Node
 	public void MakeNewUser(string username, string password){
 		userId = Guid.NewGuid().ToString();
 		userName = username;
-		savedServerIp = defaultServerIp;
-		autoConnectToServer = false;
 	}
 
 	public void SaveToFile(){
