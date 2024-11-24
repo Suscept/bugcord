@@ -12,6 +12,10 @@ public partial class UserService : Node
 	public string savedServerIp;
 	public string profilePictureFileId;
 	public bool autoConnectToServer;
+	public bool identifySelf = true; // Controls if the client will automatically send an identifying packet to the network
+	public bool allowService = true; // If false, the client will not store data for others. Keep true plz
+	public int serviceAllowance = 5000; // The amount in megabytes to use for providing service to other peers.
+	public string customServicePath;
 
 	public const string clientSavePath = "user://client.data";
 	public const string defaultServerIp = "75.71.255.149:25987";
@@ -40,6 +44,10 @@ public partial class UserService : Node
 			{"defaultConnectServer", savedServerIp},
 			{"autoConnectToServer", autoConnectToServer},
 			{"profilePictureFileId", profilePictureFileId},
+			{"identifySelf", identifySelf},
+			{"allowService", allowService},
+			{"serviceAllowance", serviceAllowance},
+			{"customServicePath", customServicePath},
 		};
 
 		FileAccess userFile = FileAccess.Open(clientSavePath, FileAccess.ModeFlags.Write);
@@ -63,5 +71,15 @@ public partial class UserService : Node
 			profilePictureFileId = (string)userDict["profilePictureFileId"];
 		
 		autoConnectToServer = (bool)userDict["autoConnectToServer"];
+
+		if (userDict.ContainsKey("identifySelf"))
+			identifySelf = (bool)userDict["identifySelf"];
+
+		if (userDict.ContainsKey("allowService"))
+			allowService = (bool)userDict["allowService"];
+		if (userDict.ContainsKey("serviceAllowance"))
+			serviceAllowance = (int)userDict["serviceAllowance"];
+		if (userDict.ContainsKey("customServicePath"))
+			customServicePath = (string)userDict["customServicePath"];
 	}
 }

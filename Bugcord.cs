@@ -593,6 +593,9 @@ public partial class Bugcord : Node
 	}
 
 	private byte[] BuildIdentifyingPacket(){
+		if (!userService.identifySelf)
+			return System.Array.Empty<byte>();
+
 		List<byte> packetBytes = new List<byte>{
 			1
 		};
