@@ -19,9 +19,9 @@ public partial class RequestService : Node
 
 	public enum VerifyMethod
 	{
-		HashCheck,
-		Consensus,
-		None,
+		HashCheck,			// If the file's id is the same as it's hash
+		Consensus,			// Multiple reputable peers return the same thing
+		None,				// Nothing. Use the first result
 	}
 
 	public enum FileExtension{
