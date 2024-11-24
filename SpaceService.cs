@@ -191,7 +191,7 @@ public partial class SpaceService : Node
 			if (spaceInfo.ContainsKey("members")){
 				Godot.Collections.Array membersJson = (Godot.Collections.Array)spaceInfo["members"];
 				foreach (string memberId in membersJson){
-					members.Add(peerService.peers[memberId]);
+					members.Add(peerService.GetPeer(memberId));
 				}
 			}else{
 				members.Add(peerService.GetLocalPeer());
@@ -200,7 +200,7 @@ public partial class SpaceService : Node
 			Godot.Collections.Array authoritiesJson = (Godot.Collections.Array)spaceInfo["authorities"];
 			List<PeerService.Peer> authorities = new List<PeerService.Peer>();
 			foreach (string authorityId in authoritiesJson){
-				authorities.Add(peerService.peers[authorityId]);
+				authorities.Add(peerService.GetPeer(authorityId));
 			}
 
 			PeerService.Peer spaceOwner = peerService.GetPeer((string)spaceInfo["owner"]);
@@ -221,7 +221,7 @@ public partial class SpaceService : Node
                 id = (string)entry.Key,
                 keyId = (string)spaceInfo["keyId"],
                 name = (string)spaceInfo["name"],
-				owner = peerService.peers[(string)spaceInfo["owner"]],
+				owner = peerService.GetPeer((string)spaceInfo["owner"]),
 				authorities = authorities,
 				members = members
             };

@@ -63,7 +63,7 @@ public partial class MessageWindow : Control
 		string replyPreview = null;
 		if (message.replyingTo != null && displayingMessages.ContainsKey(message.replyingTo)){
 			DatabaseService.Message replyingToMessage = displayingMessages[message.replyingTo];
-			replyPreview = peerService.peers[replyingToMessage.senderId].username;
+			replyPreview = peerService.GetPeer(replyingToMessage.senderId).username;
 			replyPreview += ": " + replyingToMessage.content;
 		}
 

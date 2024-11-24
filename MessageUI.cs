@@ -57,7 +57,7 @@ public partial class MessageUI : MarginContainer
 		fileService = setFileService;
 		peerService = setPeerService;
 
-		usernameLabel.Text = peerService.peers[message.senderId].username;
+		usernameLabel.Text = peerService.GetPeer(message.senderId).username;
 		timestampLabel.Text = GetTimestampString(message.unixTimestamp);
 		myMessage = message;
 

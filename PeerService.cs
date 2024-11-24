@@ -35,7 +35,6 @@ public partial class PeerService : Node
 	}
 
 	public Peer GetLocalPeer(){
-		return peers[userService.userId];
 	}
 
 	public Peer GetPeer(string peerId){

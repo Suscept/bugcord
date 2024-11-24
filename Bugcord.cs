@@ -87,7 +87,7 @@ public partial class Bugcord : Node
 	public void DisplayMessage(DatabaseService.Message message){
 		Dictionary messageDict = new Dictionary
 		{
-			{"sender", peerService.peers[message.senderId].username}
+			{"sender", peerService.GetPeer(message.senderId).username}
 		};
 
 		if (message.content != null){
@@ -329,20 +329,20 @@ public partial class Bugcord : Node
 		string spaceName = dataSpans[1].GetStringFromUtf8();
 		string keyId = dataSpans[2].GetStringFromUtf8();
 		string ownerId = dataSpans[3].GetStringFromUtf8();
-		PeerService.Peer owner = peerService.peers[ownerId];
+		PeerService.Peer owner = peerService.GetPeer(ownerId);
 
 		int memberOffset = 4;
 		List<PeerService.Peer> authorities = new List<PeerService.Peer>();
 		for (int i = 0; i < authorityCount; i++){
 			string authorityId = dataSpans[memberOffset].GetStringFromUtf8();
-			authorities.Add(peerService.peers[authorityId]);
+			authorities.Add(peerService.GetPeer(authorityId));
 			memberOffset++;
 		}
 
 		List<PeerService.Peer> members = new List<PeerService.Peer>();
 		for (int i = 0; i < memberCount; i++){
 			string memberId = dataSpans[memberOffset].GetStringFromUtf8();
-			authorities.Add(peerService.peers[memberId]);
+			authorities.Add(peerService.GetPeer(memberId));
 			memberOffset++;
 		}
 

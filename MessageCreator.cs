@@ -66,7 +66,7 @@ public partial class MessageCreator : MarginContainer
 		replyingToMessage = message.id;
 		replyModel.Visible = true;
 
-		string replyPreviewText = peerService.peers[message.senderId].username;
+		string replyPreviewText = peerService.GetPeer(message.senderId).username;
 		replyPreviewText += ": " + message.content;
 		replyPreview.Text = replyPreviewText;
 	}
