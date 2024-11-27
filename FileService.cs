@@ -305,6 +305,10 @@ public partial class FileService : Node
 	// Indexes the cache folder. Since the cache is cleared on shutdown this is mainly to handle unexpected shutdowns
 	public void LoadCache(){
 		GD.Print("FileService: Loading cache...");
+		if (!DirAccess.DirExistsAbsolute(cachePath)){
+			GD.Print("- No cache to load from.");
+			return;
+		}
 
 		string[] filesInCache = DirAccess.GetFilesAt(cachePath);
 		foreach (string file in filesInCache){
