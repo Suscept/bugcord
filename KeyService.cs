@@ -175,6 +175,11 @@ public partial class KeyService : Node
 		return true;
 	}
 
+	/// <summary>
+	/// Signs a section of data using the currently logged in user's key.
+	/// </summary>
+	/// <param name="data">The data to sign.</param>
+	/// <returns>An array of length 32 containing the signiture for this data.</returns>
 	public byte[] SignData(byte[] data){
 		byte[] signature = userAuthentication.SignData(data, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
 		return signature;
