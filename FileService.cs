@@ -45,8 +45,12 @@ public partial class FileService : Node
 
 	// Gets a file from serve folder or cache or peer (returns true). If it cannot be found, a request to peers is made and the file can be brought from cache later (returns false).
 	public bool GetFile(string id, out byte[] data){
-		if (id == null || id == ""){
+		if (id == null){
 			GD.PushError("Null file request!");
+		}
+
+		if (id == ""){
+			GD.PushError("Empty file request!");
 		}
 
 		GD.Print("Getting file: " + id);
