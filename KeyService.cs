@@ -179,13 +179,13 @@ public partial class KeyService : Node
 	/// Signs a section of data using the currently logged in user's key.
 	/// </summary>
 	/// <param name="data">The data to sign.</param>
-	/// <returns>An array of length 32 containing the signiture for this data.</returns>
+	/// <returns>An array of length 256 containing the signiture for this data.</returns>
 	public byte[] SignData(byte[] data){
 		byte[] signature = userAuthentication.SignData(data, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
 		return signature;
 	}
 
-	public static bool VerifySigniture(byte[] data, byte[] signature, byte[] signeeKey){
+	public static bool VerifySignature(byte[] data, byte[] signature, byte[] signeeKey){
 		RSA signetureVerifier = RSA.Create();
 		signetureVerifier.ImportRSAPublicKey(signeeKey, out int bytesRead);
 		
