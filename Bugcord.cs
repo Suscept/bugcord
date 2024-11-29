@@ -227,6 +227,7 @@ public partial class Bugcord : Node
 		keyService.AuthSaveToFile();
 
 		LogIn();
+		alertService.NewAlert("Welcome to Bugcord!", "Thank you for downloading Bugcord! Here's what you need to do to get chatting\n.1 Connect to a relay server. On the top left, enter the url or ip address to a relay server.\n.2 Create or join a space. Underneath where you enter a relay server, you may create your own space. Or have a friend invite to their own and the space will show up automatically.\n3. Get chatting! But for free, for real.", "Get chatting");
 	}
 
 	public string GetClientId(){
