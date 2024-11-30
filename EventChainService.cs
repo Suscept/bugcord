@@ -114,7 +114,7 @@ public partial class EventChainService : Node
 		if (tryGetNextChain && nextChain != null){
 			LoadEventChain(nextChain);
 		}
-		
+
 		if (processEvents){
 			int endOffset = 0;
 			if (isFinishedChain)
