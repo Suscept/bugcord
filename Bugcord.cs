@@ -63,7 +63,7 @@ public partial class Bugcord : Node
 		notificationService = GetNode<NotificationService>("NotificationService");
 		alertService = GetNode<PopupAlert>("/root/Main/Popups/GenericPopup");
 
-		if (!LogIn()){
+		if (!TryLogIn()){
 			registerWindow.Visible = true;
 		}
 	}
@@ -191,18 +191,13 @@ public partial class Bugcord : Node
 	#region user file related
 
 	public bool LogIn(){
-		if (!FileAccess.FileExists(UserService.clientSavePath)){
-			return false;
-		}
-
-		userService.LoadFromFile();
-
 		// User RSA key
 		if (!keyService.AuthLoadFromFile()){
 			return false;
 		}
 
-		peerService.LoadFromFile();
+		userService.LoadFromPeer(peerService.GetPeer(userService.userId));
+		userService.LoadFromFile();
 
 	 	spaceService.LoadFromFile();
 
@@ -217,14 +212,44 @@ public partial class Bugcord : Node
 		return true;
 	}
 
+	public bool TryLogIn(){
+		// User RSA key
+		if (!keyService.AuthLoadFromFile()){
+			return false; // It's currently not possible to log in without the private key file being on disk
+		}
+
+		return TryLogIn(keyService.GetUserIdFromAuth(), null);
+	}
+
+	public bool TryLogIn(string userId, string password){
+		userService.userId = userId;
+
+		// User RSA key
+		if (!keyService.AuthLoadFromFile()){
+			return false; // It's currently not possible to log in without the private key file being on disk
+		}
+
+		if (!fileService.IsFileServable(userId, RequestService.FileExtension.PeerData)){
+			requestService.Request(userId, RequestService.FileExtension.PeerData, RequestService.VerifyMethod.NewestSignature, TryContinueLogin);
+			requestService.OnRequestSuccess += TryContinueLogin;
+			return false;
+		}
+
+		return LogIn();
+	}
+
+	public void TryContinueLogin(string requestId){
+		LogIn();
+	}
+
 	public void CreateUserFile(string username, string password){
 		GD.Print("Creating new user.. " + username);
 
-		userService.MakeNewUser(username, password);
-		userService.SaveToFile();
-
 		keyService.NewUserAuth();
 		keyService.AuthSaveToFile();
+
+		userService.MakeNewUser(username, password);
+		userService.SaveToFile();
 
 		LogIn();
 		alertService.NewAlert("Welcome to Bugcord!", "Thank you for downloading Bugcord! Here's what you need to do to get chatting\n.1 Connect to a relay server. On the top left, enter the url or ip address to a relay server.\n.2 Create or join a space. Underneath where you enter a relay server, you may create your own space. Or have a friend invite to their own and the space will show up automatically.\n3. Get chatting! But for free, for real.", "Get chatting");
@@ -361,10 +386,12 @@ public partial class Bugcord : Node
 
 		string fileGuid = ReadDataSpan(packet, 2).GetStringFromUtf8();
 		GD.Print("Recieved file request " + fileGuid);
-		if (!fileService.IsFileServable(fileGuid, extension)) // stop if we dont have this file
+
+		byte[] fileData = fileService.GetServableData(fileGuid, extension, out bool success);
+		if (!success)
 			return;
 
-		byte[][] servePartitions = MakePartitions(fileService.GetServableData(fileGuid, extension), filePacketSize);
+		byte[][] servePartitions = MakePartitions(fileData, filePacketSize);
 		for(int i = 0; i < servePartitions.Length; i++){
 			packetService.SendPacket(BuildFilePacket(fileGuid, i, servePartitions.Length, servePartitions[i], packet[1]));
 		}
@@ -396,9 +423,12 @@ public partial class Bugcord : Node
 			profilePictureId = packetDataSpans[3].GetStringFromUtf8();
 		}
 
-		if (peerService.AddPeer(guid, username, key, profilePictureId)){
+		if (!peerService.peers.ContainsKey(guid))
 			Send(BuildIdentifyingPacket());
-		}
+
+		// if (peerService.AddPeer(guid, username, key, profilePictureId)){
+		// 	Send(BuildIdentifyingPacket());
+		// }
 	}
 
 	private void ProcessMessagePacket(PacketService.Packet packet, bool fromEventChain){
@@ -605,7 +635,7 @@ public partial class Bugcord : Node
 		byte[] username = userService.userName.ToUtf8Buffer();
 		byte[] guid = userService.userId.ToUtf8Buffer();
 		byte[] profilePicture = "null".ToUtf8Buffer();
-		if (userService.profilePictureFileId != null){
+		if (userService.profilePictureFileId != null && userService.profilePictureFileId.Length > 0){
 			profilePicture = userService.profilePictureFileId.ToUtf8Buffer();
 		}
 		
@@ -670,6 +700,12 @@ public partial class Bugcord : Node
 		return spans.ToArray();
 	}
 
+	/// <summary>
+	/// Reads all data after a specified index.
+	/// </summary>
+	/// <param name="data"></param>
+	/// <param name="startIndex"></param>
+	/// <returns></returns>
 	public static byte[] ReadLengthInfinetly(byte[] data, int startIndex){
 		int length = data.Length - startIndex;
 

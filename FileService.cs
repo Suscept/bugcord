@@ -176,11 +176,28 @@ public partial class FileService : Node
 	}
 
 	public byte[] GetServableData(string guid){
-		return GetServableData(guid, RequestService.FileExtension.MediaFile);
+		return GetServableData(guid, RequestService.FileExtension.MediaFile, out bool success);
 	}
 
 	public byte[] GetServableData(string guid, RequestService.FileExtension extension){
-		FileAccess file = FileAccess.Open(dataServePath + guid + RequestService.GetFileExtensionString(extension), FileAccess.ModeFlags.Read);
+		return GetServableData(guid, extension, out bool success);
+	}
+
+	public byte[] GetServableData(string guid, RequestService.FileExtension extension, out bool success){
+		string path = dataServePath + guid + RequestService.GetFileExtensionString(extension);
+		
+		if (!FileAccess.FileExists(path)){
+			success = false;
+			return Array.Empty<byte>();
+		}
+
+		FileAccess file = FileAccess.Open(path, FileAccess.ModeFlags.Read);
+		if (file == null){
+			success = false;
+			return Array.Empty<byte>();
+		}
+
+		success = true;
 		return file.GetBuffer((long)file.GetLength());
 	}
 

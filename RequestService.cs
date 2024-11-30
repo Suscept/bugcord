@@ -24,6 +24,7 @@ public partial class RequestService : Node
 		HashCheck,			// If the file's id is the same as it's hash
 		Consensus,			// Multiple reputable peers return the same thing
 		None,				// Nothing. Use the first result
+		NewestSignature,	// Whichever result is the newest and signed by it's owner
 	}
 
 	public enum FileExtension{
@@ -74,7 +75,7 @@ public partial class RequestService : Node
 	public void Request(string id, FileExtension extension, VerifyMethod verifyMethod, float timeout, Action<string> subscription){
 		GD.Print("Requesting file: " + id);
 		if (activeRequests.ContainsKey(id)){
-			GD.Print("Request already exists");
+			GD.Print("- Request already exists");
 			return;
 		}
 
@@ -100,6 +101,8 @@ public partial class RequestService : Node
 			subscriptions[id].Add(subscription);
 			GD.Print("- Subscription added");
 		}
+
+		GD.Print("- Request created");
 	}
 
 	public void ProcessRequestResponse(byte[] packet){

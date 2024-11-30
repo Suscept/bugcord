@@ -6,8 +6,6 @@ using System.Text;
 
 public partial class KeyService : Node
 {
-	// PeerId, RSAKey
-	public Dictionary<string, byte[]> peerKeys = new();
 	// KeyId, AESKey
 	public Dictionary<string, byte[]> myKeys = new();
 	private RSA userAuthentication;
@@ -19,11 +17,13 @@ public partial class KeyService : Node
 	public const string oldKnownKeysPath = "user://keys.auth";
 
 	private SpaceService spaceService;
+	private PeerService peerService;
 
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
 	{
 		spaceService = GetParent().GetNode<SpaceService>("SpaceService");
+		peerService = GetParent().GetNode<PeerService>("PeerService");
 	}
 
 	// Called every frame. 'delta' is the elapsed time since the previous frame.
@@ -32,6 +32,14 @@ public partial class KeyService : Node
 	}
 
 	#region User Auth
+
+	/// <summary>
+	/// Derives the user id from the loaded auth file.
+	/// </summary>
+	/// <returns>The user id</returns>
+	public string GetUserIdFromAuth(){
+		return GetSHA256HashString(GetPublicKey());
+	}
 
 	// Generates and adds a new key. Returns the keys id as its hash
 	public string NewKey(){
@@ -156,7 +164,7 @@ public partial class KeyService : Node
 	// Encrypt using a peer's public key
 	public byte[] EncryptForPeer(byte[] data, string peerId){
 		RSA inviteAuth = RSACryptoServiceProvider.Create(2048);
-		inviteAuth.ImportRSAPublicKey(peerKeys[peerId], out int bytesRead);
+		inviteAuth.ImportRSAPublicKey(peerService.GetPeer(peerId).publicKey, out int bytesRead);
 		byte[] spaceKeyEncrypted = inviteAuth.Encrypt(data, RSAEncryptionPadding.Pkcs1);
 
 		return spaceKeyEncrypted;

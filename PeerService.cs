@@ -4,6 +4,8 @@ using System.Collections.Generic;
 
 public partial class PeerService : Node
 {
+	public const ushort peerPackageVersion = 0;
+
 	[Signal] public delegate void OnProfileImageAvailableEventHandler(ImageTexture profile, string peerId);
 
 	// Peer id, Peer Data
@@ -20,6 +22,7 @@ public partial class PeerService : Node
 	private KeyService keyService;
 	private UserService userService;
 	private FileService fileService;
+	private RequestService requestService;
 
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
@@ -27,6 +30,7 @@ public partial class PeerService : Node
 		keyService = GetParent().GetNode<KeyService>("KeyService");
 		userService = GetParent().GetNode<UserService>("UserService");
 		fileService = GetParent().GetNode<FileService>("FileService");
+		requestService = GetParent().GetNode<RequestService>("RequestService");
 	}
 
 	// Called every frame. 'delta' is the elapsed time since the previous frame.
@@ -35,91 +39,114 @@ public partial class PeerService : Node
 	}
 
 	public Peer GetLocalPeer(){
+		return GetPeer(userService.userId);
 	}
 
 	public Peer GetPeer(string peerId){
+		return GetPeer(peerId, out bool fullPeer);
+	}
+
+	/// <summary>
+	/// Gets a peer with a provided id.
+	/// </summary>
+	/// <param name="peerId">The peer's id.</param>
+	/// <param name="fullPeer">Out: If this peer is not yet fully known. We can wait on the request for that peer's full data if needed.</param>
+	/// <returns>The peer</returns>
+	public Peer GetPeer(string peerId, out bool fullPeer){
+		if (peers.ContainsKey(peerId)){
+			if (peers[peerId].publicKey != null && peers[peerId].publicKey.Length > 0){ // If public key length is zero then this is a temporary peer object
+				fullPeer = true;
+				return peers[peerId];
+			}
+		}
+
+		bool peerFileAvailable = LoadPeerFile(peerId);
+		fullPeer = peerFileAvailable;
+		if (!peerFileAvailable){
+			requestService.Request(peerId, RequestService.FileExtension.PeerData, RequestService.VerifyMethod.NewestSignature);
+			peers.TryAdd(peerId, new Peer(){
+				id = peerId
+			});
+		}
+		
 		return peers[peerId];
 	}
 
-	public bool AddPeer(string id, string username, byte[] rsaKey, string profilePictureId){
-		if (peers.ContainsKey(id)){
-			GD.Print("Peer already known. Updating info");
-			peers[id].username = username;
-			peers[id].profilePictureId = profilePictureId;
-			SaveToFile();
-			return false;
-		}
+	// public bool AddPeer(string id, string username, byte[] rsaKey, string profilePictureId){
+	// 	if (peers.ContainsKey(id)){
+	// 		GD.Print("Peer already known. Updating info");
+	// 		peers[id].username = username;
+	// 		peers[id].profilePictureId = profilePictureId;
+	// 		SaveToFile();
+	// 		return false;
+	// 	}
 
-		GD.Print("Adding new peer");
+	// 	GD.Print("Adding new peer");
 		
-		peers.Add(id, new Peer(){
-			id = id,
-			username = username,
-			profilePictureId = profilePictureId,
-		});
+	// 	peers.Add(id, new Peer(){
+	// 		id = id,
+	// 		username = username,
+	// 		profilePictureId = profilePictureId,
+	// 	});
 
-		keyService.peerKeys.Add(id, rsaKey);
+	// 	SaveToFile();
+	// 	return true;
+	// }
 
-		SaveToFile();
-		return true;
-	}
+	// public void SaveToFile(){
+	// 	if (!FileAccess.FileExists(clientPeerPath)){
+	// 		FileAccess peerList = FileAccess.Open(clientPeerPath, FileAccess.ModeFlags.Write);
+	// 		Godot.Collections.Dictionary<string, string> peerDict = new();
+	// 		peerList.StoreString(Json.Stringify(peerDict));
+	// 		peerList.Close();
+	// 	}
 
-	public void SaveToFile(){
-		if (!FileAccess.FileExists(clientPeerPath)){
-			FileAccess peerList = FileAccess.Open(clientPeerPath, FileAccess.ModeFlags.Write);
-			Godot.Collections.Dictionary<string, string> peerDict = new();
-			peerList.StoreString(Json.Stringify(peerDict));
-			peerList.Close();
-		}
+	// 	// Convert to godot dictionary to save
+	// 	Godot.Collections.Dictionary savePeers = new();
+	// 	foreach (KeyValuePair<string, Peer> entry in peers){
+	// 		Godot.Collections.Dictionary savePeer = new(){
+    //             {"username", entry.Value.username},
+    //             {"rsapublickey", Bugcord.ToBase64(peers[entry.Key].publicKey)}
+    //         };
 
-		// Convert to godot dictionary to save
-		Godot.Collections.Dictionary savePeers = new();
-		foreach (KeyValuePair<string, Peer> entry in peers){
-			Godot.Collections.Dictionary savePeer = new(){
-                {"username", entry.Value.username},
-                {"rsapublickey", Bugcord.ToBase64(keyService.peerKeys[entry.Key])}
-            };
+	// 		if (entry.Value.profilePictureId != null){
+	// 			savePeer.Add("profilePictureId", entry.Value.profilePictureId);
+	// 		}
 
-			if (entry.Value.profilePictureId != null){
-				savePeer.Add("profilePictureId", entry.Value.profilePictureId);
-			}
+	// 		savePeers.Add(entry.Key, savePeer);
+	// 	}
 
-			savePeers.Add(entry.Key, savePeer);
-		}
+	// 	FileAccess peerFile = FileAccess.Open(clientPeerPath, FileAccess.ModeFlags.Write);
+	// 	peerFile.Seek(0);
+	// 	peerFile.StoreString(Json.Stringify(savePeers));
+	// 	peerFile.Close();
+	// }
 
-		FileAccess peerFile = FileAccess.Open(clientPeerPath, FileAccess.ModeFlags.Write);
-		peerFile.Seek(0);
-		peerFile.StoreString(Json.Stringify(savePeers));
-		peerFile.Close();
-	}
+	// public void LoadFromFile(){
+	// 	if (!FileAccess.FileExists(clientPeerPath)){
+	// 		return;
+	// 	}
 
-	public void LoadFromFile(){
-		if (!FileAccess.FileExists(clientPeerPath)){
-			return;
-		}
+	// 	FileAccess userPeers = FileAccess.Open(clientPeerPath, FileAccess.ModeFlags.Read);
+	// 	string peerFileRaw = userPeers.GetAsText();
 
-		FileAccess userPeers = FileAccess.Open(clientPeerPath, FileAccess.ModeFlags.Read);
-		string peerFileRaw = userPeers.GetAsText();
+	// 	// Convert to system dictionary
+	// 	Godot.Collections.Dictionary loadPeers = (Godot.Collections.Dictionary)Json.ParseString(peerFileRaw);
+	// 	foreach (KeyValuePair<Variant, Variant> peer in loadPeers){
+	// 		Godot.Collections.Dictionary peerDict = (Godot.Collections.Dictionary)peer.Value;
+	// 		Peer loadPeer = new(){
+	// 			id = (string)peer.Key,
+	// 			username = (string)peerDict["username"],
+	// 		};
 
-		// Convert to system dictionary
-		Godot.Collections.Dictionary loadPeers = (Godot.Collections.Dictionary)Json.ParseString(peerFileRaw);
-		foreach (KeyValuePair<Variant, Variant> peer in loadPeers){
-			Godot.Collections.Dictionary peerDict = (Godot.Collections.Dictionary)peer.Value;
-			Peer loadPeer = new(){
-				id = (string)peer.Key,
-				username = (string)peerDict["username"],
-			};
+	// 		if (peerDict.ContainsKey("profilePictureId")){
+	// 			loadPeer.profilePictureId = (string)peerDict["profilePictureId"];
+	// 		}
 
-			if (peerDict.ContainsKey("profilePictureId")){
-				loadPeer.profilePictureId = (string)peerDict["profilePictureId"];
-			}
-
-			peers.Add((string)peer.Key, loadPeer);
-
-			keyService.peerKeys.Add((string)peer.Key, Bugcord.FromBase64((string)peerDict["rsapublickey"]));
-		}
-		userPeers.Close();
-	}
+	// 		peers.Add((string)peer.Key, loadPeer);
+	// 	}
+	// 	userPeers.Close();
+	// }
 
 	/// <summary>
 	/// Gets the peer's profile picture.
@@ -152,6 +179,104 @@ public partial class PeerService : Node
 		return true;
 	}
 
+	public void SavePeerFile(Peer peer, double timestamp){
+		List<byte> packageBytes = new List<byte>();
+		List<byte> signitureBytes = new List<byte>();
+
+		signitureBytes.AddRange(BitConverter.GetBytes(timestamp));
+		
+		signitureBytes.AddRange(Bugcord.MakeDataSpan(peer.id.ToUtf8Buffer()));
+		signitureBytes.AddRange(Bugcord.MakeDataSpan(peer.publicKey));
+		signitureBytes.AddRange(Bugcord.MakeDataSpan(peer.username.ToUtf8Buffer()));
+
+		if (peer.profilePictureId != null && peer.profilePictureId.Length > 0){
+			signitureBytes.AddRange(Bugcord.MakeDataSpan(peer.profilePictureId.ToUtf8Buffer()));
+		}else{
+			signitureBytes.AddRange(Bugcord.MakeDataSpan("null".ToUtf8Buffer()));
+		}
+
+		packageBytes.AddRange(BitConverter.GetBytes(peerPackageVersion));
+		packageBytes.AddRange(keyService.SignData(signitureBytes.ToArray()));
+		packageBytes.AddRange(signitureBytes);
+
+		fileService.WriteToServable(packageBytes.ToArray(), peer.id, RequestService.FileExtension.PeerData);
+	}
+
+	public bool LoadPeerFile(string peerId){
+		GD.Print("PeerService: Loading peer file " + peerId);
+
+		byte[] peerFile = fileService.GetServableData(peerId, RequestService.FileExtension.PeerData, out bool success);
+		if (!success){ // File is not on disk
+			GD.Print("- Peer file not available");
+			if (userService.userId == peerId){ // We're supposed to always have our own peerfile
+				userService.MakePeerFromUser();
+			}
+			return false;
+		}
+
+		ushort version = BitConverter.ToUInt16(peerFile, 0);
+		if (peerPackageVersion < version){ // Version not supported
+			GD.Print("- Loading failed. Incorrect version: " + version + " Supported: " + peerPackageVersion);
+			return false;
+		}
+
+		byte[] signature = Bugcord.ReadLength(peerFile, 2, 256);
+		double timestamp = BitConverter.ToDouble(peerFile, 258);
+
+		byte[][] dataspans = Bugcord.ReadDataSpans(peerFile, 266);
+
+		string id = dataspans[0].GetStringFromUtf8();
+		byte[] publicKey = dataspans[1];
+		string username = dataspans[2].GetStringFromUtf8();
+		string profilePictureId = dataspans[3].GetStringFromUtf8();
+		if (profilePictureId == "null"){
+			profilePictureId = null;
+		}
+
+		// Verify everything
+		if (id != peerId){
+			GD.Print("- Loading failed. Id mismatch. Expected: " + peerId + " Got: " + id);
+			return false;
+		}
+
+		// A peer's id should be the hash of it's public key
+		if (KeyService.GetSHA256HashString(publicKey) != id){
+			GD.Print("- Loading failed. Key hash mismatch");
+			return false;
+		}
+
+		// Make sure the package was actually created by this peer
+		byte[] signatureSection = Bugcord.ReadLengthInfinetly(peerFile, 258);
+		if (KeyService.VerifySignature(signatureSection, signature, publicKey) == false){
+			GD.Print("- Loading failed. Signature not verified");
+			return false;
+		}
+
+		// The package was made in the future?????
+		// Adds one second to the timestamp incase of slight desyncs is system clocks
+		double currentTime = Time.GetUnixTimeFromSystem();
+		if (timestamp + 1 > currentTime){
+			GD.Print("- Loading failed. Package created in the future. This system's time: " + currentTime + " Package timestamp: " + timestamp);
+			return false;
+		}
+
+        Peer peer = new Peer
+        {
+            id = id,
+			username = username,
+			publicKey = publicKey,
+			profilePictureId = profilePictureId,
+        };
+
+		if (peers.ContainsKey(id)){
+			peers[id] = peer;
+		}else{
+			peers.Add(id, peer);
+		}
+		GD.Print("- Peer file loaded successfully.");
+        return true;
+	}
+
 	public void OnCacheChanged(string fileId){
 		if (!awaitingProfilePictures.ContainsKey(fileId))
 			return;
@@ -164,5 +289,6 @@ public partial class PeerService : Node
 		public string id;
 		public string username;
 		public string profilePictureId;
+		public byte[] publicKey;
 	}
 }

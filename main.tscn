@@ -492,16 +492,17 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -173.0
-offset_top = -107.0
-offset_right = 159.854
-offset_bottom = 120.26
+offset_left = -249.0
+offset_top = -151.0
+offset_right = 252.0
+offset_bottom = 79.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("6_jgjb0")
-usernameInput = NodePath("VBoxContainer/UsernameInput")
-passwordInput = NodePath("VBoxContainer/PasswordInput")
-repeatPasswordInput = NodePath("VBoxContainer/PasswordRepeat")
+usernameInput = NodePath("VBoxContainer/HBoxContainer/Register/UsernameInput")
+passwordInput = NodePath("VBoxContainer/HBoxContainer/Register/PasswordInput")
+repeatPasswordInput = NodePath("VBoxContainer/HBoxContainer/Register/PasswordRepeat")
+metadata/_edit_group_ = true
 
 [node name="VBoxContainer" type="VBoxContainer" parent="Popups/Register"]
 layout_mode = 1
@@ -513,29 +514,78 @@ grow_vertical = 2
 
 [node name="Label" type="Label" parent="Popups/Register/VBoxContainer"]
 layout_mode = 2
-text = "Bugcord registration"
+text = "Welcome to Bugcord!"
 horizontal_alignment = 1
 
-[node name="UsernameInput" type="LineEdit" parent="Popups/Register/VBoxContainer"]
+[node name="HSeparator" type="HSeparator" parent="Popups/Register/VBoxContainer"]
+layout_mode = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="Popups/Register/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Register" type="VBoxContainer" parent="Popups/Register/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label" type="Label" parent="Popups/Register/VBoxContainer/HBoxContainer/Register"]
+layout_mode = 2
+text = "Register"
+horizontal_alignment = 1
+
+[node name="UsernameInput" type="LineEdit" parent="Popups/Register/VBoxContainer/HBoxContainer/Register"]
 layout_mode = 2
 placeholder_text = "Username:"
 
-[node name="PasswordInput" type="LineEdit" parent="Popups/Register/VBoxContainer"]
+[node name="PasswordInput" type="LineEdit" parent="Popups/Register/VBoxContainer/HBoxContainer/Register"]
 layout_mode = 2
 placeholder_text = "Password:"
 virtual_keyboard_type = 6
 secret = true
 
-[node name="PasswordRepeat" type="LineEdit" parent="Popups/Register/VBoxContainer"]
+[node name="PasswordRepeat" type="LineEdit" parent="Popups/Register/VBoxContainer/HBoxContainer/Register"]
 layout_mode = 2
 placeholder_text = "Repeat Password:"
 virtual_keyboard_type = 6
 secret = true
 
-[node name="Button" type="Button" parent="Popups/Register/VBoxContainer"]
+[node name="Button" type="Button" parent="Popups/Register/VBoxContainer/HBoxContainer/Register"]
+custom_minimum_size = Vector2(100, 0)
 layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 10
 mouse_default_cursor_shape = 2
 text = "Register"
+
+[node name="VSeparator" type="VSeparator" parent="Popups/Register/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+
+[node name="Login" type="VBoxContainer" parent="Popups/Register/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label" type="Label" parent="Popups/Register/VBoxContainer/HBoxContainer/Login"]
+layout_mode = 2
+text = "Login"
+horizontal_alignment = 1
+
+[node name="IdInput" type="LineEdit" parent="Popups/Register/VBoxContainer/HBoxContainer/Login"]
+layout_mode = 2
+placeholder_text = "User ID:"
+max_length = 64
+virtual_keyboard_type = 6
+
+[node name="PasswordInput" type="LineEdit" parent="Popups/Register/VBoxContainer/HBoxContainer/Login"]
+layout_mode = 2
+placeholder_text = "Password:"
+secret = true
+
+[node name="Button" type="Button" parent="Popups/Register/VBoxContainer/HBoxContainer/Login"]
+custom_minimum_size = Vector2(100, 0)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 10
+text = "Login"
 
 [node name="MakeSpace" type="Panel" parent="Popups" node_paths=PackedStringArray("spaceName")]
 visible = false
@@ -1028,6 +1078,7 @@ stretch_mode = 5
 [connection signal="OnConnectedToSpace" from="Bugcord" to="HBoxContainer/ChatMain/VBoxContainer/MessageWindow" method="DisplaySpaceMessages"]
 [connection signal="OnMessageRecieved" from="Bugcord" to="HBoxContainer/ChatMain/VBoxContainer/MessageWindow" method="DisplayNewMessage"]
 [connection signal="OnLoggedIn" from="Bugcord/UserService" to="HBoxContainer/LeftBar/Panel/VBoxContainer/ServerInput" method="OnLoggedIn"]
+[connection signal="OnLoggedIn" from="Bugcord/UserService" to="HBoxContainer/RightBar/TabContainer/Settings" method="OnLoggedIn"]
 [connection signal="OnConnected" from="Bugcord/PacketService" to="Bugcord" method="OnConnected"]
 [connection signal="OnRequestCreated" from="Bugcord/RequestService" to="Popups/RequestDebugView" method="DisplayRequest"]
 [connection signal="OnRequestFailed" from="Bugcord/RequestService" to="Popups/RequestDebugView" method="RemoveRequest"]
@@ -1051,8 +1102,9 @@ stretch_mode = 5
 [connection signal="file_selected" from="HBoxContainer/RightBar/TabContainer/Settings/FileDialog" to="HBoxContainer/RightBar/TabContainer/Settings" method="OnProfileImagePicked"]
 [connection signal="pressed" from="HBoxContainer/RightBar/TabContainer/Settings/VBoxContainer/ScrollContainer/VBoxContainer/UserSettings/VBoxContainer/ProfilePicture/Button" to="HBoxContainer/RightBar/TabContainer/Settings" method="PickProfileImage"]
 [connection signal="pressed" from="HBoxContainer/RightBar/TabContainer/Settings/VBoxContainer/Save" to="HBoxContainer/RightBar/TabContainer/Settings" method="Save"]
+[connection signal="OnLogin" from="Popups/Register" to="Bugcord" method="TryLogIn"]
 [connection signal="OnRegister" from="Popups/Register" to="Bugcord" method="CreateUserFile"]
-[connection signal="pressed" from="Popups/Register/VBoxContainer/Button" to="Popups/Register" method="AttemptRegister"]
+[connection signal="pressed" from="Popups/Register/VBoxContainer/HBoxContainer/Register/Button" to="Popups/Register" method="AttemptRegister"]
 [connection signal="OnCreatingSpace" from="Popups/MakeSpace" to="Bugcord/SpaceService" method="GenerateSpace"]
 [connection signal="pressed" from="Popups/MakeSpace/VBoxContainer/CreateSpace" to="Popups/MakeSpace" method="OnCreateSpace"]
 [connection signal="pressed" from="Popups/MakeSpace/Button" to="Popups/MakeSpace" method="ToggleVisibility"]

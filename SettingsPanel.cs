@@ -16,8 +16,18 @@ public partial class SettingsPanel : MarginContainer
 	{	
 		fileService = GetNode<FileService>("/root/Main/Bugcord/FileService");
 		userService = GetNode<UserService>("/root/Main/Bugcord/UserService");
+	}
 
-		if (userService.profilePictureFileId != "" && userService.profilePictureFileId != null){
+	// Called every frame. 'delta' is the elapsed time since the previous frame.
+	public override void _Process(double delta)
+	{
+	}
+
+	public void OnLoggedIn(){
+		fileService = GetNode<FileService>("/root/Main/Bugcord/FileService");
+		userService = GetNode<UserService>("/root/Main/Bugcord/UserService");
+
+		if (userService.profilePictureFileId != null && userService.profilePictureFileId != ""){
 			if (fileService.GetFile(userService.profilePictureFileId, out byte[] data)){
 				TryLoadProfilePicture();
 			}else{
@@ -26,11 +36,6 @@ public partial class SettingsPanel : MarginContainer
 		}
 
 		usernameSetting.Text = userService.userName;
-	}
-
-	// Called every frame. 'delta' is the elapsed time since the previous frame.
-	public override void _Process(double delta)
-	{
 	}
 
 	public void Save(){

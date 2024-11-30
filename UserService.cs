@@ -7,10 +7,13 @@ public partial class UserService : Node
 {
 	[Signal] public delegate void OnLoggedInEventHandler();
 
+	// Local peer
 	public string userId;
-	public string userName;
-	public string savedServerIp;
+	public string userName = "username";
 	public string profilePictureFileId;
+
+	// Client settings
+	public string savedServerIp;
 	public bool autoConnectToServer;
 	public bool identifySelf = true; // Controls if the client will automatically send an identifying packet to the network
 	public bool allowService = true; // If false, the client will not store data for others. Keep true plz
@@ -19,9 +22,14 @@ public partial class UserService : Node
 
 	public const string clientSavePath = "user://client.data";
 
+	private KeyService keyService;
+	private PeerService peerService;
+
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
 	{
+		keyService = GetParent().GetNode<KeyService>("KeyService");
+		peerService = GetParent().GetNode<PeerService>("PeerService");
 	}
 
 	// Called every frame. 'delta' is the elapsed time since the previous frame.
@@ -29,18 +37,40 @@ public partial class UserService : Node
 	{
 	}
 
+	/// <summary>
+	/// Turns the current user into a peer and saves to a file.
+	/// </summary>
+	public void MakePeerFromUser(){
+		PeerService.Peer peer = new PeerService.Peer(){
+			id = userId,
+			username = userName,
+			profilePictureId = profilePictureFileId,
+			publicKey = keyService.GetPublicKey(),
+		};
+
+		if (peerService.peers.ContainsKey(peer.id)){
+			peerService.peers[peer.id] = peer;
+		}else{
+			peerService.peers.Add(peer.id, peer);
+		}
+
+		peerService.SavePeerFile(peer, Time.GetUnixTimeFromSystem());
+	}
+
 	public void MakeNewUser(string username, string password){
-		userId = Guid.NewGuid().ToString();
+		userId = KeyService.GetSHA256HashString(keyService.GetPublicKey()); // User id is the hash of the user's public key
 		userName = username;
 	}
 
 	public void SaveToFile(){
+		GD.Print("UserService: Saving user file...");
+
 		Dictionary userDict = new Dictionary{
-			{"id", userId},
-			{"username", userName },
+			// {"id", userId},
+			// {"username", userName },
 			{"defaultConnectServer", savedServerIp},
 			{"autoConnectToServer", autoConnectToServer},
-			{"profilePictureFileId", profilePictureFileId},
+			// {"profilePictureFileId", profilePictureFileId},
 			{"identifySelf", identifySelf},
 			{"allowService", allowService},
 			{"serviceAllowance", serviceAllowance},
@@ -51,24 +81,29 @@ public partial class UserService : Node
 		userFile.Seek(0);
 		userFile.StoreLine(Json.Stringify(userDict));
 		userFile.Close();
+
+		MakePeerFromUser();
 	}
 
-	public void LoadFromFile(){
+	public bool LoadFromFile(){
+		if (!FileAccess.FileExists(clientSavePath))
+			return false;
+
 		FileAccess userData = FileAccess.Open(clientSavePath, FileAccess.ModeFlags.Read);
 		string userfileRaw = userData.GetAsText();
 		GD.Print("user: " + userfileRaw);
 		Variant userParsed = Json.ParseString(userfileRaw);
 		Dictionary userDict = (Dictionary)userParsed.Obj;
 
-		userId = (string)userDict["id"];
-		userName = (string)userDict["username"];
+		// userId = (string)userDict["id"];
+		// userName = (string)userDict["username"];
 		savedServerIp = (string)userDict["defaultConnectServer"];
 
-		if (userDict.ContainsKey("profilePictureFileId"))
-			profilePictureFileId = (string)userDict["profilePictureFileId"];
-		
 		autoConnectToServer = (bool)userDict["autoConnectToServer"];
 
+		// if (userDict.ContainsKey("profilePictureFileId"))
+		// 	profilePictureFileId = (string)userDict["profilePictureFileId"];
+		
 		if (userDict.ContainsKey("identifySelf"))
 			identifySelf = (bool)userDict["identifySelf"];
 
@@ -78,5 +113,13 @@ public partial class UserService : Node
 			serviceAllowance = (int)userDict["serviceAllowance"];
 		if (userDict.ContainsKey("customServicePath"))
 			customServicePath = (string)userDict["customServicePath"];
+
+		return true;
+	}
+
+	public void LoadFromPeer(PeerService.Peer peer){
+		userId = peer.id;
+		userName = peer.username;
+		profilePictureFileId = peer.profilePictureId;
 	}
 }
