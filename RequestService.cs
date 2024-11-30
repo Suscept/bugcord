@@ -13,6 +13,8 @@ public partial class RequestService : Node
 
 	[Export] public float requestTimeoutTime = 15;
 
+	public Dictionary<string, List<Action<string>>> subscriptions = new();
+
 	private FileService fileService;
 	private PacketService packetService;
 	private Bugcord bugcord;
@@ -58,10 +60,18 @@ public partial class RequestService : Node
 	}
 
 	public void Request(string id, FileExtension extension, VerifyMethod verifyMethod){
-		Request(id, extension, verifyMethod, requestTimeoutTime);
+		Request(id, extension, verifyMethod, requestTimeoutTime, null);
+	}
+
+	public void Request(string id, FileExtension extension, VerifyMethod verifyMethod, Action<string> subscription){
+		Request(id, extension, verifyMethod, requestTimeoutTime, subscription);
 	}
 
 	public void Request(string id, FileExtension extension, VerifyMethod verifyMethod, float timeout){
+		Request(id, extension, verifyMethod, timeout, null);
+	}
+
+	public void Request(string id, FileExtension extension, VerifyMethod verifyMethod, float timeout, Action<string> subscription){
 		GD.Print("Requesting file: " + id);
 		if (activeRequests.ContainsKey(id)){
 			GD.Print("Request already exists");
@@ -81,6 +91,15 @@ public partial class RequestService : Node
 		packetService.SendPacket(bugcord.BuildFileRequest(id, (byte)extension));
 
 		EmitSignal(SignalName.OnRequestCreated, id);
+
+		if (subscription != null){
+			if (subscriptions[id] == null){
+				GD.Print("- Creating new subscription list");
+				subscriptions.Add(id, new List<Action<string>>());
+			}
+			subscriptions[id].Add(subscription);
+			GD.Print("- Subscription added");
+		}
 	}
 
 	public void ProcessRequestResponse(byte[] packet){
@@ -179,6 +198,17 @@ public partial class RequestService : Node
 		}
 		
 		EmitSignal(SignalName.OnRequestSuccess, request.id);
+		TriggerSubscriptions(fileId);
+	}
+
+	public void TriggerSubscriptions(string id){
+		if (!subscriptions.ContainsKey(id))
+			return;
+
+		foreach (Action<string> subscription in subscriptions[id]){
+			subscription.Invoke(id);
+		}
+		subscriptions.Remove(id);
 	}
 
 	public static string GetFileExtensionString(FileExtension fileExtension){
