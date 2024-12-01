@@ -36,10 +36,16 @@ public partial class RequestDebugView : Panel
 	}
 
 	public void UpdateRequest(string id){
+		if (!displayedRequests.ContainsKey(id))
+			return;
+
 		displayedRequests[id].IncrementParts();
 	}
 
 	public void RemoveRequest(string id){
+		if (!displayedRequests.ContainsKey(id))
+			return;
+
 		displayedRequests[id].QueueFree();
 		displayedRequests.Remove(id);
 	}
