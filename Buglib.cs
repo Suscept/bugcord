@@ -45,8 +45,11 @@ public partial class Buglib : Node
 		return builder.ToString();
 	}
 
-	// Returns true if the provided string is a valid hex string
-	// Can be used to verify all hash-based id's across bugcord. Basically, if this function returns false than it's not a hash based id.
+	/// <summary>
+	/// Can be used to verify all hash-based id's across bugcord. Basically, if this function returns false than it's not a hash based id.
+	/// </summary>
+	/// <param name="hex"></param>
+	/// <returns>true if the provided string is a valid hex string</returns>
 	public static bool VerifyHexString(string hex){
 		string lowerHex = hex.ToLower();
 
