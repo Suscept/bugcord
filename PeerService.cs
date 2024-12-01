@@ -48,7 +48,8 @@ public partial class PeerService : Node
 
 	public void AddTemporaryPeer(string id){
 		peers.TryAdd(id, new Peer(){
-			id = id
+			id = id,
+			username = id.Substring(0, 6),
 		});
 	}
 
