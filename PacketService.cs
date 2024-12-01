@@ -160,7 +160,8 @@ public partial class PacketService : Node
 		GD.Print("Checksum verified.");
 		Packet packet = new Packet{
 			timestamp = Time.GetUnixTimeFromSystem(),
-			data = packetData
+			data = packetData,
+			version = version,
 		};
 
 		try{
@@ -179,5 +180,6 @@ public partial class PacketService : Node
 	public class Packet{
 		public double timestamp;
 		public byte[] data;
+		public ushort version;
 	}
 }
