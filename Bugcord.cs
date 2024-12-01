@@ -183,7 +183,7 @@ public partial class Bugcord : Node
 	public void OnConnected(){
 		GD.Print("connected");
 
-		Send(BuildIdentifyingPacket());
+		Send(BuildFileAvailabilityPacket(peerService.GetLocalPeer().id, RequestService.FileExtension.PeerData, RequestService.VerifyMethod.NewestSignature));
 	}
 
 	#endregion
@@ -335,6 +335,30 @@ public partial class Bugcord : Node
 			case PacketService.PacketType.SpaceUpdate:
 				ProcessSpaceUpdatePacket(packet);
 				break;
+			case PacketService.PacketType.FileAvailable:
+				ProcessFileAvailabilityPacket(packet);
+				break;
+		}
+	}
+
+	private void ProcessFileAvailabilityPacket(PacketService.Packet packet){
+		RequestService.FileExtension extension = (RequestService.FileExtension)packet.data[1];
+		RequestService.VerifyMethod verifyMethod = (RequestService.VerifyMethod)packet.data[2];
+
+		string fileId = ReadDataSpan(packet.data, 3).GetStringFromUtf8();
+
+		if (!Buglib.VerifyHexString(fileId)) // Invalid id
+			return;
+
+		if (extension == RequestService.FileExtension.PeerData){
+			// if (fileId == userService.userId) // Ignore our own availability packet
+			// 	return;
+			
+			peerService.AddTemporaryPeer(fileId);
+		}
+
+		if (userService.allowService){
+			requestService.Request(fileId, extension, verifyMethod);
 		}
 	}
 
@@ -498,6 +522,19 @@ public partial class Bugcord : Node
 	#endregion
 
 	#region packet builders
+
+	private byte[] BuildFileAvailabilityPacket(string fileId, RequestService.FileExtension extension, RequestService.VerifyMethod verifyMethod){
+		List<byte> packetBytes = new List<byte>
+        {
+            12,
+            (byte)extension,
+            (byte)verifyMethod
+        };
+
+		packetBytes.AddRange(MakeDataSpan(fileId.ToUtf8Buffer()));
+
+		return packetBytes.ToArray();
+	}
 
 	private byte[] BuildSpaceUpdatePacket(SpaceService.Space space){
 		List<byte> packetBytes = new List<byte>{

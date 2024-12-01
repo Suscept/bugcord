@@ -25,6 +25,8 @@ public partial class PacketService : Node
 		FileRequest = 6,
 		FilePacket = 7,
 		SpaceUpdate = 9,
+		VoiceChatEvent = 11,
+		FileAvailable = 12,
 	}
 
 	private StreamPeerTcp tcpClient = new StreamPeerTcp();

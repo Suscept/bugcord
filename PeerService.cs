@@ -46,6 +46,12 @@ public partial class PeerService : Node
 		return GetPeer(peerId, out bool fullPeer);
 	}
 
+	public void AddTemporaryPeer(string id){
+		peers.TryAdd(id, new Peer(){
+			id = id
+		});
+	}
+
 	/// <summary>
 	/// Gets a peer with a provided id.
 	/// </summary>
@@ -64,9 +70,7 @@ public partial class PeerService : Node
 		fullPeer = peerFileAvailable;
 		if (!peerFileAvailable){
 			requestService.Request(peerId, RequestService.FileExtension.PeerData, RequestService.VerifyMethod.NewestSignature);
-			peers.TryAdd(peerId, new Peer(){
-				id = peerId
-			});
+			AddTemporaryPeer(peerId);
 		}
 		
 		return peers[peerId];
