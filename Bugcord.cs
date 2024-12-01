@@ -364,16 +364,16 @@ public partial class Bugcord : Node
 
 	private void ProcessSpaceUpdatePacket(PacketService.Packet packet){
 		byte[] initVector = ReadLength(packet.data, 1, 16);
-		byte[][] packetParts = ReadDataSpans(packet.data, 18);
+		byte[][] packetParts = ReadDataSpans(packet.data, 17);
 		string keyUsed = packetParts[0].GetStringFromUtf8();
 
 		byte[] encryptedSection = packetParts[1];
 		byte[] decryptedSection = KeyService.AESDecrypt(encryptedSection, keyService.myKeys[keyUsed], initVector);
 
-		byte[][] dataSpans = ReadDataSpans(decryptedSection, 9);
+		byte[][] dataSpans = ReadDataSpans(decryptedSection, 8);
 
-		int authorityCount = BitConverter.ToInt32(decryptedSection, 1);
-		int memberCount = BitConverter.ToInt32(decryptedSection, 5);
+		int authorityCount = BitConverter.ToInt32(decryptedSection, 0);
+		int memberCount = BitConverter.ToInt32(decryptedSection, 4);
 
 		string spaceId = dataSpans[0].GetStringFromUtf8();
 		string spaceName = dataSpans[1].GetStringFromUtf8();
