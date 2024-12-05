@@ -27,10 +27,10 @@ public partial class SpaceSettingsUI : Panel
 	private bool changeMade;
 	private string spaceNameChange;
 	private PeerService.Peer ownerChange;
-	private List<PeerService.Peer> invitedPeers = new List<PeerService.Peer>();
-	private List<PeerService.Peer> kickedPeers = new List<PeerService.Peer>();
-	private List<PeerService.Peer> promotedPeers = new List<PeerService.Peer>();
-	private List<PeerService.Peer> demotedPeers = new List<PeerService.Peer>();
+	private HashSet<PeerService.Peer> invitedPeers = new HashSet<PeerService.Peer>();
+	private HashSet<PeerService.Peer> kickedPeers = new HashSet<PeerService.Peer>();
+	private HashSet<PeerService.Peer> promotedPeers = new HashSet<PeerService.Peer>();
+	private HashSet<PeerService.Peer> demotedPeers = new HashSet<PeerService.Peer>();
 
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
@@ -88,7 +88,9 @@ public partial class SpaceSettingsUI : Panel
 		}
 
 		// Add new members
-		displayingSpace.members.AddRange(invitedPeers);
+		foreach (PeerService.Peer peer in invitedPeers){
+			displayingSpace.members.Add(peer);
+		}
 
 		// Remove kicked members
 		foreach (PeerService.Peer peer in kickedPeers)
@@ -103,12 +105,16 @@ public partial class SpaceSettingsUI : Panel
 		}
 
 		// Promote authorities
-		displayingSpace.authorities.AddRange(promotedPeers);
+		foreach (PeerService.Peer peer in promotedPeers){
+			displayingSpace.authorities.Add(peer);
+		}
 
 		// Change owner
 		displayingSpace.owner = ownerChange;
 
 		spaceService.OnUpdateSpace(displayingSpace, prevKey); // Also invites all peers in members list
+
+		CancelChanges();
 	}
 
 	public void SpaceNameChangeSubmitted(string newName){
@@ -146,7 +152,7 @@ public partial class SpaceSettingsUI : Panel
 		DisplayPeerlist(invitedPeers, memberActions, memberListContainer, memberUserUis, 2);
 	}
 
-	public void DisplayPeerlist(List<PeerService.Peer> peers, string[] actions, Control container, List<Control> controlList, int actionIdOffset){
+	public void DisplayPeerlist(HashSet<PeerService.Peer> peers, string[] actions, Control container, List<Control> controlList, int actionIdOffset){
 		foreach (PeerService.Peer peer in peers){
 			UserDisplayUI userDisplay = userDisplayUi.Instantiate<UserDisplayUI>();
 			controlList.Add(userDisplay);

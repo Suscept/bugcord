@@ -286,7 +286,7 @@ public partial class Bugcord : Node
 	}
 
 	public void UpdateSpace(string spaceId){
-		List<PeerService.Peer> members = spaceService.spaces[spaceId].members;
+		HashSet<PeerService.Peer> members = spaceService.spaces[spaceId].members;
 		foreach (PeerService.Peer member in members)
 		{
 			SendSpaceInvite(spaceId, member.id);
@@ -382,14 +382,14 @@ public partial class Bugcord : Node
 		PeerService.Peer owner = peerService.GetPeer(ownerId);
 
 		int memberOffset = 4;
-		List<PeerService.Peer> authorities = new List<PeerService.Peer>();
+		HashSet<PeerService.Peer> authorities = new HashSet<PeerService.Peer>();
 		for (int i = 0; i < authorityCount; i++){
 			string authorityId = dataSpans[memberOffset].GetStringFromUtf8();
 			authorities.Add(peerService.GetPeer(authorityId));
 			memberOffset++;
 		}
 
-		List<PeerService.Peer> members = new List<PeerService.Peer>();
+		HashSet<PeerService.Peer> members = new HashSet<PeerService.Peer>();
 		for (int i = 0; i < memberCount; i++){
 			string memberId = dataSpans[memberOffset].GetStringFromUtf8();
 			authorities.Add(peerService.GetPeer(memberId));

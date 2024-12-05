@@ -60,7 +60,7 @@ public partial class SpaceService : Node
 		bugcord.UpdateSpace(space.id);
 	}
 
-	public void AddSpace(string spaceId, string spaceName, string spaceKeyId, PeerService.Peer owner, List<PeerService.Peer> authorities, List<PeerService.Peer> members){
+	public void AddSpace(string spaceId, string spaceName, string spaceKeyId, PeerService.Peer owner, HashSet<PeerService.Peer> authorities, HashSet<PeerService.Peer> members){
 		Space spaceData = new(){
 			id = spaceId,
 			name = spaceName,
@@ -106,11 +106,11 @@ public partial class SpaceService : Node
 		string keyGuid = keyService.NewKey();
 		string spaceId = keyGuid;
 
-		List<PeerService.Peer> spaceAuthorites = new List<PeerService.Peer>
+		HashSet<PeerService.Peer> spaceAuthorites = new HashSet<PeerService.Peer>
         {
             peerService.GetLocalPeer()
         };
-		List<PeerService.Peer> spaceMembers = new List<PeerService.Peer>
+		HashSet<PeerService.Peer> spaceMembers = new HashSet<PeerService.Peer>
         {
             peerService.GetLocalPeer()
         };
@@ -173,7 +173,9 @@ public partial class SpaceService : Node
 	}
 
 	public void LoadFromFile(){
+		GD.Print("SpaceService: Loading from file");
 		if (!FileAccess.FileExists(clientSpacesPath)){
+			GD.Print("- No space file found");
 			return;
 		}
 
@@ -187,33 +189,45 @@ public partial class SpaceService : Node
 				continue;
 			}
 
-			List<PeerService.Peer> members = new List<PeerService.Peer>();
+			HashSet<PeerService.Peer> members = new HashSet<PeerService.Peer>();
 			if (spaceInfo.ContainsKey("members")){
 				Godot.Collections.Array membersJson = (Godot.Collections.Array)spaceInfo["members"];
 				foreach (string memberId in membersJson){
-					members.Add(peerService.GetPeer(memberId));
+					PeerService.Peer member = peerService.GetPeer(memberId);
+					if (!members.Contains(member))
+						members.Add(member);
 				}
 			}else{
 				members.Add(peerService.GetLocalPeer());
 			}
 
 			Godot.Collections.Array authoritiesJson = (Godot.Collections.Array)spaceInfo["authorities"];
-			List<PeerService.Peer> authorities = new List<PeerService.Peer>();
+			HashSet<PeerService.Peer> authorities = new HashSet<PeerService.Peer>();
 			foreach (string authorityId in authoritiesJson){
-				authorities.Add(peerService.GetPeer(authorityId));
+				PeerService.Peer authority = peerService.GetPeer(authorityId);
+				if (!authorities.Contains(authority))
+					authorities.Add(authority);
 			}
 
 			PeerService.Peer spaceOwner = peerService.GetPeer((string)spaceInfo["owner"]);
 
 			// Broken space fixes
 			if (!members.Contains(spaceOwner)){ // Owner is not a member??
-				GD.Print("Fixed space where owner was not a member");
+				GD.Print("- Fixed owner that was not a member");
 				members.Add(spaceOwner);
 			}
 
 			if (!authorities.Contains(spaceOwner)){ // Owner is not an authority??
-				GD.Print("Fixed space where owner was not an admin");
+				GD.Print("- Fixed owner that was not an admin");
 				authorities.Add(spaceOwner);
+			}
+
+			foreach (PeerService.Peer authority in authorities){ // Any authority must also be a member
+				GD.Print("- " + members.Contains(authority));
+				if (!members.Contains(authority)){
+					GD.Print("- Authority missing as member");
+					members.Add(authority);
+				}
 			}
 
             Space entryData = new()
@@ -239,7 +253,7 @@ public partial class SpaceService : Node
 		public string keyId;
 
 		public PeerService.Peer owner;
-		public List<PeerService.Peer> authorities = new List<PeerService.Peer>();
-		public List<PeerService.Peer> members = new List<PeerService.Peer>();
+		public HashSet<PeerService.Peer> authorities = new HashSet<PeerService.Peer>();
+		public HashSet<PeerService.Peer> members = new HashSet<PeerService.Peer>();
 	}
 }
