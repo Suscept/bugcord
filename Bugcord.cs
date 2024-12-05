@@ -333,7 +333,7 @@ public partial class Bugcord : Node
 				// ProcessFilePacket(packet.data);
 				break;
 			case PacketService.PacketType.SpaceUpdate:
-				ProcessSpaceUpdatePacket(packet);
+				ProcessSpaceUpdatePacket(packet, fromEventChain);
 				break;
 			case PacketService.PacketType.FileAvailable:
 				ProcessFileAvailabilityPacket(packet);
@@ -362,10 +362,13 @@ public partial class Bugcord : Node
 		}
 	}
 
-	private void ProcessSpaceUpdatePacket(PacketService.Packet packet){
+	private void ProcessSpaceUpdatePacket(PacketService.Packet packet, bool fromEventChain){
 		byte[] initVector = ReadLength(packet.data, 1, 16);
 		byte[][] packetParts = ReadDataSpans(packet.data, 17);
 		string keyUsed = packetParts[0].GetStringFromUtf8();
+
+		if (!fromEventChain)
+			eventChainService.SaveEvent(packet.data, keyUsed);
 
 		byte[] encryptedSection = packetParts[1];
 		byte[] decryptedSection = KeyService.AESDecrypt(encryptedSection, keyService.myKeys[keyUsed], initVector);
@@ -398,11 +401,11 @@ public partial class Bugcord : Node
 
 		spaceService.AddSpace(spaceId, spaceName, keyId, owner, authorities, members);
 
-		if (retrievingChain){
-			eventChainService.LoadEventChain(keyId);
-		}else{
-			eventChainService.SaveEvent(packet.data, keyUsed);
-		}
+		// if (retrievingChain){
+		// 	eventChainService.LoadEventChain(keyId);
+		// }else{
+		// 	eventChainService.SaveEvent(packet.data, keyUsed);
+		// }
 	}
 
 	private void ProcessFileRequest(byte[] packet){
