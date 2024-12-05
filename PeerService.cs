@@ -85,6 +85,19 @@ public partial class PeerService : Node
 	/// <param name="fileId">The file id to wait for if the file needs to be pulled from the network. Null if the peer doesnt have a profile picture</param>
 	/// <returns>If the image is available now</returns>
 	public bool GetProfilePicture(string peerId, out ImageTexture profileImage){
+		bool result = GetProfilePicture(peerId, null, out ImageTexture image);
+		profileImage = image;
+		return result;
+	}
+
+	/// <summary>
+	/// Gets the peer's profile picture.
+	/// </summary>
+	/// <param name="peerId">The peer's id</param>
+	/// <param name="profileImage">OUT: The peer's profile picture</param>
+	/// <param name="fileId">The file id to wait for if the file needs to be pulled from the network. Null if the peer doesnt have a profile picture</param>
+	/// <returns>If the image is available now</returns>
+	public bool GetProfilePicture(string peerId, Action<string> subscription, out ImageTexture profileImage){
 		string imageId = peers[peerId].profilePictureId;
 		if (imageId == null){
 			profileImage = null;
@@ -92,7 +105,7 @@ public partial class PeerService : Node
 		}
 
 		if (!peerProfileImages.ContainsKey(peerId)){
-			bool cachedNow = fileService.GetFile(imageId);
+			bool cachedNow = fileService.GetFile(imageId, subscription);
 			if (cachedNow){
 				string path = fileService.GetCachePath(imageId);
 				peerProfileImages.Add(peerId, ImageTexture.CreateFromImage(Image.LoadFromFile(path)));

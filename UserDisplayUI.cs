@@ -5,6 +5,10 @@ public partial class UserDisplayUI : MarginContainer
 {
 	[Signal] public delegate void OnActionPickedEventHandler(string displayUserId, long action);
 
+	[Export] public string[] dropdownActions;
+	[Export] public int dropdownActionIdOffset;
+
+	[ExportGroup("UI References")]
 	[Export] public TextureRect profileTexture;
 	[Export] public Label usernameLabel;
 	[Export] public MenuButton actionsDropdownButton;
@@ -20,9 +24,15 @@ public partial class UserDisplayUI : MarginContainer
 		actionDropdown.IdPressed += OnActionPressed;
 	}
 
+	public void Initiate(PeerService.Peer userToDisplay){
+		Initiate(userToDisplay, dropdownActions, dropdownActionIdOffset);
+	}
+
 	public void Initiate(PeerService.Peer userToDisplay, string[] actions, int actionIdOffset){
 		displayingUser = userToDisplay;
 		usernameLabel.Text = userToDisplay.username;
+
+		DisplayProfilePicture(null);
 
 		if (actions.Length == 0){
 			actionsDropdownButton.Visible = false;
@@ -39,5 +49,13 @@ public partial class UserDisplayUI : MarginContainer
 
 	public void OnActionPressed(long id){
 		EmitSignal(SignalName.OnActionPicked, displayingUser.id, id);
+	}
+
+	public void DisplayProfilePicture(string pfpId){
+		PeerService peerService = GetNode<PeerService>("/root/Main/Bugcord/PeerService");
+
+		bool availableNow = peerService.GetProfilePicture(displayingUser.id, DisplayProfilePicture, out ImageTexture profileImage);
+		if (availableNow)
+			profileTexture.Texture = profileImage;
 	}
 }

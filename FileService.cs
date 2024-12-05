@@ -40,11 +40,21 @@ public partial class FileService : Node
 	}
 
 	public bool GetFile(string id){
-		return GetFile(id, out byte[] data);
+		return GetFile(id, null, out byte[] data);
+	}
+
+	public bool GetFile(string id, Action<string> subscription){
+		return GetFile(id, subscription, out byte[] data);
+	}
+
+	public bool GetFile(string id, out byte[] data){
+		bool result = GetFile(id, null, out byte[] resultData);
+		data = resultData;
+		return result;
 	}
 
 	// Gets a file from serve folder or cache or peer (returns true). If it cannot be found, a request to peers is made and the file can be brought from cache later (returns false).
-	public bool GetFile(string id, out byte[] data){
+	public bool GetFile(string id, Action<string> subscription, out byte[] data){
 		if (id == null){
 			GD.PushError("Null file request!");
 		}
@@ -70,7 +80,7 @@ public partial class FileService : Node
 		}
 
 		GD.Print("- Getting from network");
-		requestService.Request(id, RequestService.FileExtension.MediaFile, RequestService.VerifyMethod.HashCheck);
+		requestService.Request(id, RequestService.FileExtension.MediaFile, RequestService.VerifyMethod.HashCheck, subscription);
 		// bugcord.Send(bugcord.BuildFileRequest(id)); // Request file from peers
 
 		data = null;
