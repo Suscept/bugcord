@@ -234,6 +234,7 @@ public partial class Bugcord : Node
 		if (!fileService.IsFileServable(userId, RequestService.FileExtension.PeerData)){
 			GD.Print("- No peer data file");
 			userService.MakePeerFile();
+			alertService.NewAlert(LangFiles.Get("no_peerfile_at_login_title"), LangFiles.Get("no_peerfile_at_login_subtext"));
 		}
 
 		return LogIn();
@@ -251,7 +252,7 @@ public partial class Bugcord : Node
 		userService.SaveClientConfig();
 
 		LogIn();
-		alertService.NewAlert("Welcome to Bugcord!", "Thank you for downloading Bugcord! Here's what you need to do to get chatting\n.1 Connect to a relay server. On the top left, enter the url or ip address to a relay server.\n.2 Create or join a space. Underneath where you enter a relay server, you may create your own space. Or have a friend invite to their own and the space will show up automatically.\n3. Get chatting! But for free, for real.", "Get chatting");
+		alertService.NewAlert(LangFiles.Get("register_welcome_title"), LangFiles.Get("register_welcome_subtext"), LangFiles.Get("register_welcome_button"));
 	}
 
 	public string GetClientId(){

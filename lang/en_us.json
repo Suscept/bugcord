@@ -1,0 +1,7 @@
+{
+	"no_peerfile_at_login_title": "Login disruption",
+	"no_peerfile_at_login_subtext": "Short explanation: Your account data has been lost.\n\nTechnical explanation: Your .peer file could not be found. Make sure the .peer file with your ID is present in the Bugcord serve folder.",
+	"register_welcome_title": "Welcome to Bugcord!",
+	"register_welcome_subtext": "Thank you for downloading Bugcord! Here's what you need to do to get chatting\n.1 Connect to a relay server. On the top left, enter the url or ip address to a relay server.\n.2 Create or join a space. Underneath where you enter a relay server, you may create your own space. Or have a friend invite to their own and the space will show up automatically.\n3. Get chatting! But for free, for real.",
+	"register_welcome_button": "Get chatting",
+}
