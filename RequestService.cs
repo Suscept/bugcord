@@ -194,7 +194,7 @@ public partial class RequestService : Node
 		}
 
 		fileService.WriteToServableAbsolute(fullFile.ToArray(), fileId + GetFileExtensionString(request.extension));
-		if (request.cacheDesired){
+		if (request.cacheDesired && request.extension == FileExtension.MediaFile){
 			bool success = fileService.UnpackageFile(fullFile.ToArray(), out byte[] fileData, out string filename);
 			if (success)
 				fileService.WriteToCache(fileData, filename, fileId);
