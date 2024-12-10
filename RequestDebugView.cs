@@ -23,6 +23,9 @@ public partial class RequestDebugView : Panel
 	}
 
 	public void DisplayRequest(string id){
+		if (requestService == null)
+			requestService = GetNode<RequestService>("/root/Main/Bugcord/RequestService");
+
 		if (!requestService.activeRequests.ContainsKey(id)){
 			GD.PrintErr(id + " is not an active request");
 			return;
@@ -36,6 +39,9 @@ public partial class RequestDebugView : Panel
 	}
 
 	public void UpdateRequest(string id){
+		if (requestService == null)
+			requestService = GetNode<RequestService>("/root/Main/Bugcord/RequestService");
+		
 		if (!displayedRequests.ContainsKey(id))
 			return;
 
@@ -43,6 +49,9 @@ public partial class RequestDebugView : Panel
 	}
 
 	public void RemoveRequest(string id){
+		if (requestService == null)
+			requestService = GetNode<RequestService>("/root/Main/Bugcord/RequestService");
+
 		if (!displayedRequests.ContainsKey(id))
 			return;
 
