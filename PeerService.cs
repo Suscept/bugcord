@@ -234,6 +234,8 @@ public partial class PeerService : Node
 			username = username,
 			publicKey = publicKey,
 			profilePictureId = profilePictureId,
+			profileBlurb = profileBlurb,
+			profileText = profileText,
         };
 
 		if (peers.ContainsKey(id)){

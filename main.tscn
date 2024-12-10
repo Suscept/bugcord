@@ -391,18 +391,19 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/side_margin = 0
 theme_override_font_sizes/font_size = 14
-current_tab = 1
 
 [node name="Space" type="MarginContainer" parent="HBoxContainer/RightBar/TabContainer"]
-visible = false
 layout_mode = 2
 
-[node name="Settings" type="MarginContainer" parent="HBoxContainer/RightBar/TabContainer" node_paths=PackedStringArray("usernameSetting", "profilePictureDisplay", "profilePictureDialog")]
+[node name="Settings" type="MarginContainer" parent="HBoxContainer/RightBar/TabContainer" node_paths=PackedStringArray("usernameSetting", "profilePictureDisplay", "profilePictureDialog", "profileBlurbEdit", "profileDescriptionEdit")]
+visible = false
 layout_mode = 2
 script = ExtResource("15_3b65x")
 usernameSetting = NodePath("VBoxContainer/ScrollContainer/VBoxContainer/UserSettings/VBoxContainer/LineEdit")
 profilePictureDisplay = NodePath("VBoxContainer/ScrollContainer/VBoxContainer/UserSettings/VBoxContainer/ProfilePicture/TextureRect")
 profilePictureDialog = NodePath("FileDialog")
+profileBlurbEdit = NodePath("VBoxContainer/ScrollContainer/VBoxContainer/UserSettings/VBoxContainer/StatusEdit")
+profileDescriptionEdit = NodePath("VBoxContainer/ScrollContainer/VBoxContainer/UserSettings/VBoxContainer/DescriptionEdit")
 metadata/_edit_group_ = true
 
 [node name="FileDialog" type="FileDialog" parent="HBoxContainer/RightBar/TabContainer/Settings"]
@@ -471,6 +472,7 @@ max_length = 64
 custom_minimum_size = Vector2(0, 100)
 layout_mode = 2
 placeholder_text = "Profile description:"
+wrap_mode = 1
 
 [node name="Save" type="Button" parent="HBoxContainer/RightBar/TabContainer/Settings/VBoxContainer"]
 layout_mode = 2
@@ -1098,7 +1100,7 @@ offset_right = 870.0
 offset_bottom = 552.0
 script = ExtResource("41_iyw4k")
 profilePictureRect = NodePath("ScrollContainer/VBoxContainer/HBoxContainer/ProfilePicture")
-usernameLabel = NodePath("ScrollContainer/VBoxContainer/HBoxContainer/VBoxContainer/UsernameLabel")
+usernameLabel = NodePath("ScrollContainer/VBoxContainer/HBoxContainer/VBoxContainer/HBoxContainer/UsernameLabel")
 blurbLabel = NodePath("ScrollContainer/VBoxContainer/HBoxContainer/VBoxContainer/UnderlineLabel")
 profileTextLablel = NodePath("ScrollContainer/VBoxContainer/ProfileText")
 
@@ -1127,11 +1129,23 @@ expand_mode = 2
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="UsernameLabel" type="Label" parent="Popups/ProfileViewer/ScrollContainer/VBoxContainer/HBoxContainer/VBoxContainer"]
+[node name="HBoxContainer" type="HBoxContainer" parent="Popups/ProfileViewer/ScrollContainer/VBoxContainer/HBoxContainer/VBoxContainer"]
 layout_mode = 2
+
+[node name="UsernameLabel" type="Label" parent="Popups/ProfileViewer/ScrollContainer/VBoxContainer/HBoxContainer/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
 text = "username wagbiwabia"
 label_settings = SubResource("LabelSettings_odflw")
 clip_text = true
+
+[node name="Button" type="Button" parent="Popups/ProfileViewer/ScrollContainer/VBoxContainer/HBoxContainer/VBoxContainer/HBoxContainer" node_paths=PackedStringArray("target")]
+layout_mode = 2
+size_flags_vertical = 4
+mouse_default_cursor_shape = 2
+text = "X"
+script = ExtResource("15_kgtp7")
+target = NodePath("../../../../../..")
 
 [node name="UnderlineLabel" type="Label" parent="Popups/ProfileViewer/ScrollContainer/VBoxContainer/HBoxContainer/VBoxContainer"]
 layout_mode = 2
@@ -1204,3 +1218,4 @@ selection_enabled = true
 [connection signal="pressed" from="Popups/GenericPopup/VBoxContainer/Button" to="Popups/GenericPopup/VBoxContainer/Button" method="SetInvisible"]
 [connection signal="pressed" from="Popups/EmbedPreview/VBoxContainer/HBoxContainer/DownloadButton" to="Popups/EmbedPreview" method="Download"]
 [connection signal="pressed" from="Popups/EmbedPreview/VBoxContainer/HBoxContainer/Button" to="Popups/EmbedPreview/VBoxContainer/HBoxContainer/Button" method="SetInvisible"]
+[connection signal="pressed" from="Popups/ProfileViewer/ScrollContainer/VBoxContainer/HBoxContainer/VBoxContainer/HBoxContainer/Button" to="Popups/ProfileViewer/ScrollContainer/VBoxContainer/HBoxContainer/VBoxContainer/HBoxContainer/Button" method="SetInvisible"]

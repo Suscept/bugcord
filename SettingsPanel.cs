@@ -38,11 +38,15 @@ public partial class SettingsPanel : MarginContainer
 		}
 
 		usernameSetting.Text = userService.localPeer.username;
+		profileBlurbEdit.Text = userService.localPeer.profileBlurb;
+		profileDescriptionEdit.Text = userService.localPeer.profileText;
 	}
 
 	public void Save(){
 		userService.localPeer.username = usernameSetting.Text;
 		userService.localPeer.profilePictureId = pickedProfileImageId;
+		userService.localPeer.profileBlurb = profileBlurbEdit.Text;
+		userService.localPeer.profileText = profileDescriptionEdit.Text;
 		userService.SaveClientConfig();
 		userService.SaveLocalPeer();
 	}

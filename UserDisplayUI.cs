@@ -58,4 +58,12 @@ public partial class UserDisplayUI : MarginContainer
 		if (availableNow)
 			profileTexture.Texture = profileImage;
 	}
+
+	public void OnElementInput(InputEvent @event){
+		if (@event is InputEventMouseButton mouseEvent){
+			if (mouseEvent.ButtonIndex.HasFlag(MouseButton.Left) && mouseEvent.Pressed){
+				GetNode<ProfileViewer>("/root/Main/Popups/ProfileViewer").ViewPeerProfile(displayingUser);
+			}
+		}
+	}
 }

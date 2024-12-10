@@ -30,6 +30,8 @@ public partial class ProfileViewer : Panel
 		blurbLabel.Text = peer.profileBlurb;
 		profileTextLablel.Text = peer.profileText;
 
+		Visible = true;
+
 		SetProfilePicture(peer.profilePictureId);
 	}
 
