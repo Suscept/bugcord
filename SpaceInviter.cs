@@ -74,7 +74,7 @@ public partial class SpaceInviter : Panel
 		inviteEntries.Clear();
 
 		foreach (KeyValuePair<string, PeerService.Peer> peer in peerService.peers){
-			if (peer.Value.id == userService.userId)
+			if (peer.Value.id == userService.localPeer.id)
 				continue;
 
 			InvitePageEntry entry = inviteEntry.Instantiate<InvitePageEntry>();

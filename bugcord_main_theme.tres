@@ -1,4 +1,7 @@
-[gd_resource type="Theme" format=3 uid="uid://b44gnqmfnkq01"]
+[gd_resource type="Theme" load_steps=2 format=3 uid="uid://b44gnqmfnkq01"]
+
+[ext_resource type="StyleBox" uid="uid://fy3x8xo46mwx" path="res://bugcord_stylebox.tres" id="1_ofyhg"]
 
 [resource]
 default_font_size = 14
+Panel/styles/panel = ExtResource("1_ofyhg")

@@ -38,7 +38,7 @@ public partial class NotificationService : Node
 			GD.PrintErr("NotificationService: Packet contains less users than expected. Expected: " + users + " Got: " + userIds.Length);
 
 		for (int i = 0; i < users; i++){
-			if (userIds[i].GetStringFromUtf8() != userService.userId)
+			if (userIds[i].GetStringFromUtf8() != userService.localPeer.id)
 				continue;
 
 			switch (type)

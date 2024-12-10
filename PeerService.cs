@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 public partial class PeerService : Node
 {
-	public const ushort peerPackageVersion = 0;
+	public const ushort peerPackageVersion = 1;
 
 	[Signal] public delegate void OnProfileImageAvailableEventHandler(ImageTexture profile, string peerId);
 
@@ -39,7 +39,7 @@ public partial class PeerService : Node
 	}
 
 	public Peer GetLocalPeer(){
-		return GetPeer(userService.userId);
+		return userService.localPeer;
 	}
 
 	public Peer GetPeer(string peerId){
@@ -60,6 +60,7 @@ public partial class PeerService : Node
 	/// <param name="fullPeer">Out: If this peer is not yet fully known. We can wait on the request for that peer's full data if needed.</param>
 	/// <returns>The peer</returns>
 	public Peer GetPeer(string peerId, out bool fullPeer){
+		GD.Print("PeerService: Getting peer: " + peerId);
 		if (peers.ContainsKey(peerId)){
 			if (peers[peerId].publicKey != null && peers[peerId].publicKey.Length > 0){ // If public key length is zero then this is a temporary peer object
 				fullPeer = true;
@@ -122,6 +123,8 @@ public partial class PeerService : Node
 	}
 
 	public void SavePeerFile(Peer peer, double timestamp){
+		GD.Print("PeerService: Saving peer file " + peer.id);
+
 		List<byte> packageBytes = new List<byte>();
 		List<byte> signitureBytes = new List<byte>();
 
@@ -137,6 +140,18 @@ public partial class PeerService : Node
 			signitureBytes.AddRange(Bugcord.MakeDataSpan("null".ToUtf8Buffer()));
 		}
 
+		if (peer.profileBlurb != null && peer.profileBlurb.Length > 0){
+			signitureBytes.AddRange(Bugcord.MakeDataSpan(peer.profileBlurb.ToUtf8Buffer()));
+		}else{
+			signitureBytes.AddRange(Bugcord.MakeDataSpan("\n".ToUtf8Buffer()));
+		}
+
+		if (peer.profileText != null && peer.profileText.Length > 0){
+			signitureBytes.AddRange(Bugcord.MakeDataSpan(peer.profileText.ToUtf8Buffer()));
+		}else{
+			signitureBytes.AddRange(Bugcord.MakeDataSpan("\n".ToUtf8Buffer()));
+		}
+
 		packageBytes.AddRange(BitConverter.GetBytes(peerPackageVersion));
 		packageBytes.AddRange(keyService.SignData(signitureBytes.ToArray()));
 		packageBytes.AddRange(signitureBytes);
@@ -150,14 +165,15 @@ public partial class PeerService : Node
 		byte[] peerFile = fileService.GetServableData(peerId, RequestService.FileExtension.PeerData, out bool success);
 		if (!success){ // File is not on disk
 			GD.Print("- Peer file not available");
-			if (userService.userId == peerId){ // We're supposed to always have our own peerfile
-				userService.MakePeerFromUser();
+			if (userService.localPeer.id == peerId){ // We're supposed to always have our own peerfile
+				SavePeerFile(userService.localPeer, Time.GetUnixTimeFromSystem());
+				// userService.MakePeerFile();
 			}
 			return false;
 		}
 
 		ushort version = BitConverter.ToUInt16(peerFile, 0);
-		if (peerPackageVersion < version){ // Version not supported
+		if (peerPackageVersion > version){ // Version not supported
 			GD.Print("- Loading failed. Incorrect version: " + version + " Supported: " + peerPackageVersion);
 			return false;
 		}
@@ -171,9 +187,19 @@ public partial class PeerService : Node
 		byte[] publicKey = dataspans[1];
 		string username = dataspans[2].GetStringFromUtf8();
 		string profilePictureId = dataspans[3].GetStringFromUtf8();
+
+		string profileBlurb = dataspans[4].GetStringFromUtf8();
+		string profileText = dataspans[5].GetStringFromUtf8();
+
 		if (profilePictureId == "null"){
 			profilePictureId = null;
 		}
+
+		if (profileBlurb == "\n")
+			profileBlurb = "";
+		if (profileText == "\n")
+			profileText = "";
+
 
 		// Verify everything
 		if (id != peerId){
@@ -232,5 +258,7 @@ public partial class PeerService : Node
 		public string username;
 		public string profilePictureId;
 		public byte[] publicKey;
+		public string profileBlurb;
+		public string profileText;
 	}
 }

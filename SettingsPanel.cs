@@ -6,6 +6,8 @@ public partial class SettingsPanel : MarginContainer
 	[Export] public LineEdit usernameSetting;
 	[Export] public TextureRect profilePictureDisplay;
 	[Export] public FileDialog profilePictureDialog;
+	[Export] public LineEdit profileBlurbEdit;
+	[Export] public TextEdit profileDescriptionEdit;
 
 	private string pickedProfileImageId;
 	private FileService fileService;
@@ -27,21 +29,22 @@ public partial class SettingsPanel : MarginContainer
 		fileService = GetNode<FileService>("/root/Main/Bugcord/FileService");
 		userService = GetNode<UserService>("/root/Main/Bugcord/UserService");
 
-		if (userService.profilePictureFileId != null && userService.profilePictureFileId != ""){
-			if (fileService.GetFile(userService.profilePictureFileId, out byte[] data)){
+		if (userService.localPeer.profilePictureId != null && userService.localPeer.profilePictureId != ""){
+			if (fileService.GetFile(userService.localPeer.profilePictureId, out byte[] data)){
 				TryLoadProfilePicture();
 			}else{
 				fileService.OnCacheChanged += TryLoadProfilePicture;
 			}
 		}
 
-		usernameSetting.Text = userService.userName;
+		usernameSetting.Text = userService.localPeer.username;
 	}
 
 	public void Save(){
-		userService.userName = usernameSetting.Text;
-		userService.profilePictureFileId = pickedProfileImageId;
-		userService.SaveToFile();
+		userService.localPeer.username = usernameSetting.Text;
+		userService.localPeer.profilePictureId = pickedProfileImageId;
+		userService.SaveClientConfig();
+		userService.SaveLocalPeer();
 	}
 
 	public void PickProfileImage(){
@@ -55,11 +58,11 @@ public partial class SettingsPanel : MarginContainer
 	}
 
 	public void TryLoadProfilePicture(){
-		DisplayProfileImage(fileService.GetCachePath(userService.profilePictureFileId));
+		DisplayProfileImage(fileService.GetCachePath(userService.localPeer.profilePictureId));
 	}
 
 	public void TryLoadProfilePicture(string fileId){ // Called from cache update
-		if (fileId != userService.profilePictureFileId)
+		if (fileId != userService.localPeer.profilePictureId)
 			return;
 
 		TryLoadProfilePicture();

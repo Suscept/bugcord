@@ -76,7 +76,7 @@ public partial class StreamService : Node
 
 		// Loop over each voice stream from each peer
 		foreach (KeyValuePair<string, List<float>> entry in incomingVoiceBuffer){
-			if (entry.Key == userService.userId) // If this is our own voice stream
+			if (entry.Key == userService.localPeer.id) // If this is our own voice stream
 				continue;
 			if (entry.Value.Count < opusFrameCount) // Stream too small
 				continue;
@@ -145,7 +145,7 @@ public partial class StreamService : Node
 	private byte[] BuildVoicePacket(byte[] audioFrames){
 		List<byte> packetBytes = new List<byte>();
 
-		packetBytes.AddRange(Bugcord.MakeDataSpan(userService.userId.ToUtf8Buffer()));
+		packetBytes.AddRange(Bugcord.MakeDataSpan(userService.localPeer.id.ToUtf8Buffer()));
 		packetBytes.AddRange(Bugcord.MakeDataSpan(audioFrames, 0));
 
 		return packetBytes.ToArray();

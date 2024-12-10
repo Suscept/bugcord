@@ -14,10 +14,6 @@ public partial class Bugcord : Node
 	[Signal] public delegate void OnMessageRecievedEventHandler(Dictionary message);
 	[Signal] public delegate void OnConnectedToSpaceEventHandler(string spaceId, string spaceName);
 
-	public const int minAudioFrames = 2048;
-	public const int maxAudioFrames = 4096;
-	public const int audioFrames = 4096;
-
 	public const int filePacketSize = 4096;
 
 	public static string selectedSpaceId;
@@ -159,7 +155,7 @@ public partial class Bugcord : Node
 		}
 
 		userService.savedServerIp = url;
-		userService.SaveToFile();
+		userService.SaveClientConfig();
 
 		PacketService.ParseUrl(url, out string host, out int port);
 		packetService.Connect(host, port);
@@ -177,7 +173,7 @@ public partial class Bugcord : Node
 	public void SetAutoConnect(bool setTrue){
 		userService.autoConnectToServer = setTrue;
 
-		userService.SaveToFile();
+		userService.SaveClientConfig();
 	}
 
 	public void OnConnected(){
@@ -191,13 +187,15 @@ public partial class Bugcord : Node
 	#region user file related
 
 	public bool LogIn(){
+		GD.Print("Logging in..");
+
 		// User RSA key
 		if (!keyService.AuthLoadFromFile()){
 			return false;
 		}
 
-		userService.LoadFromPeer(peerService.GetPeer(userService.userId));
-		userService.LoadFromFile();
+		userService.localPeer = peerService.GetPeer(keyService.GetUserIdFromAuth());
+		userService.LoadClientConfig();
 
 	 	spaceService.LoadFromFile();
 
@@ -212,8 +210,12 @@ public partial class Bugcord : Node
 		return true;
 	}
 
+	/// <summary>
+	/// Attempts to log in to whatever user account the current key file represents.
+	/// </summary>
+	/// <returns>If login was successful</returns>
 	public bool TryLogIn(){
-		// User RSA key
+		// Attempt to load the key file
 		if (!keyService.AuthLoadFromFile()){
 			return false; // It's currently not possible to log in without the private key file being on disk
 		}
@@ -222,24 +224,19 @@ public partial class Bugcord : Node
 	}
 
 	public bool TryLogIn(string userId, string password){
-		userService.userId = userId;
+		GD.Print("Trying login ID: " + userId);
 
-		// User RSA key
+		// Attempt to load the key file
 		if (!keyService.AuthLoadFromFile()){
 			return false; // It's currently not possible to log in without the private key file being on disk
 		}
 
 		if (!fileService.IsFileServable(userId, RequestService.FileExtension.PeerData)){
-			requestService.Request(userId, RequestService.FileExtension.PeerData, RequestService.VerifyMethod.NewestSignature, TryContinueLogin);
-			requestService.OnRequestSuccess += TryContinueLogin;
-			return false;
+			GD.Print("- No peer data file");
+			userService.MakePeerFile();
 		}
 
 		return LogIn();
-	}
-
-	public void TryContinueLogin(string requestId){
-		LogIn();
 	}
 
 	public void CreateUserFile(string username, string password){
@@ -248,15 +245,17 @@ public partial class Bugcord : Node
 		keyService.NewUserAuth();
 		keyService.AuthSaveToFile();
 
-		userService.MakeNewUser(username, password);
-		userService.SaveToFile();
+		userService.MakePeerFile();
+		userService.localPeer.username = username;
+		// userService.MakeNewUser(username, password);
+		userService.SaveClientConfig();
 
 		LogIn();
 		alertService.NewAlert("Welcome to Bugcord!", "Thank you for downloading Bugcord! Here's what you need to do to get chatting\n.1 Connect to a relay server. On the top left, enter the url or ip address to a relay server.\n.2 Create or join a space. Underneath where you enter a relay server, you may create your own space. Or have a friend invite to their own and the space will show up automatically.\n3. Get chatting! But for free, for real.", "Get chatting");
 	}
 
 	public string GetClientId(){
-		return userService.userId;
+		return userService.localPeer.id;
 	}
 
 	#endregion
@@ -636,7 +635,7 @@ public partial class Bugcord : Node
 
 		List<byte> sectionToEncrypt = new List<byte>();
 
-		sectionToEncrypt.AddRange(MakeDataSpan(userService.userId.ToUtf8Buffer())); // Sender id
+		sectionToEncrypt.AddRange(MakeDataSpan(userService.localPeer.id.ToUtf8Buffer())); // Sender id
 
 		// Notifications
 		List<string> peersToNotify = new List<string>();
@@ -672,11 +671,11 @@ public partial class Bugcord : Node
 		};
 
 		byte[] publicKey = keyService.GetPublicKey();
-		byte[] username = userService.userName.ToUtf8Buffer();
-		byte[] guid = userService.userId.ToUtf8Buffer();
+		byte[] username = userService.localPeer.username.ToUtf8Buffer();
+		byte[] guid = userService.localPeer.id.ToUtf8Buffer();
 		byte[] profilePicture = "null".ToUtf8Buffer();
-		if (userService.profilePictureFileId != null && userService.profilePictureFileId.Length > 0){
-			profilePicture = userService.profilePictureFileId.ToUtf8Buffer();
+		if (userService.localPeer.profilePictureId != null && userService.localPeer.profilePictureId.Length > 0){
+			profilePicture = userService.localPeer.profilePictureId.ToUtf8Buffer();
 		}
 		
 		packetBytes.AddRange(MakeDataSpan(guid));

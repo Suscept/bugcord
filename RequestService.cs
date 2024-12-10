@@ -94,7 +94,7 @@ public partial class RequestService : Node
 		EmitSignal(SignalName.OnRequestCreated, id);
 
 		if (subscription != null){
-			if (subscriptions[id] == null){
+			if (!subscriptions.ContainsKey(id)){
 				GD.Print("- Creating new subscription list");
 				subscriptions.Add(id, new List<Action<string>>());
 			}

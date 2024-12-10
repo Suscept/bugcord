@@ -8,7 +8,8 @@ public partial class UserService : Node
 	[Signal] public delegate void OnLoggedInEventHandler();
 
 	// Local peer
-	public string userId;
+	public PeerService.Peer localPeer;
+	// public string userId;
 	public string userName = "username";
 	public string profilePictureFileId;
 
@@ -38,12 +39,32 @@ public partial class UserService : Node
 	}
 
 	/// <summary>
+	/// Creates a peer object and file for this peer. Overrides the current local peer so be careful.
+	/// </summary>
+	public void MakePeerFile(){
+		string userId = keyService.GetUserIdFromAuth();
+
+		PeerService.Peer peer = new PeerService.Peer(){
+			id = userId,
+			username = userId.Substring(0, 6),
+			publicKey = keyService.GetPublicKey(),
+		};
+
+		localPeer = peer;
+		SaveLocalPeer();
+	}
+
+	public void SaveLocalPeer(){
+		peerService.SavePeerFile(localPeer, Time.GetUnixTimeFromSystem());
+	}
+
+	/// <summary>
 	/// Turns the current user into a peer and saves to a file.
 	/// </summary>
 	public void MakePeerFromUser(){
 		PeerService.Peer peer = new PeerService.Peer(){
-			id = userId,
-			username = userName,
+			id = keyService.GetUserIdFromAuth(),
+			username = "username",
 			profilePictureId = profilePictureFileId,
 			publicKey = keyService.GetPublicKey(),
 		};
@@ -54,15 +75,16 @@ public partial class UserService : Node
 			peerService.peers.Add(peer.id, peer);
 		}
 
-		peerService.SavePeerFile(peer, Time.GetUnixTimeFromSystem());
+		SaveLocalPeer();
+		localPeer = peer;
 	}
 
 	public void MakeNewUser(string username, string password){
-		userId = KeyService.GetSHA256HashString(keyService.GetPublicKey()); // User id is the hash of the user's public key
+		// userId = KeyService.GetSHA256HashString(keyService.GetPublicKey()); // User id is the hash of the user's public key
 		userName = username;
 	}
 
-	public void SaveToFile(){
+	public void SaveClientConfig(){
 		GD.Print("UserService: Saving user file...");
 
 		Dictionary userDict = new Dictionary{
@@ -82,10 +104,10 @@ public partial class UserService : Node
 		userFile.StoreLine(Json.Stringify(userDict));
 		userFile.Close();
 
-		MakePeerFromUser();
+		// MakePeerFromUser();
 	}
 
-	public bool LoadFromFile(){
+	public bool LoadClientConfig(){
 		if (!FileAccess.FileExists(clientSavePath))
 			return false;
 
@@ -118,8 +140,6 @@ public partial class UserService : Node
 	}
 
 	public void LoadFromPeer(PeerService.Peer peer){
-		userId = peer.id;
-		userName = peer.username;
-		profilePictureFileId = peer.profilePictureId;
+		localPeer = peer;
 	}
 }

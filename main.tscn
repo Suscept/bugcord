@@ -1,4 +1,4 @@
-[gd_scene load_steps=43 format=3 uid="uid://b4h65lw1u6cii"]
+[gd_scene load_steps=45 format=3 uid="uid://b4h65lw1u6cii"]
 
 [ext_resource type="Script" path="res://Bugcord.cs" id="1_jyk1e"]
 [ext_resource type="PackedScene" uid="uid://c0hr25wlgd0kt" path="res://message.tscn" id="1_ki7uw"]
@@ -40,6 +40,7 @@
 [ext_resource type="Script" path="res://RequestDebugView.cs" id="35_k7oys"]
 [ext_resource type="PackedScene" uid="uid://bee1wu35jp3qv" path="res://request_debug.tscn" id="36_vcdlk"]
 [ext_resource type="Script" path="res://EmbedPreviewer.cs" id="38_mrfv4"]
+[ext_resource type="Script" path="res://ProfileViewer.cs" id="41_iyw4k"]
 
 [sub_resource type="AudioStreamGenerator" id="AudioStreamGenerator_2jvjo"]
 mix_rate = 48000.0
@@ -55,6 +56,9 @@ expand_margin_left = 2.0
 expand_margin_top = 2.0
 expand_margin_right = 2.0
 expand_margin_bottom = 2.0
+
+[sub_resource type="LabelSettings" id="LabelSettings_odflw"]
+font_size = 24
 
 [node name="Main" type="Control"]
 layout_mode = 3
@@ -387,12 +391,13 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/side_margin = 0
 theme_override_font_sizes/font_size = 14
+current_tab = 1
 
 [node name="Space" type="MarginContainer" parent="HBoxContainer/RightBar/TabContainer"]
+visible = false
 layout_mode = 2
 
 [node name="Settings" type="MarginContainer" parent="HBoxContainer/RightBar/TabContainer" node_paths=PackedStringArray("usernameSetting", "profilePictureDisplay", "profilePictureDialog")]
-visible = false
 layout_mode = 2
 script = ExtResource("15_3b65x")
 usernameSetting = NodePath("VBoxContainer/ScrollContainer/VBoxContainer/UserSettings/VBoxContainer/LineEdit")
@@ -455,6 +460,17 @@ flat = true
 layout_mode = 2
 size_flags_horizontal = 3
 placeholder_text = "Username:"
+
+[node name="StatusEdit" type="LineEdit" parent="HBoxContainer/RightBar/TabContainer/Settings/VBoxContainer/ScrollContainer/VBoxContainer/UserSettings/VBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "Status:"
+max_length = 64
+
+[node name="DescriptionEdit" type="TextEdit" parent="HBoxContainer/RightBar/TabContainer/Settings/VBoxContainer/ScrollContainer/VBoxContainer/UserSettings/VBoxContainer"]
+custom_minimum_size = Vector2(0, 100)
+layout_mode = 2
+placeholder_text = "Profile description:"
 
 [node name="Save" type="Button" parent="HBoxContainer/RightBar/TabContainer/Settings/VBoxContainer"]
 layout_mode = 2
@@ -1073,6 +1089,69 @@ size_flags_vertical = 3
 texture = ExtResource("16_h3cnx")
 expand_mode = 1
 stretch_mode = 5
+
+[node name="ProfileViewer" type="Panel" parent="Popups" node_paths=PackedStringArray("profilePictureRect", "usernameLabel", "blurbLabel", "profileTextLablel")]
+visible = false
+offset_left = 614.0
+offset_top = 40.0
+offset_right = 870.0
+offset_bottom = 552.0
+script = ExtResource("41_iyw4k")
+profilePictureRect = NodePath("ScrollContainer/VBoxContainer/HBoxContainer/ProfilePicture")
+usernameLabel = NodePath("ScrollContainer/VBoxContainer/HBoxContainer/VBoxContainer/UsernameLabel")
+blurbLabel = NodePath("ScrollContainer/VBoxContainer/HBoxContainer/VBoxContainer/UnderlineLabel")
+profileTextLablel = NodePath("ScrollContainer/VBoxContainer/ProfileText")
+
+[node name="ScrollContainer" type="ScrollContainer" parent="Popups/ProfileViewer"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+horizontal_scroll_mode = 0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Popups/ProfileViewer/ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="HBoxContainer" type="HBoxContainer" parent="Popups/ProfileViewer/ScrollContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="ProfilePicture" type="TextureRect" parent="Popups/ProfileViewer/ScrollContainer/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+texture = ExtResource("16_h3cnx")
+expand_mode = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Popups/ProfileViewer/ScrollContainer/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="UsernameLabel" type="Label" parent="Popups/ProfileViewer/ScrollContainer/VBoxContainer/HBoxContainer/VBoxContainer"]
+layout_mode = 2
+text = "username wagbiwabia"
+label_settings = SubResource("LabelSettings_odflw")
+clip_text = true
+
+[node name="UnderlineLabel" type="Label" parent="Popups/ProfileViewer/ScrollContainer/VBoxContainer/HBoxContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "blurbnajwjakhj"
+clip_text = true
+
+[node name="ProfileText" type="RichTextLabel" parent="Popups/ProfileViewer/ScrollContainer/VBoxContainer"]
+layout_mode = 2
+focus_mode = 2
+theme_override_font_sizes/normal_font_size = 14
+theme_override_font_sizes/bold_font_size = 16
+theme_override_font_sizes/italics_font_size = 14
+theme_override_font_sizes/bold_italics_font_size = 16
+theme_override_font_sizes/mono_font_size = 14
+bbcode_enabled = true
+text = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Praesent nec turpis vel dui volutpat gravida at quis ante. Curabitur sed nibh justo. Sed gravida massa ut tellus accumsan, sit amet tristique velit tincidunt. Quisque pharetra orci nec aliquam blandit. Curabitur eget eros laoreet, volutpat ligula bibendum, malesuada metus. Donec ut lectus arcu. Suspendisse vitae massa tellus. Integer pretium ante ut nibh tristique auctor. Vestibulum sapien ligula, bibendum quis sapien et, convallis porttitor ante. Nullam interdum iaculis tellus at dapibus. Donec ac mattis massa, et dictum nibh. Vivamus et urna nec augue tempor rutrum ut nec neque. Suspendisse pretium tempor cursus."
+fit_content = true
+scroll_active = false
+selection_enabled = true
 
 [connection signal="OnConnectedToSpace" from="Bugcord" to="HBoxContainer/ChatMain/VBoxContainer/HBoxContainer2/SpaceView" method="UpdateSpaceInfo"]
 [connection signal="OnConnectedToSpace" from="Bugcord" to="HBoxContainer/ChatMain/VBoxContainer/MessageWindow" method="DisplaySpaceMessages"]
