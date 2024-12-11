@@ -11,7 +11,7 @@ outline_size = 1
 font_size = 12
 font_color = Color(0.629675, 0.629675, 0.629675, 1)
 
-[node name="MessageUI" type="MarginContainer" node_paths=PackedStringArray("imageContent", "profilePicture", "textContent", "usernameLabel", "mediaLoadingProgressLabel", "timestampLabel", "extraOptionsDropdown", "jumpToReplyButton", "contentContainer")]
+[node name="MessageUI" type="MarginContainer" node_paths=PackedStringArray("imageContent", "profilePicture", "textContent", "usernameLabel", "mediaLoadingProgressLabel", "timestampLabel", "extraOptionsDropdown", "jumpToReplyButton")]
 offset_right = 252.0
 offset_bottom = 80.0
 size_flags_horizontal = 3
@@ -27,7 +27,6 @@ mediaLoadingProgressLabel = NodePath("VBoxContainer/MarginContainer/HBoxContaine
 timestampLabel = NodePath("VBoxContainer/MarginContainer/HBoxContainer/VBoxContainer/Metadata/Timestamp")
 extraOptionsDropdown = NodePath("VBoxContainer/MarginContainer/HBoxContainer/MenuButton")
 jumpToReplyButton = NodePath("VBoxContainer/Reply")
-contentContainer = NodePath("VBoxContainer/MarginContainer/HBoxContainer/VBoxContainer")
 
 [node name="VBoxContainer" type="VBoxContainer" parent="."]
 layout_mode = 2
