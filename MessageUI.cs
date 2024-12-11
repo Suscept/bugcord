@@ -82,6 +82,7 @@ public partial class MessageUI : MarginContainer
 		if (message.embedId != null && message.embedId.Length > 0){
 			waitingForEmbedGuid = message.embedId;
 		
+			mediaLoadingProgressLabel.Visible = true;
 			mediaLoadingProgressLabel.Text = "Loading...";
 		}else{
 			imageContent.Visible = false;
@@ -141,6 +142,14 @@ public partial class MessageUI : MarginContainer
 		if (inputEvent is InputEventMouseButton mouseEvent){
 			if (mouseEvent.ButtonMask == MouseButtonMask.Left){
 				GetNode<EmbedPreviewer>("/root/Main/Popups/EmbedPreview").PreviewEmbed(waitingForEmbedGuid);
+			}
+		}
+	}
+
+	public void OnUserDisplayInput(InputEvent @event){
+		if (@event is InputEventMouseButton mouseEvent){
+			if (mouseEvent.ButtonIndex.HasFlag(MouseButton.Left) && mouseEvent.Pressed){
+				GetNode<ProfileViewer>("/root/Main/Popups/ProfileViewer").ViewPeerProfile(peerService.GetPeer(myMessage.senderId));
 			}
 		}
 	}
