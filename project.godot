@@ -10,9 +10,10 @@ config_version=5
 
 [application]
 
-config/name="bugcord"
+config/name="Bugcord"
 run/main_scene="res://main.tscn"
 config/features=PackedStringArray("4.2", "C#", "GL Compatibility")
+boot_splash/image="res://ProgrammerArtLogo.png"
 config/icon="res://icon.svg"
 
 [audio]
