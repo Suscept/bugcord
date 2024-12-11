@@ -60,7 +60,6 @@ public partial class PeerService : Node
 	/// <param name="fullPeer">Out: If this peer is not yet fully known. We can wait on the request for that peer's full data if needed.</param>
 	/// <returns>The peer</returns>
 	public Peer GetPeer(string peerId, out bool fullPeer){
-		GD.Print("PeerService: Getting peer: " + peerId);
 		if (peers.ContainsKey(peerId)){
 			if (peers[peerId].publicKey != null && peers[peerId].publicKey.Length > 0){ // If public key length is zero then this is a temporary peer object
 				fullPeer = true;
@@ -68,6 +67,7 @@ public partial class PeerService : Node
 			}
 		}
 
+		GD.Print("PeerService: Getting peer: " + peerId);
 		bool peerFileAvailable = LoadPeerFile(peerId);
 		fullPeer = peerFileAvailable;
 		if (!peerFileAvailable){
