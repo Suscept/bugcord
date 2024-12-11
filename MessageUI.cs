@@ -81,7 +81,7 @@ public partial class MessageUI : MarginContainer
 
 		if (message.embedId != null && message.embedId.Length > 0){
 			waitingForEmbedGuid = message.embedId;
-		
+
 			mediaLoadingProgressLabel.Visible = true;
 			mediaLoadingProgressLabel.Text = "Loading...";
 		}else{
@@ -91,7 +91,9 @@ public partial class MessageUI : MarginContainer
 	}
 
 	public void SetupMessageContent(string text){
-		string[] lines = text.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+		string sanitizedText = text.Replace("[", "[lb]"); // Removes the ability for users to add their own BBCode tags to their messages
+
+		string[] lines = sanitizedText.Split('\n', StringSplitOptions.RemoveEmptyEntries);
 		string processedLines = "";
 		for (int i = 0; i < lines.Length; i++){
 			if (lines[i][0] == '>'){ // Greentext
@@ -103,6 +105,7 @@ public partial class MessageUI : MarginContainer
 			}
 			processedLines += lines[i];
 		}
+
 		textContent.Text = processedLines;
 	}
 
