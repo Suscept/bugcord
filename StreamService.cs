@@ -126,7 +126,7 @@ public partial class StreamService : Node
 	}
 
 	private void ProcessVoicePacket(byte[] packet){
-		byte[][] dataSpans = Bugcord.ReadDataSpans(packet, 0);
+		byte[][] dataSpans = Buglib.ReadDataSpans(packet, 0);
 
 		string senderId = dataSpans[0].GetStringFromUtf8();
 		byte[] framesEncoded = dataSpans[1];
@@ -145,8 +145,8 @@ public partial class StreamService : Node
 	private byte[] BuildVoicePacket(byte[] audioFrames){
 		List<byte> packetBytes = new List<byte>();
 
-		packetBytes.AddRange(Bugcord.MakeDataSpan(userService.localPeer.id.ToUtf8Buffer()));
-		packetBytes.AddRange(Bugcord.MakeDataSpan(audioFrames, 0));
+		packetBytes.AddRange(Buglib.MakeDataSpan(userService.localPeer.id.ToUtf8Buffer()));
+		packetBytes.AddRange(Buglib.MakeDataSpan(audioFrames, 0));
 
 		return packetBytes.ToArray();
 	}

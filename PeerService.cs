@@ -130,26 +130,26 @@ public partial class PeerService : Node
 
 		signitureBytes.AddRange(BitConverter.GetBytes(timestamp));
 		
-		signitureBytes.AddRange(Bugcord.MakeDataSpan(peer.id.ToUtf8Buffer()));
-		signitureBytes.AddRange(Bugcord.MakeDataSpan(peer.publicKey));
-		signitureBytes.AddRange(Bugcord.MakeDataSpan(peer.username.ToUtf8Buffer()));
+		signitureBytes.AddRange(Buglib.MakeDataSpan(peer.id.ToUtf8Buffer()));
+		signitureBytes.AddRange(Buglib.MakeDataSpan(peer.publicKey));
+		signitureBytes.AddRange(Buglib.MakeDataSpan(peer.username.ToUtf8Buffer()));
 
 		if (peer.profilePictureId != null && peer.profilePictureId.Length > 0){
-			signitureBytes.AddRange(Bugcord.MakeDataSpan(peer.profilePictureId.ToUtf8Buffer()));
+			signitureBytes.AddRange(Buglib.MakeDataSpan(peer.profilePictureId.ToUtf8Buffer()));
 		}else{
-			signitureBytes.AddRange(Bugcord.MakeDataSpan("null".ToUtf8Buffer()));
+			signitureBytes.AddRange(Buglib.MakeDataSpan("null".ToUtf8Buffer()));
 		}
 
 		if (peer.profileBlurb != null && peer.profileBlurb.Length > 0){
-			signitureBytes.AddRange(Bugcord.MakeDataSpan(peer.profileBlurb.ToUtf8Buffer()));
+			signitureBytes.AddRange(Buglib.MakeDataSpan(peer.profileBlurb.ToUtf8Buffer()));
 		}else{
-			signitureBytes.AddRange(Bugcord.MakeDataSpan("\n".ToUtf8Buffer()));
+			signitureBytes.AddRange(Buglib.MakeDataSpan("\n".ToUtf8Buffer()));
 		}
 
 		if (peer.profileText != null && peer.profileText.Length > 0){
-			signitureBytes.AddRange(Bugcord.MakeDataSpan(peer.profileText.ToUtf8Buffer()));
+			signitureBytes.AddRange(Buglib.MakeDataSpan(peer.profileText.ToUtf8Buffer()));
 		}else{
-			signitureBytes.AddRange(Bugcord.MakeDataSpan("\n".ToUtf8Buffer()));
+			signitureBytes.AddRange(Buglib.MakeDataSpan("\n".ToUtf8Buffer()));
 		}
 
 		packageBytes.AddRange(BitConverter.GetBytes(peerPackageVersion));
@@ -178,10 +178,10 @@ public partial class PeerService : Node
 			return false;
 		}
 
-		byte[] signature = Bugcord.ReadLength(peerFile, 2, 256);
+		byte[] signature = Buglib.ReadLength(peerFile, 2, 256);
 		double timestamp = BitConverter.ToDouble(peerFile, 258);
 
-		byte[][] dataspans = Bugcord.ReadDataSpans(peerFile, 266);
+		byte[][] dataspans = Buglib.ReadDataSpans(peerFile, 266);
 
 		string id = dataspans[0].GetStringFromUtf8();
 		byte[] publicKey = dataspans[1];
@@ -214,7 +214,7 @@ public partial class PeerService : Node
 		}
 
 		// Make sure the package was actually created by this peer
-		byte[] signatureSection = Bugcord.ReadLengthInfinetly(peerFile, 258);
+		byte[] signatureSection = Buglib.ReadLengthInfinetly(peerFile, 258);
 		if (KeyService.VerifySignature(signatureSection, signature, publicKey) == false){
 			GD.Print("- Loading failed. Signature not verified");
 			return false;

@@ -96,7 +96,7 @@ public partial class EventChainService : Node
 		FileAccess eventFile = FileAccess.Open(chainStorePath + "/" + keyChain + ".chain", FileAccess.ModeFlags.Read);
 
 		byte[] eventChainRaw = eventFile.GetBuffer((long)eventFile.GetLength());
-		byte[][] dataspans = Bugcord.ReadDataSpans(eventChainRaw, 3);
+		byte[][] dataspans = Buglib.ReadDataSpans(eventChainRaw, 3);
 
 		ushort chainVersion = BitConverter.ToUInt16(eventChainRaw, 0);
 		if (chainVersion > eventChainVersion){
@@ -120,7 +120,7 @@ public partial class EventChainService : Node
 			if (isFinishedChain)
 				endOffset = 1;
 			for (int i = 1; i < dataspans.Length - endOffset; i++){
-				byte[][] eventDataspans = Bugcord.ReadDataSpans(dataspans[i], 10);
+				byte[][] eventDataspans = Buglib.ReadDataSpans(dataspans[i], 10);
 
 				ushort eventVersion = BitConverter.ToUInt16(dataspans[i], 0);
 				double eventTimestamp = BitConverter.ToDouble(dataspans[i], 2);
@@ -150,12 +150,12 @@ public partial class EventChainService : Node
 
 		eventSection.AddRange(BitConverter.GetBytes(eventVersion));
 		eventSection.AddRange(BitConverter.GetBytes(packet.timestamp));
-		eventSection.AddRange(Bugcord.MakeDataSpan(packet.data));
+		eventSection.AddRange(Buglib.MakeDataSpan(packet.data));
 
 		FileAccess eventFile = FileAccess.Open(chainStorePath + keyChain + ".chain", FileAccess.ModeFlags.ReadWrite);
 
 		eventFile.SeekEnd();
-		eventFile.StoreBuffer(Bugcord.MakeDataSpan(eventSection.ToArray()));
+		eventFile.StoreBuffer(Buglib.MakeDataSpan(eventSection.ToArray()));
 		eventFile.Close();
 	}
 
@@ -166,7 +166,7 @@ public partial class EventChainService : Node
 
 		eventSection.AddRange(BitConverter.GetBytes(eventChainVersion));
 		eventSection.Add(0);
-		eventSection.AddRange(Bugcord.MakeDataSpan(previousChainId.ToUtf8Buffer()));
+		eventSection.AddRange(Buglib.MakeDataSpan(previousChainId.ToUtf8Buffer()));
 
 		FileAccess newEventFile = FileAccess.Open(chainStorePath + chainId + ".chain", FileAccess.ModeFlags.Write);
 		newEventFile.StoreBuffer(eventSection.ToArray());

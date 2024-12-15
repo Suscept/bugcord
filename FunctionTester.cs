@@ -26,7 +26,7 @@ public partial class FunctionTester : Panel
 		switch (type)
 		{
 			case 0:
-				foreach (byte[] b in Bugcord.ReadDataSpans(Bugcord.FromBase64(input.Text), 0)){
+				foreach (byte[] b in Buglib.ReadDataSpans(Bugcord.FromBase64(input.Text), 0)){
 					foreach (byte bt in b){
 						GD.Print(bt);
 					}

@@ -1,5 +1,6 @@
 using Godot;
 using System;
+using System.Collections.Generic;
 using System.Reflection;
 using System.Text;
 
@@ -119,4 +120,79 @@ public partial class Buglib : Node
 	{
 		return  o.GetType().GetConstructor(new Type[0])!=null;
 	}
+
+	#region Dataspans
+	public static byte[] ReadDataSpan(byte[] fullSpan, int startIndex){
+		ushort spanLength = BitConverter.ToUInt16(fullSpan, startIndex);
+
+		if (spanLength == 0){ // A dataspan length of zero assumes its a very large span at the end of the data
+			return ReadLengthInfinetly(fullSpan, startIndex + 2);
+		}
+
+		return ReadLength(fullSpan, startIndex + 2, spanLength);
+	}
+
+	public static byte[][] ReadDataSpans(byte[] fullData, int startIndex){
+		List<byte[]> spans = new List<byte[]>();
+		for (int i = startIndex; i < fullData.Length; i += 0){ // increment not needed
+			byte[] gotSpan = ReadDataSpan(fullData, i);
+			spans.Add(gotSpan);
+			i += gotSpan.Length + 2; // +2 accounts for length header
+		}
+
+		return spans.ToArray();
+	}
+
+	/// <summary>
+	/// Reads all data after a specified index.
+	/// </summary>
+	/// <param name="data"></param>
+	/// <param name="startIndex"></param>
+	/// <returns></returns>
+	public static byte[] ReadLengthInfinetly(byte[] data, int startIndex){
+		int length = data.Length - startIndex;
+
+		byte[] read = new byte[length];
+		
+		for (int i = 0; i < length; i++){
+			read[i] = data[i + startIndex];
+		}
+
+		return read;
+	}
+
+	public static byte[] ReadLength(byte[] data, int startIndex, int length){
+		if (data.Length < (startIndex + length)){
+			GD.PrintErr("Dataspan reading failed. Index out of range. Length: " + length);
+			throw new IndexOutOfRangeException();
+		}
+
+		byte[] read = new byte[length];
+		
+		for (int i = 0; i < length; i++){
+			read[i] = data[i + startIndex];
+		}
+
+		return read;
+	}
+
+	public static byte[] MakeDataSpan(byte[] data){
+		if (data.Length > 32767)
+			GD.PrintErr("Attempting to create a dataspan with a length of more than 32767. Consider overriding length to zero if this span is the last of a set.");
+		return MakeDataSpan(data, (short)data.Length);
+	}
+
+	public static byte[] MakeDataSpan(byte[] data, short lengthHeaderOverride){
+		List<byte> bytes = new List<byte>();
+		short dataLength = lengthHeaderOverride;
+
+		byte[] lengthHeader = BitConverter.GetBytes(dataLength);
+
+		bytes.AddRange(lengthHeader);
+		bytes.AddRange(data);
+
+		return bytes.ToArray();
+	}
+
+	#endregion
 }

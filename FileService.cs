@@ -117,19 +117,19 @@ public partial class FileService : Node
 			byte[] iv = KeyService.GetRandomBytes(16);
 
 			packagedFileData.AddRange(iv);
-			packagedFileData.AddRange(Bugcord.MakeDataSpan(Bugcord.selectedKeyId.ToUtf8Buffer()));
+			packagedFileData.AddRange(Buglib.MakeDataSpan(Bugcord.selectedKeyId.ToUtf8Buffer()));
 
 			// Begin encrypted section
 			List<byte> encryptSection = new List<byte>();
 
-			encryptSection.AddRange(Bugcord.MakeDataSpan(filename.ToUtf8Buffer()));
-			encryptSection.AddRange(Bugcord.MakeDataSpan(file, 0)); // Override length header to signify infinite length
+			encryptSection.AddRange(Buglib.MakeDataSpan(filename.ToUtf8Buffer()));
+			encryptSection.AddRange(Buglib.MakeDataSpan(file, 0)); // Override length header to signify infinite length
 
 			byte[] encryptedData = keyService.EncryptWithKey(encryptSection.ToArray(), encryptKeyId, iv);
-			packagedFileData.AddRange(Bugcord.MakeDataSpan(encryptedData, 0));
+			packagedFileData.AddRange(Buglib.MakeDataSpan(encryptedData, 0));
 		}else{
-			packagedFileData.AddRange(Bugcord.MakeDataSpan(filename.ToUtf8Buffer()));
-			packagedFileData.AddRange(Bugcord.MakeDataSpan(file, 0));
+			packagedFileData.AddRange(Buglib.MakeDataSpan(filename.ToUtf8Buffer()));
+			packagedFileData.AddRange(Buglib.MakeDataSpan(file, 0));
 		}
 
 		fileHash = KeyService.GetSHA256Hash(packagedFileData.ToArray());
@@ -147,8 +147,8 @@ public partial class FileService : Node
 		bool encrypted = package[2] == 1;
 
 		if (encrypted){
-			byte[] iv = Bugcord.ReadLength(package, 3, 16);
-			byte[][] dataSpans = Bugcord.ReadDataSpans(package, 19);
+			byte[] iv = Buglib.ReadLength(package, 3, 16);
+			byte[][] dataSpans = Buglib.ReadDataSpans(package, 19);
 			string keyId = dataSpans[0].GetStringFromUtf8();
 
 			if (!keyService.myKeys.ContainsKey(keyId)){
@@ -158,7 +158,7 @@ public partial class FileService : Node
 			}
 
 			byte[] encryptedSection = dataSpans[1];
-			byte[][] decryptedDataspans = Bugcord.ReadDataSpans(keyService.DecryptWithKey(encryptedSection, keyId, iv), 0);
+			byte[][] decryptedDataspans = Buglib.ReadDataSpans(keyService.DecryptWithKey(encryptedSection, keyId, iv), 0);
 			filename = decryptedDataspans[0].GetStringFromUtf8();
 			if (!filename.IsValidFileName()){
 				file = null;
@@ -169,7 +169,7 @@ public partial class FileService : Node
 			file = decryptedDataspans[1];
 			return true;
 		}else{
-			byte[][] dataSpans = Bugcord.ReadDataSpans(package, 3);
+			byte[][] dataSpans = Buglib.ReadDataSpans(package, 3);
 
 			filename = dataSpans[0].GetStringFromUtf8();
 			file = dataSpans[1];

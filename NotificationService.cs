@@ -32,7 +32,7 @@ public partial class NotificationService : Node
 	public void ProcessNotificationPacket(byte[] packet){
 		NotificationType type = (NotificationType)packet[0];
 		byte users = packet[1];
-		byte[][] userIds = Bugcord.ReadDataSpans(packet, 2);
+		byte[][] userIds = Buglib.ReadDataSpans(packet, 2);
 
 		if (users > userIds.Length)
 			GD.PrintErr("NotificationService: Packet contains less users than expected. Expected: " + users + " Got: " + userIds.Length);
@@ -69,7 +69,7 @@ public partial class NotificationService : Node
 		packetList.Add((byte)users.Count);
 
 		for (int i = 0; i < users.Count; i++){
-			packetList.AddRange(Bugcord.MakeDataSpan(users[i].ToUtf8Buffer()));
+			packetList.AddRange(Buglib.MakeDataSpan(users[i].ToUtf8Buffer()));
 		}
 
 		return packetList.ToArray();

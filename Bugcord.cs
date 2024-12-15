@@ -345,7 +345,7 @@ public partial class Bugcord : Node
 		RequestService.FileExtension extension = (RequestService.FileExtension)packet.data[1];
 		RequestService.VerifyMethod verifyMethod = (RequestService.VerifyMethod)packet.data[2];
 
-		string fileId = ReadDataSpan(packet.data, 3).GetStringFromUtf8();
+		string fileId = Buglib.ReadDataSpan(packet.data, 3).GetStringFromUtf8();
 
 		if (!Buglib.VerifyHexString(fileId)) // Invalid id
 			return;
@@ -363,8 +363,8 @@ public partial class Bugcord : Node
 	}
 
 	private void ProcessSpaceUpdatePacket(PacketService.Packet packet, bool fromEventChain){
-		byte[] initVector = ReadLength(packet.data, 1, 16);
-		byte[][] packetParts = ReadDataSpans(packet.data, 17);
+		byte[] initVector = Buglib.ReadLength(packet.data, 1, 16);
+		byte[][] packetParts = Buglib.ReadDataSpans(packet.data, 17);
 		string keyUsed = packetParts[0].GetStringFromUtf8();
 
 		if (!fromEventChain)
@@ -373,7 +373,7 @@ public partial class Bugcord : Node
 		byte[] encryptedSection = packetParts[1];
 		byte[] decryptedSection = KeyService.AESDecrypt(encryptedSection, keyService.myKeys[keyUsed], initVector);
 
-		byte[][] dataSpans = ReadDataSpans(decryptedSection, 8);
+		byte[][] dataSpans = Buglib.ReadDataSpans(decryptedSection, 8);
 
 		int authorityCount = BitConverter.ToInt32(decryptedSection, 0);
 		int memberCount = BitConverter.ToInt32(decryptedSection, 4);
@@ -411,7 +411,7 @@ public partial class Bugcord : Node
 	private void ProcessFileRequest(byte[] packet){
 		RequestService.FileExtension extension = (RequestService.FileExtension)packet[1];
 
-		string fileGuid = ReadDataSpan(packet, 2).GetStringFromUtf8();
+		string fileGuid = Buglib.ReadDataSpan(packet, 2).GetStringFromUtf8();
 		GD.Print("Recieved file request " + fileGuid);
 
 		byte[] fileData = fileService.GetServableData(fileGuid, extension, out bool success);
@@ -427,7 +427,7 @@ public partial class Bugcord : Node
 	private void ProcessKeyPackage(byte[] packet){
 		GD.Print("Processing space invite");
 
-		byte[][] dataSpans = ReadDataSpans(packet, 1);
+		byte[][] dataSpans = Buglib.ReadDataSpans(packet, 1);
 
 		string keyId = dataSpans[0].GetStringFromUtf8();
 		byte[] encryptedSpaceKey = dataSpans[1];
@@ -440,7 +440,7 @@ public partial class Bugcord : Node
 	}
 
 	private void ProcessIdentify(byte[] packet){
-		byte[][] packetDataSpans = ReadDataSpans(packet, 1);
+		byte[][] packetDataSpans = Buglib.ReadDataSpans(packet, 1);
 
 		string guid = packetDataSpans[0].GetStringFromUtf8();
 		string username = packetDataSpans[1].GetStringFromUtf8();
@@ -459,10 +459,10 @@ public partial class Bugcord : Node
 	}
 
 	private void ProcessMessagePacket(PacketService.Packet packet, bool fromEventChain){
-		byte[][] spans = ReadDataSpans(packet.data, 19);
+		byte[][] spans = Buglib.ReadDataSpans(packet.data, 19);
 
-		ushort hashNonce =  BitConverter.ToUInt16(ReadLength(packet.data, 1, 2));
-		byte[] initVector = ReadLength(packet.data, 3, 16);
+		ushort hashNonce =  BitConverter.ToUInt16(Buglib.ReadLength(packet.data, 1, 2));
+		byte[] initVector = Buglib.ReadLength(packet.data, 3, 16);
 
 		string keyUsed = spans[0].GetStringFromUtf8();
 		if (!fromEventChain)
@@ -472,7 +472,7 @@ public partial class Bugcord : Node
 
 		byte[] decryptedSection = KeyService.AESDecrypt(encryptedSection, keyService.myKeys[keyUsed], initVector);
 
-		byte[][] decryptedSpans = ReadDataSpans(decryptedSection, 0);
+		byte[][] decryptedSpans = Buglib.ReadDataSpans(decryptedSection, 0);
 		string senderGuid = decryptedSpans[0].GetStringFromUtf8();
 
 		if (!fromEventChain)
@@ -534,7 +534,7 @@ public partial class Bugcord : Node
             (byte)verifyMethod
         };
 
-		packetBytes.AddRange(MakeDataSpan(fileId.ToUtf8Buffer()));
+		packetBytes.AddRange(Buglib.MakeDataSpan(fileId.ToUtf8Buffer()));
 
 		return packetBytes.ToArray();
 	}
@@ -549,24 +549,24 @@ public partial class Bugcord : Node
 		sectionToEncrypt.AddRange(BitConverter.GetBytes(space.authorities.Count));
 		sectionToEncrypt.AddRange(BitConverter.GetBytes(space.members.Count));
 
-		sectionToEncrypt.AddRange(MakeDataSpan(space.id.ToUtf8Buffer()));
-		sectionToEncrypt.AddRange(MakeDataSpan(space.name.ToUtf8Buffer()));
-		sectionToEncrypt.AddRange(MakeDataSpan(space.keyId.ToUtf8Buffer()));
+		sectionToEncrypt.AddRange(Buglib.MakeDataSpan(space.id.ToUtf8Buffer()));
+		sectionToEncrypt.AddRange(Buglib.MakeDataSpan(space.name.ToUtf8Buffer()));
+		sectionToEncrypt.AddRange(Buglib.MakeDataSpan(space.keyId.ToUtf8Buffer()));
 
-		sectionToEncrypt.AddRange(MakeDataSpan(space.owner.id.ToUtf8Buffer()));
+		sectionToEncrypt.AddRange(Buglib.MakeDataSpan(space.owner.id.ToUtf8Buffer()));
 
 		foreach (PeerService.Peer peer in space.authorities){
-			sectionToEncrypt.AddRange(MakeDataSpan(peer.id.ToUtf8Buffer()));
+			sectionToEncrypt.AddRange(Buglib.MakeDataSpan(peer.id.ToUtf8Buffer()));
 		}
 
 		foreach (PeerService.Peer peer in space.members){
-			sectionToEncrypt.AddRange(MakeDataSpan(peer.id.ToUtf8Buffer()));
+			sectionToEncrypt.AddRange(Buglib.MakeDataSpan(peer.id.ToUtf8Buffer()));
 		}
 
 		byte[] initVector = KeyService.GetRandomBytes(16);
 		packetBytes.AddRange(initVector);
-		packetBytes.AddRange(MakeDataSpan(space.keyId.ToUtf8Buffer()));
-		packetBytes.AddRange(MakeDataSpan(keyService.EncryptWithSpace(sectionToEncrypt.ToArray(), space.id, initVector)));
+		packetBytes.AddRange(Buglib.MakeDataSpan(space.keyId.ToUtf8Buffer()));
+		packetBytes.AddRange(Buglib.MakeDataSpan(keyService.EncryptWithSpace(sectionToEncrypt.ToArray(), space.id, initVector)));
 
 		return packetBytes.ToArray();
 	}
@@ -579,9 +579,9 @@ public partial class Bugcord : Node
 
 		packetBytes.AddRange(BitConverter.GetBytes((ushort)filePart));
 		packetBytes.AddRange(BitConverter.GetBytes((ushort)totalFileParts));
-		packetBytes.AddRange(MakeDataSpan(fileGuid.ToUtf8Buffer()));
-		packetBytes.AddRange(MakeDataSpan(GetClientId().ToUtf8Buffer()));
-		packetBytes.AddRange(MakeDataSpan(data, 0));
+		packetBytes.AddRange(Buglib.MakeDataSpan(fileGuid.ToUtf8Buffer()));
+		packetBytes.AddRange(Buglib.MakeDataSpan(GetClientId().ToUtf8Buffer()));
+		packetBytes.AddRange(Buglib.MakeDataSpan(data, 0));
 
 		return packetBytes.ToArray();
 	}
@@ -593,7 +593,7 @@ public partial class Bugcord : Node
 		};
 		
 		packetBytes.AddRange(BitConverter.GetBytes(afterDate));
-		packetBytes.AddRange(MakeDataSpan(eventFileGuid.ToUtf8Buffer()));
+		packetBytes.AddRange(Buglib.MakeDataSpan(eventFileGuid.ToUtf8Buffer()));
 
 		return packetBytes.ToArray();
 	}
@@ -608,7 +608,7 @@ public partial class Bugcord : Node
 			subtype,
 		};
 
-		packetBytes.AddRange(MakeDataSpan(fileGuid.ToUtf8Buffer()));
+		packetBytes.AddRange(Buglib.MakeDataSpan(fileGuid.ToUtf8Buffer()));
 
 		return packetBytes.ToArray();
 	}
@@ -636,29 +636,29 @@ public partial class Bugcord : Node
 
 		List<byte> sectionToEncrypt = new List<byte>();
 
-		sectionToEncrypt.AddRange(MakeDataSpan(userService.localPeer.id.ToUtf8Buffer())); // Sender id
+		sectionToEncrypt.AddRange(Buglib.MakeDataSpan(userService.localPeer.id.ToUtf8Buffer())); // Sender id
 
 		// Notifications
 		List<string> peersToNotify = new List<string>();
 		foreach (PeerService.Peer peer in spaceService.spaces[selectedSpaceId].members){
 			peersToNotify.Add(peer.id);
 		}
-		sectionToEncrypt.AddRange(MakeDataSpan(notificationService.BuildNotificationPacket(NotificationService.NotificationType.Single, peersToNotify)));
+		sectionToEncrypt.AddRange(Buglib.MakeDataSpan(notificationService.BuildNotificationPacket(NotificationService.NotificationType.Single, peersToNotify)));
 		
-		sectionToEncrypt.AddRange(MakeDataSpan(BitConverter.GetBytes((ushort)messageFlags))); // Message flags
+		sectionToEncrypt.AddRange(Buglib.MakeDataSpan(BitConverter.GetBytes((ushort)messageFlags))); // Message flags
 		if (text != null)
-			sectionToEncrypt.AddRange(MakeDataSpan(text.ToUtf8Buffer()));
+			sectionToEncrypt.AddRange(Buglib.MakeDataSpan(text.ToUtf8Buffer()));
 		if (embedId != null)
-			sectionToEncrypt.AddRange(MakeDataSpan(embedId.ToUtf8Buffer()));
+			sectionToEncrypt.AddRange(Buglib.MakeDataSpan(embedId.ToUtf8Buffer()));
 		if (replyingTo != null)
-			sectionToEncrypt.AddRange(MakeDataSpan(replyingTo.ToUtf8Buffer()));
+			sectionToEncrypt.AddRange(Buglib.MakeDataSpan(replyingTo.ToUtf8Buffer()));
 
 		byte[] encryptedSection = keyService.EncryptWithSpace(sectionToEncrypt.ToArray(), selectedSpaceId, initVector);
 
 		packetList.AddRange(hashNonce);
 		packetList.AddRange(initVector);
-		packetList.AddRange(MakeDataSpan(keyId));
-		packetList.AddRange(MakeDataSpan(encryptedSection));
+		packetList.AddRange(Buglib.MakeDataSpan(keyId));
+		packetList.AddRange(Buglib.MakeDataSpan(encryptedSection));
 
 		return packetList.ToArray();
 	}
@@ -679,10 +679,10 @@ public partial class Bugcord : Node
 			profilePicture = userService.localPeer.profilePictureId.ToUtf8Buffer();
 		}
 		
-		packetBytes.AddRange(MakeDataSpan(guid));
-		packetBytes.AddRange(MakeDataSpan(username));
-		packetBytes.AddRange(MakeDataSpan(publicKey));
-		packetBytes.AddRange(MakeDataSpan(profilePicture));
+		packetBytes.AddRange(Buglib.MakeDataSpan(guid));
+		packetBytes.AddRange(Buglib.MakeDataSpan(username));
+		packetBytes.AddRange(Buglib.MakeDataSpan(publicKey));
+		packetBytes.AddRange(Buglib.MakeDataSpan(profilePicture));
 
 		return packetBytes.ToArray();
 	}
@@ -694,8 +694,8 @@ public partial class Bugcord : Node
 
 		byte[] spaceKeyEncrypted = keyService.EncryptKeyForPeer(keyId, recipientId);
 
-		packetBytes.AddRange(MakeDataSpan(keyId.ToUtf8Buffer()));
-		packetBytes.AddRange(MakeDataSpan(spaceKeyEncrypted));
+		packetBytes.AddRange(Buglib.MakeDataSpan(keyId.ToUtf8Buffer()));
+		packetBytes.AddRange(Buglib.MakeDataSpan(spaceKeyEncrypted));
 
 		return packetBytes.ToArray();
 	}
@@ -719,77 +719,77 @@ public partial class Bugcord : Node
 		return Convert.FromBase64String(data);
 	}
 
-	public static byte[] ReadDataSpan(byte[] fullSpan, int startIndex){
-		ushort spanLength = BitConverter.ToUInt16(fullSpan, startIndex);
+	// public static byte[] ReadDataSpan(byte[] fullSpan, int startIndex){
+	// 	ushort spanLength = BitConverter.ToUInt16(fullSpan, startIndex);
 
-		if (spanLength == 0){ // A dataspan length of zero assumes its a very large span at the end of the data
-			return ReadLengthInfinetly(fullSpan, startIndex + 2);
-		}
+	// 	if (spanLength == 0){ // A dataspan length of zero assumes its a very large span at the end of the data
+	// 		return ReadLengthInfinetly(fullSpan, startIndex + 2);
+	// 	}
 
-		return ReadLength(fullSpan, startIndex + 2, spanLength);
-	}
+	// 	return ReadLength(fullSpan, startIndex + 2, spanLength);
+	// }
 
-	public static byte[][] ReadDataSpans(byte[] fullData, int startIndex){
-		List<byte[]> spans = new List<byte[]>();
-		for (int i = startIndex; i < fullData.Length; i += 0){ // increment not needed
-			byte[] gotSpan = ReadDataSpan(fullData, i);
-			spans.Add(gotSpan);
-			i += gotSpan.Length + 2; // +2 accounts for length header
-		}
+	// public static byte[][] ReadDataSpans(byte[] fullData, int startIndex){
+	// 	List<byte[]> spans = new List<byte[]>();
+	// 	for (int i = startIndex; i < fullData.Length; i += 0){ // increment not needed
+	// 		byte[] gotSpan = ReadDataSpan(fullData, i);
+	// 		spans.Add(gotSpan);
+	// 		i += gotSpan.Length + 2; // +2 accounts for length header
+	// 	}
 
-		return spans.ToArray();
-	}
+	// 	return spans.ToArray();
+	// }
 
-	/// <summary>
-	/// Reads all data after a specified index.
-	/// </summary>
-	/// <param name="data"></param>
-	/// <param name="startIndex"></param>
-	/// <returns></returns>
-	public static byte[] ReadLengthInfinetly(byte[] data, int startIndex){
-		int length = data.Length - startIndex;
+	// /// <summary>
+	// /// Reads all data after a specified index.
+	// /// </summary>
+	// /// <param name="data"></param>
+	// /// <param name="startIndex"></param>
+	// /// <returns></returns>
+	// public static byte[] ReadLengthInfinetly(byte[] data, int startIndex){
+	// 	int length = data.Length - startIndex;
 
-		byte[] read = new byte[length];
+	// 	byte[] read = new byte[length];
 		
-		for (int i = 0; i < length; i++){
-			read[i] = data[i + startIndex];
-		}
+	// 	for (int i = 0; i < length; i++){
+	// 		read[i] = data[i + startIndex];
+	// 	}
 
-		return read;
-	}
+	// 	return read;
+	// }
 
-	public static byte[] ReadLength(byte[] data, int startIndex, int length){
-		if (data.Length < (startIndex + length)){
-			GD.PrintErr("Dataspan reading failed. Index out of range. Length: " + length);
-			throw new IndexOutOfRangeException();
-		}
+	// public static byte[] ReadLength(byte[] data, int startIndex, int length){
+	// 	if (data.Length < (startIndex + length)){
+	// 		GD.PrintErr("Dataspan reading failed. Index out of range. Length: " + length);
+	// 		throw new IndexOutOfRangeException();
+	// 	}
 
-		byte[] read = new byte[length];
+	// 	byte[] read = new byte[length];
 		
-		for (int i = 0; i < length; i++){
-			read[i] = data[i + startIndex];
-		}
+	// 	for (int i = 0; i < length; i++){
+	// 		read[i] = data[i + startIndex];
+	// 	}
 
-		return read;
-	}
+	// 	return read;
+	// }
 
-	public static byte[] MakeDataSpan(byte[] data){
-		if (data.Length > 32767)
-			GD.PrintErr("Attempting to create a dataspan with a length of more than 32767. Consider overriding length to zero if this span is the last of a set.");
-		return MakeDataSpan(data, (short)data.Length);
-	}
+	// public static byte[] MakeDataSpan(byte[] data){
+	// 	if (data.Length > 32767)
+	// 		GD.PrintErr("Attempting to create a dataspan with a length of more than 32767. Consider overriding length to zero if this span is the last of a set.");
+	// 	return MakeDataSpan(data, (short)data.Length);
+	// }
 
-	public static byte[] MakeDataSpan(byte[] data, short lengthHeaderOverride){
-		List<byte> bytes = new List<byte>();
-		short dataLength = lengthHeaderOverride;
+	// public static byte[] MakeDataSpan(byte[] data, short lengthHeaderOverride){
+	// 	List<byte> bytes = new List<byte>();
+	// 	short dataLength = lengthHeaderOverride;
 
-		byte[] lengthHeader = BitConverter.GetBytes(dataLength);
+	// 	byte[] lengthHeader = BitConverter.GetBytes(dataLength);
 
-		bytes.AddRange(lengthHeader);
-		bytes.AddRange(data);
+	// 	bytes.AddRange(lengthHeader);
+	// 	bytes.AddRange(data);
 
-		return bytes.ToArray();
-	}
+	// 	return bytes.ToArray();
+	// }
 
 	public static void PrintBytes(byte[] bytes){
 		GD.Print("Bytes Print:");

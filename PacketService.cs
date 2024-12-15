@@ -149,7 +149,7 @@ public partial class PacketService : Node
 			return false;
 		}
 
-		byte[] packetData = Bugcord.ReadLength(data, 6, length);
+		byte[] packetData = Buglib.ReadLength(data, 6, length);
 
 		if (!Bugcord.ValidateSumComplement(packetData, (ushort)checksum)){
 			return false;

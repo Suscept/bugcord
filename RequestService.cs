@@ -108,7 +108,7 @@ public partial class RequestService : Node
 	public void ProcessRequestResponse(byte[] packet){
 		GD.Print("recieved file packet");
 
-		byte[][] dataSpans = Bugcord.ReadDataSpans(packet, 6);
+		byte[][] dataSpans = Buglib.ReadDataSpans(packet, 6);
 
 		byte subtype = packet[1];
 
