@@ -581,7 +581,7 @@ public partial class Bugcord : Node
 		packetBytes.AddRange(BitConverter.GetBytes((ushort)totalFileParts));
 		packetBytes.AddRange(Buglib.MakeDataSpan(fileGuid.ToUtf8Buffer()));
 		packetBytes.AddRange(Buglib.MakeDataSpan(GetClientId().ToUtf8Buffer()));
-		packetBytes.AddRange(Buglib.MakeDataSpan(data, 0));
+		packetBytes.AddRange(Buglib.MakeDataSpan(data, true));
 
 		return packetBytes.ToArray();
 	}

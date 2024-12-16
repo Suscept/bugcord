@@ -131,11 +131,12 @@ public partial class Buglib : Node
 	}
 
 	#region Dataspans
+
 	public static byte[] ReadDataSpan(byte[] fullSpan, int startIndex){
 		ushort spanLength = BitConverter.ToUInt16(fullSpan, startIndex);
 
-		if (spanLength == 0){ // A dataspan length of zero assumes its a very large span at the end of the data
-			return ReadLengthInfinetly(fullSpan, startIndex + 2);
+		if (spanLength == 65535){ // A dataspan length of zero assumes its a very large span at the end of the data
+			return ReadLengthInfinitely(fullSpan, startIndex + 2);
 		}
 
 		return ReadLength(fullSpan, startIndex + 2, spanLength);
@@ -158,7 +159,7 @@ public partial class Buglib : Node
 	/// <param name="data"></param>
 	/// <param name="startIndex"></param>
 	/// <returns></returns>
-	public static byte[] ReadLengthInfinetly(byte[] data, int startIndex){
+	public static byte[] ReadLengthInfinitely(byte[] data, int startIndex){
 		int length = data.Length - startIndex;
 
 		byte[] read = new byte[length];
@@ -186,14 +187,20 @@ public partial class Buglib : Node
 	}
 
 	public static byte[] MakeDataSpan(byte[] data){
-		if (data.Length > 32767)
-			GD.PrintErr("Attempting to create a dataspan with a length of more than 32767. Consider overriding length to zero if this span is the last of a set.");
-		return MakeDataSpan(data, (short)data.Length);
+		return MakeDataSpan(data, false);
 	}
 
-	public static byte[] MakeDataSpan(byte[] data, short lengthHeaderOverride){
+	public static byte[] MakeDataSpan(byte[] data,  bool infiniteLength){
+		if (infiniteLength){
+			return MakeDataSpan(data, 65535);
+		}
+		if (data.Length >= 65535)
+			GD.PushError("Attempting to create a dataspan with a length of more than 65534. Consider setting the infiniteLength override");
+		return MakeDataSpan(data, (ushort)data.Length);
+	}
+
+	private static byte[] MakeDataSpan(byte[] data, ushort dataLength){
 		List<byte> bytes = new List<byte>();
-		short dataLength = lengthHeaderOverride;
 
 		byte[] lengthHeader = BitConverter.GetBytes(dataLength);
 

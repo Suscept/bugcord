@@ -123,13 +123,13 @@ public partial class FileService : Node
 			List<byte> encryptSection = new List<byte>();
 
 			encryptSection.AddRange(Buglib.MakeDataSpan(filename.ToUtf8Buffer()));
-			encryptSection.AddRange(Buglib.MakeDataSpan(file, 0)); // Override length header to signify infinite length
+			encryptSection.AddRange(Buglib.MakeDataSpan(file, true)); // Override length header to signify infinite length
 
 			byte[] encryptedData = keyService.EncryptWithKey(encryptSection.ToArray(), encryptKeyId, iv);
-			packagedFileData.AddRange(Buglib.MakeDataSpan(encryptedData, 0));
+			packagedFileData.AddRange(Buglib.MakeDataSpan(encryptedData, true));
 		}else{
 			packagedFileData.AddRange(Buglib.MakeDataSpan(filename.ToUtf8Buffer()));
-			packagedFileData.AddRange(Buglib.MakeDataSpan(file, 0));
+			packagedFileData.AddRange(Buglib.MakeDataSpan(file, true));
 		}
 
 		fileHash = KeyService.GetSHA256Hash(packagedFileData.ToArray());

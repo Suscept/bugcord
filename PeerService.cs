@@ -214,7 +214,7 @@ public partial class PeerService : Node
 		}
 
 		// Make sure the package was actually created by this peer
-		byte[] signatureSection = Buglib.ReadLengthInfinetly(peerFile, 258);
+		byte[] signatureSection = Buglib.ReadLengthInfinitely(peerFile, 258);
 		if (KeyService.VerifySignature(signatureSection, signature, publicKey) == false){
 			GD.Print("- Loading failed. Signature not verified");
 			return false;

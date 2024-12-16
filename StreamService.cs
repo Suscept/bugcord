@@ -146,7 +146,7 @@ public partial class StreamService : Node
 		List<byte> packetBytes = new List<byte>();
 
 		packetBytes.AddRange(Buglib.MakeDataSpan(userService.localPeer.id.ToUtf8Buffer()));
-		packetBytes.AddRange(Buglib.MakeDataSpan(audioFrames, 0));
+		packetBytes.AddRange(Buglib.MakeDataSpan(audioFrames, true));
 
 		return packetBytes.ToArray();
 	}
