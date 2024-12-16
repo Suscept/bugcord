@@ -121,6 +121,15 @@ public partial class Buglib : Node
 		return  o.GetType().GetConstructor(new Type[0])!=null;
 	}
 
+	/// <summary>
+	/// Converts a byte array to a hex string. Contains no spaces between the hex values so it can be easily copied to tools like hexed.it
+	/// </summary>
+	/// <param name="data"></param>
+	/// <returns>The bytes converted to a hexadecimal string</returns>
+	public static string ToHexString(byte[] data){
+		return BitConverter.ToString(data).Replace("-", "");
+	}
+
 	#region Dataspans
 	public static byte[] ReadDataSpan(byte[] fullSpan, int startIndex){
 		ushort spanLength = BitConverter.ToUInt16(fullSpan, startIndex);
