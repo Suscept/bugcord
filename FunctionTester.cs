@@ -26,10 +26,13 @@ public partial class FunctionTester : Panel
 		switch (type)
 		{
 			case 0:
-				foreach (byte[] b in Buglib.ReadDataSpans(Bugcord.FromBase64(input.Text), 0)){
-					foreach (byte bt in b){
-						GD.Print(bt);
-					}
+				GD.Print("Debugging dataspan");
+				GD.Print("- Imported bytes: " + Buglib.ToHexString(Bugcord.FromBase64(input.Text)));
+
+				byte[][] dataspans = Buglib.ReadDataSpans(Bugcord.FromBase64(input.Text), 0);
+				GD.Print("- Decoded " + dataspans.Length + " dataspans");
+				for (int i = 0; i < dataspans.Length; i++){
+					GD.Print("- Dataspan " + i + " (" + dataspans[i].Length + " bytes): " + Buglib.ToHexString(dataspans[i]));
 				}
 				break;
 			
