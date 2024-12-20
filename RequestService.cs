@@ -11,7 +11,8 @@ public partial class RequestService : Node
 
 	[Signal] public delegate void OnRequestProgressEventHandler(string requestId);
 
-	[Export] public float requestTimeoutTime = 15;
+	[Export] public float minRequestTime = 2;
+	[Export] public float maxRequestTime = 15;
 
 	public Dictionary<string, List<Action<string>>> subscriptions = new();
 
@@ -49,23 +50,25 @@ public partial class RequestService : Node
 	public override void _Process(double delta)
 	{
 		foreach (PendingRequest pendingRequest in activeRequests.Values){
-			pendingRequest.timeLeft -= (float)delta;
-			if (pendingRequest.timeLeft <= 0){
+			pendingRequest.timeWaited += (float)delta;
+			if (pendingRequest.timeWaited > pendingRequest.maxWaitTime){
 				// Request timeout
 				GD.Print("Request " + pendingRequest.id + " timed out");
 				EmitSignal(SignalName.OnRequestTimeout, pendingRequest.id);
 				EmitSignal(SignalName.OnRequestFailed, pendingRequest.id);
 				activeRequests.Remove(pendingRequest.id);
+			}else if  (pendingRequest.timeWaited > pendingRequest.minWaitTime && pendingRequest.anyResponceFinished){
+				WrapUpRequest(pendingRequest);
 			}
 		}
 	}
 
 	public void Request(string id, FileExtension extension, VerifyMethod verifyMethod){
-		Request(id, extension, verifyMethod, requestTimeoutTime, null);
+		Request(id, extension, verifyMethod, maxRequestTime, null);
 	}
 
 	public void Request(string id, FileExtension extension, VerifyMethod verifyMethod, Action<string> subscription){
-		Request(id, extension, verifyMethod, requestTimeoutTime, subscription);
+		Request(id, extension, verifyMethod, maxRequestTime, subscription);
 	}
 
 	public void Request(string id, FileExtension extension, VerifyMethod verifyMethod, float timeout){
@@ -83,7 +86,7 @@ public partial class RequestService : Node
 			id = id,
 			extension = extension,
 			verifyMethod = verifyMethod,
-			timeLeft = timeout,
+			maxWaitTime = timeout,
 			cacheDesired = true,
 		};
 
@@ -132,7 +135,7 @@ public partial class RequestService : Node
 				id = fileId,
 				extension = extension,
 				verifyMethod = VerifyMethod.None,
-				timeLeft = requestTimeoutTime * 2,
+				maxWaitTime = maxRequestTime * 2,
 				cacheDesired = false,
 			};
 
@@ -146,17 +149,23 @@ public partial class RequestService : Node
 			List<byte[]> bytesList = new List<byte[]>();
 			byte[][] bytes = new byte[filePartMax][];
 			bytesList.AddRange(bytes);
+			
+			RequestResponce responce = new RequestResponce{
+				respondingPeer = senderId,
+				segments = bytesList,
+				expectedSegments = filePartMax
+			};
 
-			request.responces.Add(senderId, bytesList); 
+			request.responces.Add(senderId, responce);
 		}
 	
-		request.responces[senderId][filePart] = file;
+		request.responces[senderId].segments[filePart] = file;
 
 		// Find how many parts have been recieved so far
 		int filePartsRecieved = 0;
-		int filePartsTotal = request.responces[senderId].Count;
+		int filePartsTotal = request.responces[senderId].segments.Count;
 		for (int i = 0; i < filePartsTotal; i++){
-			if (request.responces[senderId][i] != null){
+			if (request.responces[senderId].segments[i] != null){
 				filePartsRecieved++;
 			}
 		}
@@ -167,41 +176,141 @@ public partial class RequestService : Node
 			return;
 		}
 
-		// No parts are missing so concatinate everything, verify and save
-		List<byte> fullFile = new();
-		for (int i = 0; i < request.responces[senderId].Count; i++){
-			fullFile.AddRange(request.responces[senderId][i]);
+		request.anyResponceFinished = true;
+
+		// If this request can recieve multiple responces
+		bool multipleResponces = request.verifyMethod == VerifyMethod.NewestSignature || request.verifyMethod == VerifyMethod.Consensus;
+
+		if (multipleResponces && request.timeWaited < request.minWaitTime){
+			return; // Some more time is needed to collect responces
 		}
-		request.responces.Remove(senderId);
+
+		WrapUpRequest(request);
+	}
+
+	/// <summary>
+	/// Ends a request by success or failure
+	/// </summary>
+	/// <param name="request"></param>
+	public void WrapUpRequest(PendingRequest request){
+		GD.Print("RequestService: Wrapping up request: " + request.id);
+
+		Dictionary<string, byte[]> fullFiles = new Dictionary<string, byte[]>();
+
+		foreach(KeyValuePair<string, RequestResponce> responceEntry in request.responces){
+			string senderId = responceEntry.Key;
+			RequestResponce responce = responceEntry.Value;
+
+			// Find how many parts have been recieved so far
+			int filePartsRecieved = 0;
+			int filePartsTotal = request.responces[senderId].segments.Count;
+			for (int i = 0; i < filePartsTotal; i++){
+				if (request.responces[senderId].segments[i] != null){
+					filePartsRecieved++;
+				}
+			}
+
+			if (filePartsRecieved < responce.expectedSegments){ // This responce is unfinished
+				continue;
+			}
+
+			// Concatinate the responces
+			List<byte> fullFile = new();
+			for (int i = 0; i < request.responces[senderId].segments.Count; i++){
+				fullFile.AddRange(request.responces[senderId].segments[i]);
+			}
+			fullFiles.Add(senderId, fullFile.ToArray());
+		}
+
+		string bestResponceSender = null;
+		byte[] bestResponceData = null;
+		double bestResponceScore = 0;
+
+		// Pick a responce to use
+		GD.Print("- Validating responces. Method: " + request.verifyMethod.ToString());
+		foreach (KeyValuePair<string, byte[]> file in fullFiles){
+			switch (request.verifyMethod)
+			{
+				case VerifyMethod.NewestSignature:
+					if (request.extension != FileExtension.PeerData){
+						bestResponceData = file.Value;
+						bestResponceSender = file.Key;
+					}
+
+					// Currently only peer packages use this so a more generic solution should be made in the future
+					ushort version = BitConverter.ToUInt16(file.Value, 0);
+					if (PeerService.peerPackageVersion > version){ // Version not supported
+						GD.Print("- Failed. Incorrect version: " + version + " Supported: " + PeerService.peerPackageVersion);
+						continue;
+					}
+
+					byte[] signature = Buglib.ReadLength(file.Value, 2, 256);
+					byte[] signedData = Buglib.ReadLengthInfinitely(file.Value, 258);
+					double score = BitConverter.ToDouble(file.Value, 258); // timestamp
+
+					byte[][] dataspans = Buglib.ReadDataSpans(file.Value, 266);
+					byte[] publicKey = dataspans[1];
+
+					// Since this is a peer file, it may be the first time this peer has sent its file so this client doesnt already have it's public key
+					// So we use the public key from this file package. Making sure to also verify everything properly
+					if (KeyService.GetSHA256HashString(publicKey) != file.Key){
+						GD.Print("- Failed. Key hash mismatch");
+						continue;
+					}
+
+					if (!KeyService.VerifySignature(signedData, signature, publicKey)){
+						GD.Print("- Failed. Bad signature");
+						continue;
+					}
+
+					if (score > bestResponceScore){
+						bestResponceData = file.Value;
+						bestResponceSender = file.Key;
+						bestResponceScore = score;
+					}
+
+					continue;
+				case VerifyMethod.HashCheck:
+					string computedFileId = KeyService.GetSHA256HashString(file.Value);
+					if (request.id != computedFileId){
+						GD.PrintErr("File hash mismatch! Packet: " + request.id + " Actual: " + computedFileId);
+						EmitSignal(SignalName.OnRequestFailed, request.id);
+						continue;
+					}
+
+					bestResponceData = file.Value;
+					bestResponceSender = file.Key;
+					break;
+				default:
+					bestResponceData = file.Value;
+					bestResponceSender = file.Key;
+					break;
+			}
+		}
+
 		activeRequests.Remove(request.id);
 
-		switch (request.verifyMethod)
-		{
-			case VerifyMethod.Consensus:
-				break;
-			case VerifyMethod.HashCheck:
-				string computedFileId = KeyService.GetSHA256HashString(fullFile.ToArray());
-				if (fileId != computedFileId){
-					GD.PrintErr("File hash mismatch! Packet: " + fileId + " Actual: " + computedFileId);
-					EmitSignal(SignalName.OnRequestFailed, request.id);
-					return;
-				}
-				break;
-			case VerifyMethod.None:
-				break;
-			default:
-				break;
+		if (bestResponceData == null){
+			GD.Print("- Request wrap up failed");
+			return;
 		}
 
-		fileService.WriteToServableAbsolute(fullFile.ToArray(), fileId + GetFileExtensionString(request.extension));
+		GD.Print("- Best responce picked. Sender: " + bestResponceSender);
+
+		// Save the file
+
+		fileService.WriteToServableAbsolute(bestResponceData, request.id + GetFileExtensionString(request.extension));
+
 		if (request.cacheDesired && request.extension == FileExtension.MediaFile){
-			bool success = fileService.UnpackageFile(fullFile.ToArray(), out byte[] fileData, out string filename);
+			bool success = fileService.UnpackageFile(bestResponceData, out byte[] fileData, out string filename);
 			if (success)
-				fileService.WriteToCache(fileData, filename, fileId);
+				fileService.WriteToCache(fileData, filename, request.id);
 		}
 		
 		EmitSignal(SignalName.OnRequestSuccess, request.id);
-		TriggerSubscriptions(fileId);
+		TriggerSubscriptions(request.id);
+
+		GD.Print("- Request wrapped up successfully!");
 	}
 
 	public void TriggerSubscriptions(string id){
@@ -237,9 +346,22 @@ public partial class RequestService : Node
 
 		public bool cacheDesired;
 
-		public float timeLeft;
+		public bool anyResponceFinished;
+
+		public float timeWaited;
+		public float maxWaitTime;
+		public float minWaitTime;
 
 		// Responder id, responce segments
-		public Dictionary<string, List<byte[]>> responces = new Dictionary<string, List<byte[]>>();
+		// public Dictionary<string, List<byte[]>> responces = new Dictionary<string, List<byte[]>>();
+		public Dictionary<string, RequestResponce> responces = new Dictionary<string, RequestResponce>();
+	}
+
+	public class RequestResponce{
+		public string respondingPeer;
+
+		public List<byte[]> segments = new List<byte[]>();
+
+		public int expectedSegments;
 	}
 }

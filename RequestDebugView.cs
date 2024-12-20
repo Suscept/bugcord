@@ -34,7 +34,7 @@ public partial class RequestDebugView : Panel
 		RequestDebug requestDisplay = requestListing.Instantiate<RequestDebug>();
 		listingContainer.AddChild(requestDisplay);
 
-		requestDisplay.Initiate(id, requestService.activeRequests[id].timeLeft);
+		requestDisplay.Initiate(id, requestService.activeRequests[id].maxWaitTime);
 		displayedRequests.Add(id, requestDisplay);
 	}
 
