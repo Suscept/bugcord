@@ -1,6 +1,7 @@
 using Godot;
 using Godot.Collections;
 using System;
+using System.IO;
 
 public partial class MessageUI : MarginContainer
 {
@@ -14,6 +15,11 @@ public partial class MessageUI : MarginContainer
 	[Export] public Label timestampLabel;
 	[Export] public MenuButton extraOptionsDropdown;
 	[Export] public Button jumpToReplyButton;
+
+	[ExportGroup("File Embed Display")]
+	[Export] public Control genericFileDisplay;
+	[Export] public Label filenameLabel;
+	[Export] public Label filesizeLabel;
 
 	public string waitingForEmbedGuid;
 	private int embedPartsRecieved;
@@ -61,6 +67,10 @@ public partial class MessageUI : MarginContainer
 		timestampLabel.Text = GetTimestampString(message.unixTimestamp);
 		myMessage = message;
 
+		genericFileDisplay.Visible = false;
+		imageContent.Visible = false;
+		textContent.Visible = false;
+
 		bool profileAvailable = peerService.GetProfilePicture(message.senderId, out ImageTexture profileImage);
 		if (profileAvailable){
 			SetProfilePicture(profileImage, message.senderId);
@@ -75,8 +85,7 @@ public partial class MessageUI : MarginContainer
 
 		if (message.content != null && message.content.Length > 0){
 			SetupMessageContent(message.content);
-		}else{
-			textContent.Visible = false;
+			textContent.Visible = true;
 		}
 
 		if (message.embedId != null && message.embedId.Length > 0){
@@ -85,7 +94,6 @@ public partial class MessageUI : MarginContainer
 			mediaLoadingProgressLabel.Visible = true;
 			mediaLoadingProgressLabel.Text = "Loading...";
 		}else{
-			imageContent.Visible = false;
 			mediaLoadingProgressLabel.Visible = false;
 		}
 	}
@@ -115,14 +123,14 @@ public partial class MessageUI : MarginContainer
 
 		fileService = GetNode<FileService>("/root/Main/Bugcord/FileService");
 		requestService = GetNode<RequestService>("/root/Main/Bugcord/RequestService");
-		string cachePath = fileService.cacheIndex[guid].path;
-		SetupMediaUi(cachePath);
 
 		popupMenu.AddItem("Download", 3);
 
 		mediaLoadingProgressLabel.Visible = false;
 		fileService.OnCacheChanged -= CacheUpdated;
 		requestService.OnRequestProgress -= FileBufferUpdated;
+
+		SetupEmbedUi(fileService.cacheIndex[guid]);
 	}
 
 	public void FileBufferUpdated(string guid){
@@ -131,6 +139,26 @@ public partial class MessageUI : MarginContainer
 
 		embedPartsRecieved++;
 		mediaLoadingProgressLabel.Text = "Loading... " + embedPartsRecieved;
+	}
+
+	public void SetupEmbedUi(FileService.CacheFile file){
+		string extension = Path.GetExtension(file.filename);
+		FileService.FileType fileType = FileService.GetFileType(extension);
+		string cachePath = file.path;
+		string id = file.id;
+
+		switch (fileType)
+		{
+			case FileService.FileType.Image:
+				SetupImageUi(cachePath);
+				break;
+			case FileService.FileType.Binary:
+				SetupFileUi(file);
+				break;
+			default:
+				SetupFileUi(file);
+				break;
+		}
 	}
 
 	public void SetProfilePicture(ImageTexture pfp, string peerId){
@@ -188,7 +216,23 @@ public partial class MessageUI : MarginContainer
 		return dateString + " " + timeString + amOrPm;
 	}
 
-	private void SetupMediaUi(string cachePath){
+	/// <summary>
+	/// Displays a generic file embed
+	/// </summary>
+	/// <param name="file"></param>
+	private void SetupFileUi(FileService.CacheFile file){
+		genericFileDisplay.Visible = true;
+
+		filenameLabel.Text = file.filename;
+
+		string fullPath = ProjectSettings.GlobalizePath(file.path);
+		long length = new FileInfo(fullPath).Length;
+		filesizeLabel.Text = Buglib.ShortenDataSize(length);
+	}
+
+	private void SetupImageUi(string cachePath){
+		imageContent.Visible = true;
+
 		Image loadedImage = Image.LoadFromFile(cachePath);
 		ImageTexture imageTexture = ImageTexture.CreateFromImage(loadedImage);
 

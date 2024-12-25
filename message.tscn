@@ -1,8 +1,9 @@
-[gd_scene load_steps=6 format=3 uid="uid://c0hr25wlgd0kt"]
+[gd_scene load_steps=7 format=3 uid="uid://c0hr25wlgd0kt"]
 
 [ext_resource type="Theme" uid="uid://b44gnqmfnkq01" path="res://bugcord_main_theme.tres" id="1_0joqi"]
 [ext_resource type="Script" path="res://MessageUI.cs" id="1_3f5tq"]
 [ext_resource type="Texture2D" uid="uid://6j35bsdb4w8r" path="res://icon.svg" id="1_7dhvk"]
+[ext_resource type="Texture2D" uid="uid://de34mt4xglldi" path="res://fileicon.png" id="4_ky2jb"]
 
 [sub_resource type="LabelSettings" id="LabelSettings_r4x21"]
 outline_size = 1
@@ -11,7 +12,7 @@ outline_size = 1
 font_size = 12
 font_color = Color(0.629675, 0.629675, 0.629675, 1)
 
-[node name="MessageUI" type="MarginContainer" node_paths=PackedStringArray("imageContent", "profilePicture", "textContent", "usernameLabel", "mediaLoadingProgressLabel", "timestampLabel", "extraOptionsDropdown", "jumpToReplyButton")]
+[node name="MessageUI" type="MarginContainer" node_paths=PackedStringArray("imageContent", "profilePicture", "textContent", "usernameLabel", "mediaLoadingProgressLabel", "timestampLabel", "extraOptionsDropdown", "jumpToReplyButton", "genericFileDisplay", "filenameLabel", "filesizeLabel")]
 offset_right = 252.0
 offset_bottom = 80.0
 size_flags_horizontal = 3
@@ -27,6 +28,9 @@ mediaLoadingProgressLabel = NodePath("VBoxContainer/MarginContainer/HBoxContaine
 timestampLabel = NodePath("VBoxContainer/MarginContainer/HBoxContainer/VBoxContainer/Metadata/Timestamp")
 extraOptionsDropdown = NodePath("VBoxContainer/MarginContainer/HBoxContainer/MenuButton")
 jumpToReplyButton = NodePath("VBoxContainer/Reply")
+genericFileDisplay = NodePath("VBoxContainer/MarginContainer/HBoxContainer/VBoxContainer/FileContent")
+filenameLabel = NodePath("VBoxContainer/MarginContainer/HBoxContainer/VBoxContainer/FileContent/HBoxContainer/VBoxContainer/FilenameLabel")
+filesizeLabel = NodePath("VBoxContainer/MarginContainer/HBoxContainer/VBoxContainer/FileContent/HBoxContainer/VBoxContainer/FileSizeLabel")
 
 [node name="VBoxContainer" type="VBoxContainer" parent="."]
 layout_mode = 2
@@ -98,6 +102,38 @@ texture = ExtResource("1_7dhvk")
 expand_mode = 1
 stretch_mode = 4
 
+[node name="FileContent" type="MarginContainer" parent="VBoxContainer/MarginContainer/HBoxContainer/VBoxContainer"]
+layout_mode = 2
+mouse_default_cursor_shape = 2
+
+[node name="Panel" type="Panel" parent="VBoxContainer/MarginContainer/HBoxContainer/VBoxContainer/FileContent"]
+layout_mode = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer/MarginContainer/HBoxContainer/VBoxContainer/FileContent"]
+layout_mode = 2
+
+[node name="TextureRect" type="TextureRect" parent="VBoxContainer/MarginContainer/HBoxContainer/VBoxContainer/FileContent/HBoxContainer"]
+layout_mode = 2
+texture = ExtResource("4_ky2jb")
+expand_mode = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="VBoxContainer/MarginContainer/HBoxContainer/VBoxContainer/FileContent/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="FilenameLabel" type="Label" parent="VBoxContainer/MarginContainer/HBoxContainer/VBoxContainer/FileContent/HBoxContainer/VBoxContainer"]
+layout_mode = 2
+text = "Unknown file"
+clip_text = true
+text_overrun_behavior = 3
+
+[node name="FileSizeLabel" type="Label" parent="VBoxContainer/MarginContainer/HBoxContainer/VBoxContainer/FileContent/HBoxContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.720467, 0.720468, 0.720467, 1)
+theme_override_font_sizes/font_size = 12
+text = "Unknown size"
+clip_text = true
+
 [node name="MediaLoadingProgress" type="Label" parent="VBoxContainer/MarginContainer/HBoxContainer/VBoxContainer"]
 visible = false
 layout_mode = 2
@@ -121,3 +157,4 @@ popup/item_2/id = 2
 [connection signal="gui_input" from="VBoxContainer/MarginContainer/HBoxContainer/Profile" to="." method="OnUserDisplayInput"]
 [connection signal="gui_input" from="VBoxContainer/MarginContainer/HBoxContainer/VBoxContainer/Metadata/MarginContainer" to="." method="OnUserDisplayInput"]
 [connection signal="gui_input" from="VBoxContainer/MarginContainer/HBoxContainer/VBoxContainer/ImageMedia" to="." method="OnImageClicked"]
+[connection signal="gui_input" from="VBoxContainer/MarginContainer/HBoxContainer/VBoxContainer/FileContent" to="." method="OnImageClicked"]
