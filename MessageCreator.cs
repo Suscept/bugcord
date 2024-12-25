@@ -82,7 +82,7 @@ public partial class MessageCreator : MarginContainer
 			// read some metadata
 			string filename = System.IO.Path.GetFileName(dir);
 			FileAccess dirFile = FileAccess.Open(dir, FileAccess.ModeFlags.Read);
-			string fileSize = BugstringUtils.BytesToSizeString(dirFile.GetLength());
+			string fileSize = Buglib.ShortenDataSize((long)dirFile.GetLength());
 			dirFile.Close();
 
 			embed_input_display newEmbed = embedScene.Instantiate<embed_input_display>();
