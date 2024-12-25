@@ -26,13 +26,14 @@ public partial class Buglib : Node
 	/// <param name="size">The data amount in bytes</param>
 	/// <returns></returns>
 	public static string ShortenDataSize(long size){
-		if (size > 500){ // Kilobyte
-			return (size/1000).ToString() + "KB";
-		}else if(size > 500000){ // Megabyte
-			return (size/1000000).ToString() + "MB";
-		}else if(size > 500000000){ // Gigabyte
-			return (size/1000000000).ToString() + "GB";
+		if (size > 536870912){ // Gigabyte
+			return (size/1073741824).ToString() + "KB";
+		}else if(size > 524288){ // Megabyte
+			return (size/1048576).ToString() + "MB";
+		}else if(size > 512){ // Kilobyte
+			return (size/1024).ToString() + "GB";
 		}
+
 		return size.ToString() + "B";
 	}
 
