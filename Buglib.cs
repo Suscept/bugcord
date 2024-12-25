@@ -20,6 +20,23 @@ public partial class Buglib : Node
 	}
 
 	/// <summary>
+	/// Gets the human-readable size of some data. (1000B > 1KB)
+	/// In regaurds to the confuzing world of KiB vs KB, This function will do as the Windows file explorer does and will use KiB while labelling as "KB"
+	/// </summary>
+	/// <param name="size">The data amount in bytes</param>
+	/// <returns></returns>
+	public static string ShortenDataSize(long size){
+		if (size > 500){ // Kilobyte
+			return (size/1000).ToString() + "KB";
+		}else if(size > 500000){ // Megabyte
+			return (size/1000000).ToString() + "MB";
+		}else if(size > 500000000){ // Gigabyte
+			return (size/1000000000).ToString() + "GB";
+		}
+		return size.ToString() + "B";
+	}
+
+	/// <summary>
 	/// Validates if the provided filename can be safely saved to disk
 	/// </summary>
 	/// <returns>True if the filename is allowed</returns>
@@ -44,6 +61,18 @@ public partial class Buglib : Node
 		}
 
 		return builder.ToString();
+	}
+
+	public static string BytesToHex(byte[] bytes, string seperator){
+		StringBuilder builder = new StringBuilder();
+
+		foreach (byte b in bytes){
+			builder.Append(b.ToString("x2") + seperator);
+		}
+
+		string finalString = builder.ToString();
+
+		return finalString.Substring(0, finalString.Length - seperator.Length); // Cut off the last seperator
 	}
 
 	/// <summary>

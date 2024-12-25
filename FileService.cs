@@ -19,6 +19,14 @@ public partial class FileService : Node
 	// File ID, CacheFile
 	public Dictionary<string, CacheFile> cacheIndex = new();
 
+	public enum FileType
+	{
+		Binary, // Also used if type is unknown/unimplimented
+		Image,
+		Video,
+		Audio,
+	}
+
 	private Bugcord bugcord;
 	private KeyService keyService;
 	private RequestService requestService;
@@ -381,6 +389,18 @@ public partial class FileService : Node
 		// Opens windows file explorer to the downloads folder. The path from the env var needs its "/" replaced with "\" to work
 		Process.Start("explorer.exe", downloadsFolder.Replace('/', '\\')); 
 	}
+
+	public static FileType GetFileType(string extension){
+        return extension switch // Thank you Microsoft for this weird shortening of switch statements
+        {
+            ".bmp" => FileType.Image,
+            ".jpg" => FileType.Image,
+            ".jpeg" => FileType.Image,
+            ".webp" => FileType.Image,
+            ".png" => FileType.Image,
+            _ => FileType.Binary,
+        };
+    }
 
 	public class StoredPacket{
 		public string packet;
