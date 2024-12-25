@@ -19,6 +19,13 @@ public partial class Buglib : Node
 	{
 	}
 
+	public static string GetRandomHexString(int length){
+		byte[] bytes = new byte[length];
+		new Random().NextBytes(bytes);
+
+		return BytesToHex(bytes);
+	}
+
 	/// <summary>
 	/// Gets the human-readable size of some data. (1000B > 1KB)
 	/// In regaurds to the confuzing world of KiB vs KB, This function will do as the Windows file explorer does and will use KiB while labelling as "KB"
