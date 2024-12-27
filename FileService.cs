@@ -385,10 +385,10 @@ public partial class FileService : Node
 
 		GD.Print("FileService: Downloading: " + id);
 
-		string downloadsFolder = System.Environment.ExpandEnvironmentVariables("%userprofile%/downloads/");
+		string downloadsFolder = OS.GetSystemDir(OS.SystemDir.Downloads);
 		CacheFile file = cacheIndex[id];
 
-		FileAccess downloadFile = FileAccess.Open(downloadsFolder + file.filename, FileAccess.ModeFlags.Write);
+		FileAccess downloadFile = FileAccess.Open(downloadsFolder + "/" + file.filename, FileAccess.ModeFlags.Write);
 		downloadFile.StoreBuffer(GetCacheData(id));
 		downloadFile.Close();
 
