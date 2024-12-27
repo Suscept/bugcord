@@ -14,7 +14,7 @@ public partial class Bugcord : Node
 	[Signal] public delegate void OnMessageRecievedEventHandler(Dictionary message);
 	[Signal] public delegate void OnConnectedToSpaceEventHandler(string spaceId, string spaceName);
 
-	public const int filePacketSize = 4096;
+	public const int filePacketSize = 1<<12; // 4096 (2^12)
 
 	public static string selectedSpaceId;
 	public static string selectedKeyId; // Remove
@@ -101,9 +101,9 @@ public partial class Bugcord : Node
 		if (!CheckSendReady())
 			return;
 
-		if (message.Length == 0) // It appears that when null strings are sent through signals they are turned into zero length strings
+		if (message != null && message.Length == 0) // It appears that when null strings are sent through signals they are turned into zero length strings
 			message = null;
-		if (replyingTo.Length == 0)
+		if (replyingTo != null && replyingTo.Length == 0)
 			replyingTo = null;
 
 		GD.Print(embedPaths.Length);

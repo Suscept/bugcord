@@ -4,7 +4,7 @@ using Godot.NativeInterop;
 
 public partial class MessageCreator : MarginContainer
 {
-	[Signal] public delegate void OnMessageSubmitEventHandler(string message, string[] embedPaths, string replyingTo);
+	[Signal] public delegate void OnMessageSubmitEventHandler();
 
 	[Export] public TextEdit messageInput;
 	[Export] public FileDialog embedDialog;
@@ -18,13 +18,21 @@ public partial class MessageCreator : MarginContainer
 
 	public string replyingToMessage;
 
-	private Dictionary<string, Node> embeds = new Dictionary<string, Node>();
+	private List<string> embedPaths = new List<string>();
+
+	private Dictionary<string, Node> embedUiElements = new Dictionary<string, Node>();
+	private Dictionary<string, Image> embedImages = new Dictionary<string, Image>();
 	private PeerService peerService;
+	private FileService fileService;
+
+	private Bugcord bugcord;
 
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
 	{
+		bugcord = GetNode<Bugcord>("/root/Main/Bugcord");
 		peerService = GetNode<PeerService>("/root/Main/Bugcord/PeerService");
+		fileService = GetNode<FileService>("/root/Main/Bugcord/FileService");
 		GetWindow().FilesDropped += EmbedFile;
 		ClearReply(); // Just to get rid of the reply preview
 	}
@@ -37,28 +45,46 @@ public partial class MessageCreator : MarginContainer
 			return;
 		}
 
+		if (Input.IsActionJustPressed("Paste") && DisplayServer.ClipboardHasImage()){
+			EmbedFile();
+		}
+
 		if (Input.IsActionJustPressed("Enter")){
 			messageInput.Undo(); // remove newline that was just added
 			string sendingText = messageInput.Text;
 
-			if (sendingText.Length == 0 && embeds.Count == 0){ // If message would be empty
+			if (sendingText.Length == 0 && embedUiElements.Count == 0){ // If message would be empty
 				return;
 			}
 
-			// Convert embed dictionary to an array
-			List<string> embedPaths = new List<string>();
-			foreach (string path in embeds.Keys){
-				embedPaths.Add(path);
+			// Save the images stored from the clipboard to the cache so we dont have to rewrite how embeds work
+			foreach (KeyValuePair<string, Image> image in embedImages){
+				string cachePath = fileService.WriteToCache(image.Value.SavePngToBuffer(), image.Key+".png", image.Key, false);
+				if (cachePath != null){
+					embedPaths.Add(cachePath);
+				}
 			}
 
-			EmitSignal(SignalName.OnMessageSubmit, sendingText, embedPaths.ToArray(), replyingToMessage);
+			// Convert embed dictionary to an array
+			// List<string> embedPaths = new List<string>();
+			// foreach (string path in embedUiElements.Keys){
+			// 	// If this embed is a clipboard embed
+			// 	string[] pathParsed = path.Split('_', System.StringSplitOptions.RemoveEmptyEntries);
+			// 	embedPaths.Add(path);
+			// }
+
+            bugcord.PostMessage(sendingText, embedPaths.ToArray(), replyingToMessage);
+			EmitSignal(SignalName.OnMessageSubmit);
+
+			// Reset the message window
 			messageInput.Clear();
 			ClearReply();
 
-			foreach (Node embedNode in embeds.Values){
+			foreach (Node embedNode in embedUiElements.Values){
 				embedNode.QueueFree();
 			}
-			embeds.Clear();
+			embedPaths.Clear();
+			embedUiElements.Clear();
 		}
 	}
 
@@ -76,8 +102,34 @@ public partial class MessageCreator : MarginContainer
 		replyModel.Visible = false;
 	}
 
+	/// <summary>
+	/// Embeds the image in the clipboard
+	/// </summary>
+	public void EmbedFile(){
+		if (!DisplayServer.ClipboardHasImage())
+			return;
+
+		GD.Print("MessgeCreator: Pasting clipboard image");
+
+		string tempImageId = Buglib.GetRandomHexString(16);
+
+		Image image = DisplayServer.ClipboardGetImage();
+
+		embedImages.Add(tempImageId, image);
+
+		embed_input_display newEmbed = embedScene.Instantiate<embed_input_display>();
+		newEmbed.Initiate("Pasted Image", Buglib.ShortenDataSize(image.GetData().Length), tempImageId);
+		newEmbed.OnRemoveEmbed += RemoveEmbed;
+
+		embedContainer.AddChild(newEmbed);
+
+		embedUiElements.Add(tempImageId, newEmbed);
+	}
+
+	/// <summary>
+	/// Embeds the file at a path
+	/// </summary>
 	public void EmbedFile(string[] dirs){
-		GD.Print(dirs.Length);
 		foreach (string dir in dirs){
 			// read some metadata
 			string filename = System.IO.Path.GetFileName(dir);
@@ -91,13 +143,15 @@ public partial class MessageCreator : MarginContainer
 
 			embedContainer.AddChild(newEmbed);
 
-			embeds.Add(dir, newEmbed);
+			embedUiElements.Add(dir, newEmbed);
+
+			embedPaths.Add(dir);
 		}
 	}
 
 	public void RemoveEmbed(string embedDir){
-		embeds[embedDir].QueueFree();
-		embeds.Remove(embedDir);
+		embedUiElements[embedDir].QueueFree();
+		embedUiElements.Remove(embedDir);
 	}
 
 	public void OnEmbedButtonPressed(){

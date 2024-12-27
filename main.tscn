@@ -1196,7 +1196,6 @@ selection_enabled = true
 [connection signal="pressed" from="HBoxContainer/LeftBar/Panel/VBoxContainer/VoiceChatUi/HBoxContainer/Connect" to="HBoxContainer/LeftBar/Panel/VBoxContainer/VoiceChatUi" method="OnConnectButtonPressed"]
 [connection signal="pressed" from="HBoxContainer/LeftBar/Panel/VBoxContainer/VoiceChatUi/HBoxContainer/Mute" to="HBoxContainer/LeftBar/Panel/VBoxContainer/VoiceChatUi" method="OnMuteButtonPressed"]
 [connection signal="pressed" from="HBoxContainer/LeftBar/Panel/VBoxContainer/VoiceChatUi/HBoxContainer/Deafen" to="HBoxContainer/LeftBar/Panel/VBoxContainer/VoiceChatUi" method="OnDeafenButtonPressed"]
-[connection signal="OnMessageSubmit" from="HBoxContainer/ChatMain/VBoxContainer/MessageCreator" to="Bugcord" method="PostMessage"]
 [connection signal="files_selected" from="HBoxContainer/ChatMain/VBoxContainer/MessageCreator/EmbedDialog" to="HBoxContainer/ChatMain/VBoxContainer/MessageCreator" method="EmbedFile"]
 [connection signal="pressed" from="HBoxContainer/ChatMain/VBoxContainer/MessageCreator/VBoxContainer/ReplyModel/ClearReply" to="HBoxContainer/ChatMain/VBoxContainer/MessageCreator" method="ClearReply"]
 [connection signal="pressed" from="HBoxContainer/ChatMain/VBoxContainer/MessageCreator/VBoxContainer/MessageInput/EmbedButton" to="HBoxContainer/ChatMain/VBoxContainer/MessageCreator" method="OnEmbedButtonPressed"]

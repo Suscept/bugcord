@@ -267,20 +267,24 @@ public partial class FileService : Node
 		return file.GetBuffer((long)file.GetLength());
 	}
 
-	public void WriteToCache(byte[] data, string filename, string guid){
+	public string WriteToCache(byte[] data, string filename, string guid){
+		return WriteToCache(data, filename, guid, true);
+	}
+
+	public string WriteToCache(byte[] data, string filename, string guid, bool ensureProperId){
 		MakeCachePath();
 
-		if (!Buglib.VerifyHexString(guid)){
+		if (ensureProperId && !Buglib.VerifyHexString(guid)){
 			GD.PrintErr("FileService: Found invalid file id while writing to cache");
-			return;
+			return null;
 		}
 
 		if (!Buglib.VerifyFilename(filename))
-			return;
+			return null;
 
 		string inCacheFilename = guid + "." + filename.Split('.')[1];
 		if (!Buglib.VerifyFilename(inCacheFilename))
-			return;
+			return null;
 
 		string path = cachePath + inCacheFilename;
 
@@ -300,6 +304,8 @@ public partial class FileService : Node
 		SaveCacheFile();
 
 		EmitSignal(SignalName.OnCacheChanged, guid);
+
+		return path;
 	}
 
 	public void ClearCache(){
