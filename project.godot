@@ -11,10 +11,14 @@ config_version=5
 [application]
 
 config/name="Bugcord"
+config/version="0.0.3"
 run/main_scene="res://main.tscn"
 config/features=PackedStringArray("4.2", "C#", "GL Compatibility")
+run/low_processor_mode=true
 boot_splash/image="res://ProgrammerArtLogo.png"
-config/icon="res://icon.svg"
+boot_splash/use_filter=false
+config/icon="res://ProgrammerArtLogo.png"
+config/windows_native_icon="res://favicon.ico"
 
 [audio]
 
