@@ -300,7 +300,13 @@ public partial class FileService : Node
 			path = path,
 			filename = filename,
 		};
-		cacheIndex.Add(guid, cacheFile);
+
+		if (cacheIndex.ContainsKey(guid)){
+			cacheIndex[guid] = cacheFile;
+		}else{
+			cacheIndex.TryAdd(guid, cacheFile);
+		}
+
 		SaveCacheFile();
 
 		EmitSignal(SignalName.OnCacheChanged, guid);
