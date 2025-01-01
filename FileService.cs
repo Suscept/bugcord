@@ -318,6 +318,7 @@ public partial class FileService : Node
 			DirAccess.RemoveAbsolute(file.path);
 		}
 		cacheIndex.Clear();
+		SaveCacheFile();
 	}
 
 	public void SaveCacheFile(){
