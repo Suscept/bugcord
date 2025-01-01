@@ -69,14 +69,14 @@ public partial class Bugcord : Node
 	{
 	}
 
-    public override void _Notification(int what)
-    {
-        if (what == NotificationWMCloseRequest){
+	public override void _Notification(int what)
+	{
+		if (what == NotificationWMCloseRequest){
 			packetService.Disconnect();
 			fileService.ClearCache();
 			GetTree().Quit();
 		}
-    }
+	}
 
 	#region message functions
 
@@ -528,11 +528,11 @@ public partial class Bugcord : Node
 
 	private byte[] BuildFileAvailabilityPacket(string fileId, RequestService.FileExtension extension, RequestService.VerifyMethod verifyMethod){
 		List<byte> packetBytes = new List<byte>
-        {
-            12,
-            (byte)extension,
-            (byte)verifyMethod
-        };
+		{
+			12,
+			(byte)extension,
+			(byte)verifyMethod
+		};
 
 		packetBytes.AddRange(Buglib.MakeDataSpan(fileId.ToUtf8Buffer()));
 
