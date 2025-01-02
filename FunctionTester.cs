@@ -33,6 +33,7 @@ public partial class FunctionTester : Panel
 				GD.Print("- Decoded " + dataspans.Length + " dataspans");
 				for (int i = 0; i < dataspans.Length; i++){
 					GD.Print("- Dataspan " + i + " (" + dataspans[i].Length + " bytes): " + Buglib.ToHexString(dataspans[i]));
+					GD.Print("	- As string : \"" + dataspans[i].GetStringFromUtf8() + "\"");
 				}
 				break;
 			
